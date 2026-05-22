@@ -1,0 +1,20 @@
+{
+  "started_at": "2026-05-13T12:11:56.525433+00:00",
+  "mode": "dry-run",
+  "before_public": 2845,
+  "target_public": 3000,
+  "cache_candidates": 2521,
+  "cafeland_pages_seen": 20,
+  "cafeland_records_seen": 45,
+  "inserted": 120,
+  "duplicates": 2446,
+  "invalid": 0,
+  "fetch_errors": 0,
+  "by_source": {
+    "cached_alonhadat": 75,
+    "nhadat_cafeland": 45
+  },
+  "max_rss_mb": 86.0,
+  "stop_reason": null,
+  "after_public": 2845
+}

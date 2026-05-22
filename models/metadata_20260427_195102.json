@@ -1,0 +1,208 @@
+{
+  "training_standard": "CVX-BDS/IoT 1.1-VN Research Extension",
+  "best_model": "QualityWeightedRandomForest",
+  "all_results": {
+    "QualityWeightedRandomForest": {
+      "mae": 3262881108.605295,
+      "rmse": 5268116365.174907,
+      "r2": 0.5487089937227217,
+      "cv_mae_mean": 4021508009.676908,
+      "cv_mae_std": 187875135.99455166,
+      "test_mae": 3360817738.9781184,
+      "test_rmse": 5325304209.150994,
+      "test_r2": 0.6885773293657002
+    },
+    "ReliabilityAwareGradientBoosting": {
+      "mae": 3424528904.2898335,
+      "rmse": 5794804644.832724,
+      "r2": 0.45396113024848406,
+      "cv_mae_mean": 3602520003.6548934,
+      "cv_mae_std": 252615580.67830253
+    },
+    "ConfidenceWeightedXGBoost": {
+      "mae": 6372299154.315056,
+      "rmse": 8072604597.770346,
+      "r2": -0.05967654517960508,
+      "cv_mae_mean": 7460063369.531568,
+      "cv_mae_std": 448750673.090885
+    }
+  },
+  "train_size": 298,
+  "validation_size": 64,
+  "test_size": 65,
+  "n_features": 53,
+  "feature_names": [
+    "area_m2_norm",
+    "bedrooms_norm",
+    "bathrooms_norm",
+    "floor_count",
+    "frontage_m",
+    "latitude_norm",
+    "longitude_norm",
+    "is_house",
+    "is_apartment",
+    "is_land",
+    "is_townhouse",
+    "is_villa",
+    "province_HN",
+    "province_HCM",
+    "province_DN",
+    "province_HP",
+    "province_CT",
+    "province_BD",
+    "noise_level_norm",
+    "temperature_norm",
+    "humidity_norm",
+    "light_level_norm",
+    "distance_to_center",
+    "area_type",
+    "legal_status",
+    "furnishing",
+    "province_price_mean",
+    "rqs_norm",
+    "provenance_score_norm",
+    "verification_score_norm",
+    "market_anchor_score_norm",
+    "timeliness_score_norm",
+    "training_weight_norm",
+    "evidence_weight_norm",
+    "confidence_stage1_score_norm",
+    "confidence_prob_a_norm",
+    "confidence_prob_b_norm",
+    "confidence_prob_c_norm",
+    "confidence_prob_d_norm",
+    "anchor_flag_feature",
+    "has_iot_signal_feature",
+    "area_bedrooms_interaction",
+    "floor_bedrooms_interaction",
+    "knn5_price_density",
+    "knn10_price_density"
+  ],
+  "trained_at": "2026-04-27T19:51:02.960571",
+  "training_quality_summary": {
+    "profile_count": 427,
+    "avg_rqs": 5.58,
+    "median_rqs": 5.58,
+    "avg_training_weight": 0.4364,
+    "max_training_weight": 0.504,
+    "min_training_weight": 0.3432,
+    "evidence_distribution": {
+      "E4": 427
+    },
+    "grade_distribution": {
+      "D": 170,
+      "C": 257
+    },
+    "anchor_rate": 0.0
+  },
+  "confidence_metadata": {
+    "stage_name": "Confidence Classification",
+    "best_model": "EntropyTree",
+    "feature_names": [
+      "support_volume_score",
+      "support_quality_score",
+      "support_completeness_score",
+      "support_anchor_share",
+      "support_source_count",
+      "support_volatility",
+      "district_support_count",
+      "province_support_count",
+      "property_type_support_count",
+      "effective_sample_size",
+      "input_completeness_score",
+      "input_iot_signal_count",
+      "input_has_legal_status",
+      "input_has_coordinates",
+      "input_has_furnishing",
+      "local_price_gap_ratio",
+      "self_collected_hint"
+    ],
+    "validation_results": {
+      "EntropyTree": {
+        "accuracy": 1.0,
+        "precision_macro": 1.0,
+        "recall_macro": 1.0,
+        "f1_macro": 1.0
+      },
+      "GiniTree": {
+        "accuracy": 1.0,
+        "precision_macro": 1.0,
+        "recall_macro": 1.0,
+        "f1_macro": 1.0
+      },
+      "HybridConfidenceForest": {
+        "accuracy": 1.0,
+        "precision_macro": 1.0,
+        "recall_macro": 1.0,
+        "f1_macro": 1.0
+      }
+    },
+    "test_metrics": {
+      "accuracy": 1.0,
+      "precision_macro": 1.0,
+      "recall_macro": 1.0,
+      "f1_macro": 1.0
+    },
+    "split_summary": {
+      "train_size": 298,
+      "validation_size": 64,
+      "test_size": 65,
+      "strategy": "70/15/15 holdout split"
+    },
+    "label_distribution": {
+      "C": 257,
+      "D": 170
+    },
+    "tree_rules": "|--- class: 0\n"
+  },
+  "conformal_calibration": {
+    "A": {
+      "count": 0,
+      "ratio_q90": 0.12,
+      "ratio_median": 0.08
+    },
+    "B": {
+      "count": 0,
+      "ratio_q90": 0.12,
+      "ratio_median": 0.08
+    },
+    "C": {
+      "count": 64,
+      "ratio_q90": 1.1090034119166365,
+      "ratio_median": 0.3069348705707024
+    },
+    "D": {
+      "count": 0,
+      "ratio_q90": 0.12,
+      "ratio_median": 0.08
+    }
+  },
+  "sample_weight_summary": {
+    "min": 0.3432,
+    "max": 0.504,
+    "mean": 0.43636182669789214
+  },
+  "split_strategy": "70/15/15 holdout with validation-driven model selection",
+  "interval_strategy": "quality-weighted point models + quantile interval heads + grouped conformal calibration",
+  "training_flow_tree": {
+    "name": "Research Training Pipeline",
+    "children": [
+      {
+        "name": "Dataset",
+        "value": 427
+      },
+      {
+        "name": "Stage 1 - Confidence Classifier",
+        "value": "EntropyTree"
+      },
+      {
+        "name": "Stage 2 - Price Interval Model",
+        "value": "QualityWeightedRandomForest"
+      },
+      {
+        "name": "Calibration",
+        "value": "Grouped conformal by trust band"
+      }
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "trained_at": "2026-04-28T01:11:55.353638",
+  "record_count": 1257,
+  "best_model": "ReliabilityAwareGradientBoosting",
+  "test_mae": 3415590282.5433626,
+  "test_rmse": 6066356691.404469,
+  "test_r2": 0.851549021829776,
+  "features": 53,
+  "version": "equilibrium_20260428_011155"
+}

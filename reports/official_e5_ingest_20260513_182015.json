@@ -1,0 +1,23 @@
+{
+  "started_at": "2026-05-13T11:20:15+00:00",
+  "mode": "dry-run",
+  "source_data_path": "C:\\Users\\Admin\\Documents\\real-estate-avm\\data\\official_e5_land_price_references_20260513.json",
+  "records_seen": 12,
+  "inserted": 12,
+  "skipped_existing": 0,
+  "inserted_ids": [
+    8859,
+    8860,
+    8861,
+    8862,
+    8863,
+    8864,
+    8865,
+    8866,
+    8867,
+    8868,
+    8869,
+    8870
+  ],
+  "report_path": "C:\\Users\\Admin\\Documents\\real-estate-avm\\reports\\official_e5_ingest_20260513_182015.json"
+}

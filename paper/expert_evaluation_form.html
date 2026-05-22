@@ -1,0 +1,2378 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đánh Giá Expert — BĐS Hà Nội (50 căn hộ)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f7fa; color: #1a1a2e; }
+  .header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white; padding: 2rem; text-align: center; }
+  .header h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
+  .header p { opacity: 0.8; font-size: 0.9rem; }
+  .meta-bar { background: #e8f5e9; border: 1px solid #4caf50; padding: 1rem; margin: 1rem; border-radius: 8px; font-size: 0.85rem; }
+  .meta-bar strong { color: #2e7d32; }
+  .expert-selector { background: white; border: 2px solid #7c3aed; border-radius: 12px; padding: 1.5rem; margin: 1rem; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+  .expert-selector label { font-weight: 700; display: block; margin-bottom: 0.5rem; color: #7c3aed; }
+  .expert-selector select { width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; }
+  .progress-bar { background: white; border-radius: 12px; padding: 1rem; margin: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .progress-bar .bar { background: #e0e0e0; border-radius: 8px; height: 24px; overflow: hidden; }
+  .progress-bar .fill { background: linear-gradient(90deg, #7c3aed, #a855f7); height: 100%; transition: width 0.5s; }
+  .progress-bar .labels { display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.8rem; color: #666; }
+  .property-card { background: white; border: 1px solid #e0e0e0; border-radius: 12px; margin: 1rem; padding: 1.25rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .property-card h3 { color: #1a1a2e; margin-bottom: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #eee; }
+  .property-card.submitted { border-color: #4caf50; background: #f0fff4; }
+  .property-card.submitted h3 { color: #2e7d32; }
+  .property-info { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1rem; }
+  .info-item { background: #f8f9fc; padding: 0.5rem 0.75rem; border-radius: 6px; }
+  .info-item label { font-size: 0.7rem; color: #888; display: block; text-transform: uppercase; letter-spacing: 0.05em; }
+  .info-item span { font-weight: 600; font-size: 0.9rem; }
+  .description { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; padding: 0.75rem; margin-bottom: 1rem; font-size: 0.85rem; line-height: 1.5; color: #444; }
+  .rating-section { border-top: 2px solid #f0f0f0; padding-top: 1rem; }
+  .rating-section h4 { color: #7c3aed; margin-bottom: 1rem; }
+  .rating-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  .rating-field { display: flex; flex-direction: column; }
+  .rating-field label { font-size: 0.78rem; font-weight: 600; color: #555; margin-bottom: 0.4rem; }
+  .rating-field label span { color: #ef233c; }
+  .rating-field input { border: 2px solid #ddd; border-radius: 8px; padding: 0.6rem; font-size: 1rem; transition: border-color 0.2s; }
+  .rating-field input:focus { outline: none; border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,0.1); }
+  .confidence-row { display: flex; gap: 1rem; margin-bottom: 1rem; align-items: center; }
+  .confidence-row label { font-size: 0.78rem; font-weight: 600; color: #555; }
+  .confidence-btn { flex: 1; padding: 0.6rem; border: 2px solid #ddd; border-radius: 8px; background: white; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+  .confidence-btn:hover { border-color: #7c3aed; }
+  .confidence-btn.selected { background: #7c3aed; color: white; border-color: #7c3aed; }
+  .comment-row { margin-bottom: 1rem; }
+  .comment-row textarea { width: 100%; border: 2px solid #ddd; border-radius: 8px; padding: 0.75rem; font-size: 0.9rem; resize: vertical; min-height: 80px; }
+  .submit-row { text-align: center; margin: 1rem 0; }
+  .submit-btn { background: linear-gradient(135deg, #7c3aed, #a855f7); color: white; border: none; padding: 0.875rem 2.5rem; border-radius: 12px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+  .submit-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(124,58,237,0.3); }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .success-msg { background: #d4edda; border: 1px solid #28a745; color: #155724; padding: 0.75rem; border-radius: 8px; text-align: center; font-weight: 600; margin-top: 0.5rem; }
+  .warning-note { background: #fff3cd; border: 1px solid #ffc107; border-radius: 8px; padding: 0.75rem; margin: 1rem; font-size: 0.82rem; color: #856404; }
+  .instructions { background: #e8f4fd; border: 1px solid #2196f3; border-radius: 8px; padding: 1rem; margin: 1rem; font-size: 0.85rem; line-height: 1.6; }
+  .instructions strong { color: #1565c0; }
+  .api-status { font-size: 0.75rem; padding: 0.5rem; border-radius: 6px; text-align: center; margin: 0.5rem 1rem; }
+  .api-status.loading { background: #fff3cd; color: #856404; }
+  .api-status.success { background: #d4edda; color: #155724; }
+  .api-status.error { background: #f8d7da; color: #721c24; }
+  .expert-stats { background: white; border-radius: 12px; padding: 1rem; margin: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .expert-stats table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .expert-stats th { background: #7c3aed; color: white; padding: 0.5rem; text-align: left; }
+  .expert-stats td { padding: 0.5rem; border-bottom: 1px solid #eee; }
+  @media (max-width: 768px) { .property-info, .rating-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Đánh Giá Expert — Căn Hộ Hà Nội</h1>
+  <p>Nghiên cứu ước lượng vùng giá chấp nhận bằng tín hiệu cung-cầu (SDEV)</p>
+</div>
+
+<div class="meta-bar">
+  <strong>📋 Hướng dẫn:</strong> Điền giá Low/Mid/High cho mỗi căn hộ.
+  Low = giá thấp nhất hợp lý, High = giá cao nhất hợp lý, Mid = giá trung bình hợp lý.
+</div>
+
+<div class="instructions">
+  <strong>Cách điền:</strong><br>
+  1. Chọn <strong>Expert ID</strong> của bạn (expert_1 / expert_2 / expert_3)<br>
+  2. Với mỗi căn, nhập <strong>Low/Mid/High</strong> theo VND (không dấu phẩy, ví dụ: 4200000000)<br>
+  3. Chọn độ tự tin → nhấn <strong>Submit</strong><br>
+  <strong>Bạn có thể điền nhiều căn rồi submit riêng từng căn. Server sẽ tự động tổng hợp khi đủ 3 experts.</strong>
+</div>
+
+<div class="warning-note">
+  ⚠️ Kết quả chỉ dùng cho nghiên cứu khoa học. Không phải tư vấn đầu tư BĐS.
+</div>
+
+<div class="expert-selector">
+  <label for="expertId">👤 Expert ID của bạn:</label>
+  <select id="expertId" onchange="filterProperties()">
+    <option value="">-- Chọn Expert ID --</option>
+<option value="expert_1">expert_1 (25 căn)</option><option value="expert_2">expert_2 (14 căn)</option><option value="expert_3">expert_3 (11 căn)</option>
+  </select>
+</div>
+
+<div class="expert-stats">
+  <table>
+    <tr><th>Expert</th><th>Số căn cần đánh giá</th><th>Cluster coverage</th></tr>
+<tr><td><strong>expert_1</strong></td><td>25 căn hộ</td><td>Quận Thanh Xuân::90-120::2BR, Quận Cầu Giấy::50-70::3BR, Quận Đống Đa::50-70::2B...</td></tr><tr><td><strong>expert_2</strong></td><td>14 căn hộ</td><td>Quận Thanh Xuân::90-120::2BR, Quận Cầu Giấy::50-70::3BR, Quận Đống Đa::50-70::2B...</td></tr><tr><td><strong>expert_3</strong></td><td>11 căn hộ</td><td>Quận Thanh Xuân::90-120::2BR, Quận Đống Đa::50-70::2BR, Quận Cầu Giấy::50-70::2B...</td></tr>
+  </table>
+</div>
+
+<div class="progress-bar">
+  <div style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem;">
+    Tiến độ: <span id="progressText">0/total</span>
+  </div>
+  <div class="bar"><div class="fill" id="progressFill" style="width:0%"></div></div>
+  <div class="labels">
+    <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+  </div>
+</div>
+
+<div class="api-status loading" id="apiStatus">🔄 Đang kiểm tra kết nối API...</div>
+
+
+<div class="property-card" data-ep-id="9" data-property-id="3032">
+  <h3>#3032 — Quận Cầu Giấy — 3PN — 120m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>120 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">9.30 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>77.5M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::120+::3BR</span></div>
+  </div>
+  <div class='description'>📝 BÁN CHUNG CƯ CAO CẤP KHU ĐÔ THỊ CẦU GIẤY – TRẦN THÁI TÔNG - 3 NGỦ - 120M - 9,3 TỶ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="12" data-property-id="26">
+  <h3>#26 — Quận Cầu Giấy — 3PN — 126m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>126 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">12.00 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>95.2M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::120+::3BR</span></div>
+  </div>
+  <div class='description'>📝 CĂN HỘ CHUNG CƯ FLC VIP CẦU GIẤY- MẶT PHỐ 3 PN SÁNG THOÁNG- DT 126M2/GIÁ 12 TỶ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="1" data-property-id="1496">
+  <h3>#1496 — Quận Cầu Giấy — 2PN — 30m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>30 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">1.40 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>46.7M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::50-70::2BR</span></div>
+  </div>
+  <div class='description'>📝 1516 căn Studio cuối cùng Sun Fours từ 1,4 tỉ CK 28,5% đủ tầng trung cao thấp có sân vườn, pháo hoa1,4 tỷ·30 m²·46,67 tr/m²·Đà NẵngEm Thủy độc quyền giỏ hàng 30 căn từ Studio đến 3PN từ căn sân vườn đến căn tầng cao-trung-thấp view Sông Hàn-Pháo hoa đầy đủ. Sở hữu ngay chỉ từ 1,4 tỉ. Hàng hiếm chớp ...</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="4" data-property-id="2597">
+  <h3>#2597 — Quận Cầu Giấy — 2PN — 55m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>55 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">2.98 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>54.2M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::50-70::2BR</span></div>
+  </div>
+  <div class='description'>📝 13CHỈ TỪ 2.9 TỶ FULL (VAT)! SỞ HỮU CĂN HỘ 2PN-2WC CÁCH HÀNG XANH CHỈ 20 PHÚT!2,98 tỷ·55 m²·54,22 tr/m²·2·2·Bình Dương (Hồ Chí Minh mới)Cách cầu Phú Long chỉ 5 phút  từ Quận 12 di chuyển cực nhanh CĂN </div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="17" data-property-id="33">
+  <h3>#33 — Quận Cầu Giấy — 3PN — 60m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>60 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">6.35 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>105.8M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::50-70::3BR</span></div>
+  </div>
+  <div class='description'>📝 Căn Hộ CC N06 TRẦN QUÝ KIÊN, TT CẦU GIẤY, FULL NỘI THẤT, 3 NGỦ + 2 WC, Giá 6.35 tỷ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="13" data-property-id="2600">
+  <h3>#2600 — Quận Cầu Giấy — 3PN — 82m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>82 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">4.50 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>54.9M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::70-90::3BR</span></div>
+  </div>
+  <div class='description'>📝 8Bán căn hộ 3PN, 2WC tại The Beverly Solari - Vinhomes Grand Park, 4,5 tỷ, 82m2, Quận 9, TP.HCM4,5 tỷ·82 m²·54,88 tr/m²·3·2·Hồ Chí MinhNhanh tay sở hữu căn hộ chung cư tại The Beverly Solari - Vinhome</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="16" data-property-id="27">
+  <h3>#27 — Quận Cầu Giấy — 3PN — 86m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>86 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">5.80 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>67.4M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::70-90::3BR</span></div>
+  </div>
+  <div class='description'>📝 Chú Hoá bán Chung cư gần TH Dịch Vọng B, phố Trần Quý Kiên, DT: 86m2, 5.8 tỷ ở Cầu Giấy</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="5" data-property-id="22">
+  <h3>#22 — Quận Cầu Giấy — 3PN — 90m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>90 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">8.70 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>96.7M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::90-120::3BR</span></div>
+  </div>
+  <div class='description'>📝 Siêu phẩm  căn góc chung cư Trung Tâm Cầu Giấy 90m2, 3PN, 2vs, 1 slot ô tô, tặng nội thất</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="8" data-property-id="2680">
+  <h3>#2680 — Quận Cầu Giấy — 3PN — 104m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>104 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">4.28 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>41.2M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::90-120::3BR</span></div>
+  </div>
+  <div class='description'>📝 24Căn hộ 3PN - 2WC sẵn sổ hồng, hỗ trợ lãi suất cố định 5%/năm trong 48 tháng4,28 tỷ·104 m²·41,12 tr/m²·3·2·Hồ Chí Minh (Bình Dương cũ)Căn hộ 3PN Phú Đông Sky Garden "nhận nhà ở ngay - nhận sổ liền ta</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="22" data-property-id="3324">
+  <h3>#3324 — Quận Thanh Xuân — 2PN — 120m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>120 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">11.20 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>93.3M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::120+::2BR</span></div>
+  </div>
+  <div class='description'>📝 Bán Căn Hộ R2b Royal City – 120m² – Full Nội Thất Cao Cấp – 11.2 Tỷ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="25" data-property-id="3325">
+  <h3>#3325 — Quận Thanh Xuân — 2PN — 129m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>129 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">14.50 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>112.4M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::120+::2BR</span></div>
+  </div>
+  <div class='description'>📝 BÁN CĂN HỘ VINHOMES ROYAL CITY R1 – 129M² GIÁ 14 TỶ – VIEW NỘI KHU – NỘI THẤT CAO CẤP</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="34" data-property-id="3369">
+  <h3>#3369 — Quận Thanh Xuân — 2PN — 70m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>70 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">5.00 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>71.4M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::70-90::2BR</span></div>
+  </div>
+  <div class='description'>📝 BÁN CHUNG CƯ THANH XUÂN – 2 PHÒNG NGỦ - GIÁ CHỈ 5 TỶ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="37" data-property-id="3096">
+  <h3>#3096 — Quận Thanh Xuân — 2PN — 73m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>73 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">9.00 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>123.3M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::70-90::2BR</span></div>
+  </div>
+  <div class='description'>📝 CĂN HỘ CAO CẤP THE LEGEND-TT THANH XUÂN-73M-2PN-2WC-BAN CÔNG ĐẸP-FULL NT-BỂ BƠI-9TỶ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="30" data-property-id="3081">
+  <h3>#3081 — Quận Thanh Xuân — 3PN — 70m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>70 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">4.68 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>66.9M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::70-90::3BR</span></div>
+  </div>
+  <div class='description'>📝 🔥BÁN CĂN HỘ NGUYỄN TRÃI - 70M² – 3 NGỦ – Ô TÔ ĐỖ – TRUNG TÂM THANH XUÂN – GIÁ NHỈNH 4 TỶ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="33" data-property-id="3298">
+  <h3>#3298 — Quận Thanh Xuân — 3PN — 80m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>80 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">5.60 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>70.0M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::70-90::3BR</span></div>
+  </div>
+  <div class='description'>📝 BÁN CĂN HỘ CC DREAM CENTER NGUYỄN HUY TƯỞNG, KHU VIP 3PN THOÁNG TẦNG THẤP 80M2 GIÁ 5.6 TỶ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="26" data-property-id="3302">
+  <h3>#3302 — Quận Thanh Xuân — 2PN — 90m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>90 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">7.60 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>84.4M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::90-120::2BR</span></div>
+  </div>
+  <div class='description'>📝 CHUNG CƯ 198 NGUYỄN TUÂN THÁNH XUÂN 90M 3 NGỦ GIÁ 7.6 TỶ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="29" data-property-id="70">
+  <h3>#70 — Quận Thanh Xuân — 2PN — 93m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>93 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">9.70 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>104.3M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::90-120::2BR</span></div>
+  </div>
+  <div class='description'>📝 Bán chung cư Gold Land, Nguyễn Trãi, Thanh Xuân, Hà Nội. 93m2, 2 ngủ, 2wc</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="18" data-property-id="3422">
+  <h3>#3422 — Quận Thanh Xuân — 3PN — 90m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>90 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">8.60 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>95.6M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::90-120::3BR</span></div>
+  </div>
+  <div class='description'>📝 8.6 tỷ / 90 m2 Căn Hộ Cc Nguyễn Tuân/ Thanh Xuân</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="21" data-property-id="3292">
+  <h3>#3292 — Quận Thanh Xuân — 3PN — 95m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>95 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">8.90 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>93.7M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::90-120::3BR</span></div>
+  </div>
+  <div class='description'>📝 ❇️ BÁN CĂN CHUNG CƯ TÒA HEI TOWER SỐ 1 NGUỴ NHƯ KON TUM THANH XUÂN 95 M2 3 PHÒNG NGỦ 2VS</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="41" data-property-id="98">
+  <h3>#98 — Quận Đống Đa — 3PN — 131m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Đống Đa</span></div>
+    <div class="info-item"><label>Diện tích</label><span>131 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">17.00 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>129.8M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Đống Đa::120+::3BR</span></div>
+  </div>
+  <div class='description'>📝 BÁN CĂN HỘ CHUNG CƯ LÁNG HẠ, ĐỐNG ĐA 131M 17 TỶ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="42" data-property-id="3449">
+  <h3>#3449 — Quận Đống Đa — 2PN — 46m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Đống Đa</span></div>
+    <div class="info-item"><label>Diện tích</label><span>46 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">2.35 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>51.1M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Đống Đa::50-70::2BR</span></div>
+  </div>
+  <div class='description'>📝 BÁN CĂN HỘ CCMN PHỐ TRƯỜNG CHINH 46M,2 NGỦ,NGÕ NÔNG GẦN PHỐ GIÁ 2.35 TỶ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="45" data-property-id="111">
+  <h3>#111 — Quận Đống Đa — 2PN — 60m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Đống Đa</span></div>
+    <div class="info-item"><label>Diện tích</label><span>60 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">6.30 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>105.0M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Đống Đa::50-70::2BR</span></div>
+  </div>
+  <div class='description'>📝 34 HOÀNG CẦU ĐỐNG ĐA – LÔ GÓC – NHÀ NHIỀU CỬA SỔ THOÁNG CĂN HỘ  TÒA 12 TẦNG, 1 HẦM – 4 THA</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="46" data-property-id="100">
+  <h3>#100 — Quận Đống Đa — 2PN — 80m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Đống Đa</span></div>
+    <div class="info-item"><label>Diện tích</label><span>80 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">8.90 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>111.2M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Đống Đa::70-90::2BR</span></div>
+  </div>
+  <div class='description'>📝 Bán căn hộ chung cư thái hà tt đống đa lô góc hai thoáng nhà đẹp ở ngay</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="47" data-property-id="102">
+  <h3>#102 — Quận Đống Đa — 3PN — 70m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Đống Đa</span></div>
+    <div class="info-item"><label>Diện tích</label><span>70 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">4.80 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>68.6M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Đống Đa::70-90::3BR</span></div>
+  </div>
+  <div class='description'>📝 BÁN CĂN HỘ TẬP THỂ T2 NAM ĐỒNG HỒ ĐẮC DI ĐỐNG ĐA - 70M 3PN - HƠN 4 TỶ SĐCC NHÀ ĐẸP</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="38" data-property-id="89">
+  <h3>#89 — Quận Đống Đa — 3PN — 90m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Đống Đa</span></div>
+    <div class="info-item"><label>Diện tích</label><span>90 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">9.75 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>108.3M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Đống Đa::90-120::3BR</span></div>
+  </div>
+  <div class='description'>📝 Bán chung cư CT2 số 34 Hoàng Cầu 90m2 căn 3 ngủ 2 Vs trung Tâm Đống Đa.</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="10" data-property-id="2701">
+  <h3>#2701 — Quận Cầu Giấy — 3PN — 124m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>124 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">17.50 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>141.4M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::120+::3BR</span></div>
+  </div>
+  <div class='description'>📝 Chính chủ bán chung cư Mipec Rubik 122 - 124 Xuân Thủy, 123.8m²</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="2" data-property-id="38">
+  <h3>#38 — Quận Cầu Giấy — 2PN — 51m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>51 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">5.10 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>100.0M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::50-70::2BR</span></div>
+  </div>
+  <div class='description'>📝 5 TỶ SỞ HỮU CHUNG CƯ TRẦN QUÝ KIÊN - TT CẦU GIẤY - NHÀ MỚI - FULL ĐỒ - DT: 51M2 - 2N</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="50" data-property-id="34">
+  <h3>#34 — Quận Cầu Giấy — 3PN — 60m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>60 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">6.35 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>105.8M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::50-70::3BR</span></div>
+  </div>
+  <div class='description'>📝 CĂN HỘ CC N06 TRẦN QUÝ KIÊN, TT CẦU GIẤY, 3 NGỦ + 2 WC, FULL NỘI THẤT, SỔ ĐỎ, Giá 6.35 tỷ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="14" data-property-id="2669">
+  <h3>#2669 — Quận Cầu Giấy — 3PN — 82m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>82 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">4.50 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>54.9M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::70-90::3BR</span></div>
+  </div>
+  <div class='description'>📝 8Bán căn hộ 3PN, 2WC tại The Beverly Solari - Vinhomes Grand Park, 4,5 tỷ, 82m2, Quận 9, TP.HCM4,5 tỷ·82 m²·54,88 tr/m²·3·2·Hồ Chí MinhNhanh tay sở hữu căn hộ chung cư tại The Beverly Solari - Vinhome</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="6" data-property-id="3046">
+  <h3>#3046 — Quận Cầu Giấy — 3PN — 100m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>100 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">11.00 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>110.0M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::90-120::3BR</span></div>
+  </div>
+  <div class='description'>📝 BÁN CHUNG CƯ STAR TOWER – LÔ GÓC – 3 NGỦ – NỘI THẤT CAO CẤP – VIEW CÔNG VIÊN CẦU GIẤY</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="23" data-property-id="3255">
+  <h3>#3255 — Quận Thanh Xuân — 2PN — 121m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>121 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">18.00 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>148.8M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::120+::2BR</span></div>
+  </div>
+  <div class='description'>📝 Bán Căn Hộ 2 Ngủ Tòa Royal City 72A Nguyễn Trãi 121m2 Hướng Đông Nam VIEW Bể Bơi 18 Tỷ.</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="35" data-property-id="3407">
+  <h3>#3407 — Quận Thanh Xuân — 2PN — 71m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>71 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">5.40 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>76.1M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::70-90::2BR</span></div>
+  </div>
+  <div class='description'>📝 CHUNG CƯ NGUYỄN HUY TƯỞNG – 71M - Ở NGAY – GIÁ 5,4 TỶ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="31" data-property-id="3389">
+  <h3>#3389 — Quận Thanh Xuân — 3PN — 78m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>78 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">7.28 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>93.3M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::70-90::3BR</span></div>
+  </div>
+  <div class='description'>📝 Bán chung cư N2C Lê Văn Lương Hoàng Minh Giám căn góc 3 ngủ 2 vệ sinh View công viên</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="27" data-property-id="3371">
+  <h3>#3371 — Quận Thanh Xuân — 2PN — 90m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>90 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">7.80 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>86.7M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::90-120::2BR</span></div>
+  </div>
+  <div class='description'>📝 Bán Chung Cư thanh Xuân Complex, Diện  90m2, Giá Chỉ Hơn 7 tỷ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="19" data-property-id="3314">
+  <h3>#3314 — Quận Thanh Xuân — 3PN — 92m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>92 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">6.40 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>69.6M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::90-120::3BR</span></div>
+  </div>
+  <div class='description'>📝 CHUNG CƯ 54 HẠ ĐÌNH THANH XUÂN CĂN HỘ 3 NGỦ SIÊU ĐẸP 92m 6.4 TỶ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="49" data-property-id="60">
+  <h3>#60 — Quận Thanh Xuân — 3PN — 115m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>115 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">9.80 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>85.2M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::90-120::3BR</span></div>
+  </div>
+  <div class='description'>📝 9.8 tỷ/115 m2 Căn Hộ Hoàng Đạo Thúy/ Thanh Xuân</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="43" data-property-id="3448">
+  <h3>#3448 — Quận Đống Đa — 2PN — 50m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Đống Đa</span></div>
+    <div class="info-item"><label>Diện tích</label><span>50 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">2.42 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>48.4M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Đống Đa::50-70::2BR</span></div>
+  </div>
+  <div class='description'>📝 NHỈNH 2 TỶ CÓ CHUNG CƯ MINI PHỐ TÂY SƠN 50M,2 NGỦ,Ở SƯỚNG</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="48" data-property-id="110">
+  <h3>#110 — Quận Đống Đa — 3PN — 70m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Đống Đa</span></div>
+    <div class="info-item"><label>Diện tích</label><span>70 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">6.50 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>92.9M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Đống Đa::70-90::3BR</span></div>
+  </div>
+  <div class='description'>📝 💥CỰC KHỦNG💥Cập nhật toàn bộ quỹ căn hộ The Ninety Complex Đống Đa</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="39" data-property-id="114">
+  <h3>#114 — Quận Đống Đa — 3PN — 115m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Đống Đa</span></div>
+    <div class="info-item"><label>Diện tích</label><span>115 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">12.30 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>107.0M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Đống Đa::90-120::3BR</span></div>
+  </div>
+  <div class='description'>📝 Chuyển nhượng căn hộ 3 ngủ Hà Thành Plaza, 102 Thái Thịnh, Đống Đa chỉ 12,3 tỷ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="11" data-property-id="25">
+  <h3>#25 — Quận Cầu Giấy — 3PN — 124m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>124 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">17.50 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>141.1M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::120+::3BR</span></div>
+  </div>
+  <div class='description'>📝 SIÊU PHẨM CĂN HỘ HẠNG SANG MIPEC XUÂN THUỶ - TRUNG TÂM CẦU GIẤY - LÔ GÓC RẤT THOÁNG - KHU</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="3" data-property-id="1509">
+  <h3>#1509 — Quận Cầu Giấy — 2PN — 53m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>53 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">2.75 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>51.9M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::50-70::2BR</span></div>
+  </div>
+  <div class='description'>📝 23Quỹ Căn Thưởng Toà F1&F5 Sun FourS Tower Độc Quyền 2,55 tỷ. 0% lãi suất 3 năm, vốn 25% từ 600 triệu2,75 tỷ·53 m²·51,89 tr/m²·2·1·Đà NẵngCơ hội An cư - Lập nghiệp sở hữu chung cư căn hộ cao cấp của chủ đầu tư Sun Group, dành cho các bạn trẻ sinh sống và làm việc tại Đà Nẵng với mức vốn ban đầu chỉ ...</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="15" data-property-id="39">
+  <h3>#39 — Quận Cầu Giấy — 3PN — 85m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>85 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">7.50 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>88.2M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::70-90::3BR</span></div>
+  </div>
+  <div class='description'>📝 GIÁ CỰC TỐT! CĂN HỘ N16 TRẦN QUÝ KIÊN - DT: 85M2 - 3N 2 VS - CỰC THOÁNG - 7.5 TỶ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="7" data-property-id="2611">
+  <h3>#2611 — Quận Cầu Giấy — 3PN — 104m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Cầu Giấy</span></div>
+    <div class="info-item"><label>Diện tích</label><span>104 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">4.28 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>41.2M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Cầu Giấy::90-120::3BR</span></div>
+  </div>
+  <div class='description'>📝 24Căn hộ 3PN - 2WC sẵn sổ hồng, hỗ trợ lãi suất cố định 5%/năm trong 48 tháng4,28 tỷ·104 m²·41,12 tr/m²·3·2·Bình Dương (Hồ Chí Minh mới)Căn hộ 3PN Phú Đông Sky Garden "nhận nhà ở ngay - nhận sổ liền t</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="24" data-property-id="61">
+  <h3>#61 — Quận Thanh Xuân — 2PN — 129m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>129 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">14.50 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>112.4M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::120+::2BR</span></div>
+  </div>
+  <div class='description'>📝 Bán căn hộ chung cư ở Royal City Nguyễn Trãi, Thanh Xuân,2 ngủ,2 wc,DT 129m2, 14,5 tỉ.</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="36" data-property-id="3439">
+  <h3>#3439 — Quận Thanh Xuân — 2PN — 72m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>72 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">6.99 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>97.1M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::70-90::2BR</span></div>
+  </div>
+  <div class='description'>📝 Thanh Xuân Căn hộ tầng trung 72m hơn 6 tỷ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="32" data-property-id="65">
+  <h3>#65 — Quận Thanh Xuân — 3PN — 80m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>80 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">7.50 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>93.8M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::70-90::3BR</span></div>
+  </div>
+  <div class='description'>📝 Chung cư lô góc phố Lê Văn Lương, Thanh Xuân. 80m2, 3 ngủ, 2wc, view hồ điều hoà</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="28" data-property-id="3079">
+  <h3>#3079 — Quận Thanh Xuân — 2PN — 92m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>92 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">8.86 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>96.3M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::90-120::2BR</span></div>
+  </div>
+  <div class='description'>📝 HIẾM - CẦN BÁN CĂN HỘ CHUNG CƯ 92M2, PHỐ LÊ TRỌNG TẤN, THANH XUÂN - VIEW TÔN THẤT TÙNG KÉO</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="20" data-property-id="3415">
+  <h3>#3415 — Quận Thanh Xuân — 3PN — 92m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Thanh Xuân</span></div>
+    <div class="info-item"><label>Diện tích</label><span>92 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">8.00 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>87.0M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Thanh Xuân::90-120::3BR</span></div>
+  </div>
+  <div class='description'>📝 Bán Căn Hộ Gold Season 47 Nguyễn Tuân DT 92m 3PN Full NT SĐCC hướng ĐN giá 8 tỷ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="44" data-property-id="2703">
+  <h3>#2703 — Quận Đống Đa — 2PN — 52m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Đống Đa</span></div>
+    <div class="info-item"><label>Diện tích</label><span>52 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>2 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">1.75 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>33.7M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Đống Đa::50-70::2BR</span></div>
+  </div>
+  <div class='description'>📝 SỔ ĐỎ TRAO TAY ! CHUNG CƯ C1 CHÙA BỘC - PHẠM NGỌC THẠCH - ĐỐNG ĐA</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<div class="property-card" data-ep-id="40" data-property-id="115">
+  <h3>#115 — Quận Đống Đa — 3PN — 115m²</h3>
+  <div class="property-info">
+    <div class="info-item"><label>Quận</label><span>Quận Đống Đa</span></div>
+    <div class="info-item"><label>Diện tích</label><span>115 m²</span></div>
+    <div class="info-item"><label>Phòng ngủ</label><span>3 PN</span></div>
+    <div class="info-item"><label>Giá rao</label><span style="color:#7c3aed">11.50 tỷ</span></div>
+    <div class="info-item"><label>Giá/m² rao</label><span>100.0M/m²</span></div>
+    <div class="info-item"><label>Cluster</label><span style="font-size:0.78rem">Quận Đống Đa::90-120::3BR</span></div>
+  </div>
+  <div class='description'>📝 Bán căn hộ Hà Thành Plaza, 102 Thái Thịnh, Đống Đa, 3 ngủ full đồ đẹp chỉ 11,5 tỷ</div>
+  <div class="rating-section">
+    <h4>💰 Đánh giá giá trị (VND)</h4>
+    <div class="rating-row">
+      <div class="rating-field">
+        <label>Low <span>*</span> (Giá thấp nhất)</label>
+        <input type="number" name="low" min="500000000" max="50000000000" step="10000000" placeholder="VD: 3500000000">
+      </div>
+      <div class="rating-field">
+        <label>Mid <span>*</span> (Giá trung bình)</label>
+        <input type="number" name="mid" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4200000000">
+      </div>
+      <div class="rating-field">
+        <label>High <span>*</span> (Giá cao nhất)</label>
+        <input type="number" name="high" min="500000000" max="50000000000" step="10000000" placeholder="VD: 4900000000">
+      </div>
+    </div>
+    <div class="confidence-row">
+      <label>Độ tự tin:</label>
+      <button type="button" class="confidence-btn" data-value="low" onclick="setConfidence(this)">🟡 Thấp</button>
+      <button type="button" class="confidence-btn selected" data-value="medium" onclick="setConfidence(this)">🟠 Trung bình</button>
+      <button type="button" class="confidence-btn" data-value="high" onclick="setConfidence(this)">🟢 Cao</button>
+    </div>
+    <div class="comment-row">
+      <textarea name="comment" placeholder="Ghi chú (tùy chọn)..."></textarea>
+    </div>
+    <div class="submit-row">
+      <button type="button" class="submit-btn" onclick="submitRating(this)">Submit đánh giá</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = "http://localhost:8002";
+const EXPERT_NAMES = {"expert_1": "Chuyên gia 1 (Nghiên cứu)", "expert_2": "Chuyên gia 2 (Môi giới)", "expert_3": "Chuyên gia 3 (Định giá)"};
+const ASSIGNMENTS = {"expert_1": [{"ep_id": 9, "property_id": 3032, "district": "Quận Cầu Giấy", "area_m2": 120.0, "bedrooms": 3, "listing_price": 9300000000.0, "listing_ppm": 77500000.0, "source_name": "alonhadat.com.vn", "description": "BÁN CHUNG CƯ CAO CẤP KHU ĐÔ THỊ CẦU GIẤY – TRẦN THÁI TÔNG - 3 NGỦ - 120M - 9,3 TỶ", "status": "pending", "cluster_key": "Quận Cầu Giấy::120+::3BR", "expert_id": "expert_1"}, {"ep_id": 12, "property_id": 26, "district": "Quận Cầu Giấy", "area_m2": 126.0, "bedrooms": 3, "listing_price": 12000000000.0, "listing_ppm": 95238095.0, "source_name": "alonhadat.com.vn", "description": "CĂN HỘ CHUNG CƯ FLC VIP CẦU GIẤY- MẶT PHỐ 3 PN SÁNG THOÁNG- DT 126M2/GIÁ 12 TỶ", "status": "pending", "cluster_key": "Quận Cầu Giấy::120+::3BR", "expert_id": "expert_1"}, {"ep_id": 1, "property_id": 1496, "district": "Quận Cầu Giấy", "area_m2": 30.0, "bedrooms": 2, "listing_price": 1400000000.0, "listing_ppm": 46666667.0, "source_name": "batdongsan.com.vn", "description": "1516 căn Studio cuối cùng Sun Fours từ 1,4 tỉ CK 28,5% đủ tầng trung cao thấp có sân vườn, pháo hoa1,4 tỷ·30 m²·46,67 tr/m²·Đà NẵngEm Thủy độc quyền giỏ hàng 30 căn từ Studio đến 3PN từ căn sân vườn đến căn tầng cao-trung-thấp view Sông Hàn-Pháo hoa đầy đủ. Sở hữu ngay chỉ từ 1,4 tỉ. Hàng hiếm chớp nhoáng duy nhất dưới 2 tỉ siêu hot trên thị trường Sức nóng và số lượng có hạn quý anh chị chần chừ lỡ nhịp không còn hàng***Chính sách bán hàng*** +/ Full chiết khấu lên đến 28% +/ Ở trước - Thanh toán sau. Dự án duy nhất hưởng ưu đãi Thanh toán tiến độ đến 70% giá trị căn hộ đượ...‎Thu ThủyĐăng hôm nay0396 678 *** · Hiện số", "status": "pending", "cluster_key": "Quận Cầu Giấy::50-70::2BR", "expert_id": "expert_1"}, {"ep_id": 4, "property_id": 2597, "district": "Quận Cầu Giấy", "area_m2": 55.0, "bedrooms": 2, "listing_price": 2980000000.0, "listing_ppm": 54181818.0, "source_name": "batdongsan.com.vn", "description": "13CHỈ TỪ 2.9 TỶ FULL (VAT)! SỞ HỮU CĂN HỘ 2PN-2WC CÁCH HÀNG XANH CHỈ 20 PHÚT!2,98 tỷ·55 m²·54,22 tr/m²·2·2·Bình Dương (Hồ Chí Minh mới)Cách cầu Phú Long chỉ 5 phút  từ Quận 12 di chuyển cực nhanh CĂN ", "status": "pending", "cluster_key": "Quận Cầu Giấy::50-70::2BR", "expert_id": "expert_1"}, {"ep_id": 17, "property_id": 33, "district": "Quận Cầu Giấy", "area_m2": 60.0, "bedrooms": 3, "listing_price": 6350000000.0, "listing_ppm": 105833333.0, "source_name": "alonhadat.com.vn", "description": "Căn Hộ CC N06 TRẦN QUÝ KIÊN, TT CẦU GIẤY, FULL NỘI THẤT, 3 NGỦ + 2 WC, Giá 6.35 tỷ", "status": "pending", "cluster_key": "Quận Cầu Giấy::50-70::3BR", "expert_id": "expert_1"}, {"ep_id": 13, "property_id": 2600, "district": "Quận Cầu Giấy", "area_m2": 82.0, "bedrooms": 3, "listing_price": 4500000000.0, "listing_ppm": 54878049.0, "source_name": "batdongsan.com.vn", "description": "8Bán căn hộ 3PN, 2WC tại The Beverly Solari - Vinhomes Grand Park, 4,5 tỷ, 82m2, Quận 9, TP.HCM4,5 tỷ·82 m²·54,88 tr/m²·3·2·Hồ Chí MinhNhanh tay sở hữu căn hộ chung cư tại The Beverly Solari - Vinhome", "status": "pending", "cluster_key": "Quận Cầu Giấy::70-90::3BR", "expert_id": "expert_1"}, {"ep_id": 16, "property_id": 27, "district": "Quận Cầu Giấy", "area_m2": 86.0, "bedrooms": 3, "listing_price": 5800000000.0, "listing_ppm": 67441860.0, "source_name": "alonhadat.com.vn", "description": "Chú Hoá bán Chung cư gần TH Dịch Vọng B, phố Trần Quý Kiên, DT: 86m2, 5.8 tỷ ở Cầu Giấy", "status": "pending", "cluster_key": "Quận Cầu Giấy::70-90::3BR", "expert_id": "expert_1"}, {"ep_id": 5, "property_id": 22, "district": "Quận Cầu Giấy", "area_m2": 90.0, "bedrooms": 3, "listing_price": 8700000000.0, "listing_ppm": 96666667.0, "source_name": "alonhadat.com.vn", "description": "Siêu phẩm  căn góc chung cư Trung Tâm Cầu Giấy 90m2, 3PN, 2vs, 1 slot ô tô, tặng nội thất", "status": "pending", "cluster_key": "Quận Cầu Giấy::90-120::3BR", "expert_id": "expert_1"}, {"ep_id": 8, "property_id": 2680, "district": "Quận Cầu Giấy", "area_m2": 104.0, "bedrooms": 3, "listing_price": 4280000000.0000005, "listing_ppm": 41153846.0, "source_name": "batdongsan.com.vn", "description": "24Căn hộ 3PN - 2WC sẵn sổ hồng, hỗ trợ lãi suất cố định 5%/năm trong 48 tháng4,28 tỷ·104 m²·41,12 tr/m²·3·2·Hồ Chí Minh (Bình Dương cũ)Căn hộ 3PN Phú Đông Sky Garden \"nhận nhà ở ngay - nhận sổ liền ta", "status": "pending", "cluster_key": "Quận Cầu Giấy::90-120::3BR", "expert_id": "expert_1"}, {"ep_id": 22, "property_id": 3324, "district": "Quận Thanh Xuân", "area_m2": 120.0, "bedrooms": 2, "listing_price": 11200000000.0, "listing_ppm": 93333333.0, "source_name": "alonhadat.com.vn", "description": "Bán Căn Hộ R2b Royal City – 120m² – Full Nội Thất Cao Cấp – 11.2 Tỷ", "status": "pending", "cluster_key": "Quận Thanh Xuân::120+::2BR", "expert_id": "expert_1"}, {"ep_id": 25, "property_id": 3325, "district": "Quận Thanh Xuân", "area_m2": 129.0, "bedrooms": 2, "listing_price": 14500000000.0, "listing_ppm": 112403101.0, "source_name": "alonhadat.com.vn", "description": "BÁN CĂN HỘ VINHOMES ROYAL CITY R1 – 129M² GIÁ 14 TỶ – VIEW NỘI KHU – NỘI THẤT CAO CẤP", "status": "pending", "cluster_key": "Quận Thanh Xuân::120+::2BR", "expert_id": "expert_1"}, {"ep_id": 34, "property_id": 3369, "district": "Quận Thanh Xuân", "area_m2": 70.0, "bedrooms": 2, "listing_price": 5000000000.0, "listing_ppm": 71428571.0, "source_name": "alonhadat.com.vn", "description": "BÁN CHUNG CƯ THANH XUÂN – 2 PHÒNG NGỦ - GIÁ CHỈ 5 TỶ", "status": "pending", "cluster_key": "Quận Thanh Xuân::70-90::2BR", "expert_id": "expert_1"}, {"ep_id": 37, "property_id": 3096, "district": "Quận Thanh Xuân", "area_m2": 73.0, "bedrooms": 2, "listing_price": 9000000000.0, "listing_ppm": 123287671.0, "source_name": "alonhadat.com.vn", "description": "CĂN HỘ CAO CẤP THE LEGEND-TT THANH XUÂN-73M-2PN-2WC-BAN CÔNG ĐẸP-FULL NT-BỂ BƠI-9TỶ", "status": "pending", "cluster_key": "Quận Thanh Xuân::70-90::2BR", "expert_id": "expert_1"}, {"ep_id": 30, "property_id": 3081, "district": "Quận Thanh Xuân", "area_m2": 70.0, "bedrooms": 3, "listing_price": 4680000000.0, "listing_ppm": 66857143.0, "source_name": "alonhadat.com.vn", "description": "🔥BÁN CĂN HỘ NGUYỄN TRÃI - 70M² – 3 NGỦ – Ô TÔ ĐỖ – TRUNG TÂM THANH XUÂN – GIÁ NHỈNH 4 TỶ", "status": "pending", "cluster_key": "Quận Thanh Xuân::70-90::3BR", "expert_id": "expert_1"}, {"ep_id": 33, "property_id": 3298, "district": "Quận Thanh Xuân", "area_m2": 80.0, "bedrooms": 3, "listing_price": 5600000000.0, "listing_ppm": 70000000.0, "source_name": "alonhadat.com.vn", "description": "BÁN CĂN HỘ CC DREAM CENTER NGUYỄN HUY TƯỞNG, KHU VIP 3PN THOÁNG TẦNG THẤP 80M2 GIÁ 5.6 TỶ", "status": "pending", "cluster_key": "Quận Thanh Xuân::70-90::3BR", "expert_id": "expert_1"}, {"ep_id": 26, "property_id": 3302, "district": "Quận Thanh Xuân", "area_m2": 90.0, "bedrooms": 2, "listing_price": 7600000000.0, "listing_ppm": 84444444.0, "source_name": "alonhadat.com.vn", "description": "CHUNG CƯ 198 NGUYỄN TUÂN THÁNH XUÂN 90M 3 NGỦ GIÁ 7.6 TỶ", "status": "pending", "cluster_key": "Quận Thanh Xuân::90-120::2BR", "expert_id": "expert_1"}, {"ep_id": 29, "property_id": 70, "district": "Quận Thanh Xuân", "area_m2": 93.0, "bedrooms": 2, "listing_price": 9700000000.0, "listing_ppm": 104301075.0, "source_name": "alonhadat.com.vn", "description": "Bán chung cư Gold Land, Nguyễn Trãi, Thanh Xuân, Hà Nội. 93m2, 2 ngủ, 2wc", "status": "pending", "cluster_key": "Quận Thanh Xuân::90-120::2BR", "expert_id": "expert_1"}, {"ep_id": 18, "property_id": 3422, "district": "Quận Thanh Xuân", "area_m2": 90.0, "bedrooms": 3, "listing_price": 8600000000.0, "listing_ppm": 95555556.0, "source_name": "alonhadat.com.vn", "description": "8.6 tỷ / 90 m2 Căn Hộ Cc Nguyễn Tuân/ Thanh Xuân", "status": "pending", "cluster_key": "Quận Thanh Xuân::90-120::3BR", "expert_id": "expert_1"}, {"ep_id": 21, "property_id": 3292, "district": "Quận Thanh Xuân", "area_m2": 95.0, "bedrooms": 3, "listing_price": 8900000000.0, "listing_ppm": 93684211.0, "source_name": "alonhadat.com.vn", "description": "❇️ BÁN CĂN CHUNG CƯ TÒA HEI TOWER SỐ 1 NGUỴ NHƯ KON TUM THANH XUÂN 95 M2 3 PHÒNG NGỦ 2VS", "status": "pending", "cluster_key": "Quận Thanh Xuân::90-120::3BR", "expert_id": "expert_1"}, {"ep_id": 41, "property_id": 98, "district": "Quận Đống Đa", "area_m2": 131.0, "bedrooms": 3, "listing_price": 17000000000.0, "listing_ppm": 129770992.0, "source_name": "alonhadat.com.vn", "description": "BÁN CĂN HỘ CHUNG CƯ LÁNG HẠ, ĐỐNG ĐA 131M 17 TỶ", "status": "pending", "cluster_key": "Quận Đống Đa::120+::3BR", "expert_id": "expert_1"}, {"ep_id": 42, "property_id": 3449, "district": "Quận Đống Đa", "area_m2": 46.0, "bedrooms": 2, "listing_price": 2350000000.0, "listing_ppm": 51086957.0, "source_name": "alonhadat.com.vn", "description": "BÁN CĂN HỘ CCMN PHỐ TRƯỜNG CHINH 46M,2 NGỦ,NGÕ NÔNG GẦN PHỐ GIÁ 2.35 TỶ", "status": "pending", "cluster_key": "Quận Đống Đa::50-70::2BR", "expert_id": "expert_1"}, {"ep_id": 45, "property_id": 111, "district": "Quận Đống Đa", "area_m2": 60.0, "bedrooms": 2, "listing_price": 6300000000.0, "listing_ppm": 105000000.0, "source_name": "alonhadat.com.vn", "description": "34 HOÀNG CẦU ĐỐNG ĐA – LÔ GÓC – NHÀ NHIỀU CỬA SỔ THOÁNG CĂN HỘ  TÒA 12 TẦNG, 1 HẦM – 4 THA", "status": "pending", "cluster_key": "Quận Đống Đa::50-70::2BR", "expert_id": "expert_1"}, {"ep_id": 46, "property_id": 100, "district": "Quận Đống Đa", "area_m2": 80.0, "bedrooms": 2, "listing_price": 8900000000.0, "listing_ppm": 111250000.0, "source_name": "alonhadat.com.vn", "description": "Bán căn hộ chung cư thái hà tt đống đa lô góc hai thoáng nhà đẹp ở ngay", "status": "pending", "cluster_key": "Quận Đống Đa::70-90::2BR", "expert_id": "expert_1"}, {"ep_id": 47, "property_id": 102, "district": "Quận Đống Đa", "area_m2": 70.0, "bedrooms": 3, "listing_price": 4800000000.0, "listing_ppm": 68571429.0, "source_name": "alonhadat.com.vn", "description": "BÁN CĂN HỘ TẬP THỂ T2 NAM ĐỒNG HỒ ĐẮC DI ĐỐNG ĐA - 70M 3PN - HƠN 4 TỶ SĐCC NHÀ ĐẸP", "status": "pending", "cluster_key": "Quận Đống Đa::70-90::3BR", "expert_id": "expert_1"}, {"ep_id": 38, "property_id": 89, "district": "Quận Đống Đa", "area_m2": 90.0, "bedrooms": 3, "listing_price": 9750000000.0, "listing_ppm": 108333333.0, "source_name": "alonhadat.com.vn", "description": "Bán chung cư CT2 số 34 Hoàng Cầu 90m2 căn 3 ngủ 2 Vs trung Tâm Đống Đa.", "status": "pending", "cluster_key": "Quận Đống Đa::90-120::3BR", "expert_id": "expert_1"}], "expert_2": [{"ep_id": 10, "property_id": 2701, "district": "Quận Cầu Giấy", "area_m2": 123.8, "bedrooms": 3, "listing_price": 17500000000.0, "listing_ppm": 141357027.0, "source_name": "nhatot.com", "description": "Chính chủ bán chung cư Mipec Rubik 122 - 124 Xuân Thủy, 123.8m²", "status": "pending", "cluster_key": "Quận Cầu Giấy::120+::3BR", "expert_id": "expert_2"}, {"ep_id": 2, "property_id": 38, "district": "Quận Cầu Giấy", "area_m2": 51.0, "bedrooms": 2, "listing_price": 5100000000.0, "listing_ppm": 100000000.0, "source_name": "alonhadat.com.vn", "description": "5 TỶ SỞ HỮU CHUNG CƯ TRẦN QUÝ KIÊN - TT CẦU GIẤY - NHÀ MỚI - FULL ĐỒ - DT: 51M2 - 2N", "status": "pending", "cluster_key": "Quận Cầu Giấy::50-70::2BR", "expert_id": "expert_2"}, {"ep_id": 50, "property_id": 34, "district": "Quận Cầu Giấy", "area_m2": 60.0, "bedrooms": 3, "listing_price": 6350000000.0, "listing_ppm": 105833333.0, "source_name": "alonhadat.com.vn", "description": "CĂN HỘ CC N06 TRẦN QUÝ KIÊN, TT CẦU GIẤY, 3 NGỦ + 2 WC, FULL NỘI THẤT, SỔ ĐỎ, Giá 6.35 tỷ", "status": "pending", "cluster_key": "Quận Cầu Giấy::50-70::3BR", "expert_id": "expert_2"}, {"ep_id": 14, "property_id": 2669, "district": "Quận Cầu Giấy", "area_m2": 82.0, "bedrooms": 3, "listing_price": 4500000000.0, "listing_ppm": 54878049.0, "source_name": "batdongsan.com.vn", "description": "8Bán căn hộ 3PN, 2WC tại The Beverly Solari - Vinhomes Grand Park, 4,5 tỷ, 82m2, Quận 9, TP.HCM4,5 tỷ·82 m²·54,88 tr/m²·3·2·Hồ Chí MinhNhanh tay sở hữu căn hộ chung cư tại The Beverly Solari - Vinhome", "status": "pending", "cluster_key": "Quận Cầu Giấy::70-90::3BR", "expert_id": "expert_2"}, {"ep_id": 6, "property_id": 3046, "district": "Quận Cầu Giấy", "area_m2": 100.0, "bedrooms": 3, "listing_price": 11000000000.0, "listing_ppm": 110000000.0, "source_name": "alonhadat.com.vn", "description": "BÁN CHUNG CƯ STAR TOWER – LÔ GÓC – 3 NGỦ – NỘI THẤT CAO CẤP – VIEW CÔNG VIÊN CẦU GIẤY", "status": "pending", "cluster_key": "Quận Cầu Giấy::90-120::3BR", "expert_id": "expert_2"}, {"ep_id": 23, "property_id": 3255, "district": "Quận Thanh Xuân", "area_m2": 121.0, "bedrooms": 2, "listing_price": 18000000000.0, "listing_ppm": 148760331.0, "source_name": "alonhadat.com.vn", "description": "Bán Căn Hộ 2 Ngủ Tòa Royal City 72A Nguyễn Trãi 121m2 Hướng Đông Nam VIEW Bể Bơi 18 Tỷ.", "status": "pending", "cluster_key": "Quận Thanh Xuân::120+::2BR", "expert_id": "expert_2"}, {"ep_id": 35, "property_id": 3407, "district": "Quận Thanh Xuân", "area_m2": 71.0, "bedrooms": 2, "listing_price": 5400000000.0, "listing_ppm": 76056338.0, "source_name": "alonhadat.com.vn", "description": "CHUNG CƯ NGUYỄN HUY TƯỞNG – 71M - Ở NGAY – GIÁ 5,4 TỶ", "status": "pending", "cluster_key": "Quận Thanh Xuân::70-90::2BR", "expert_id": "expert_2"}, {"ep_id": 31, "property_id": 3389, "district": "Quận Thanh Xuân", "area_m2": 78.0, "bedrooms": 3, "listing_price": 7280000000.0, "listing_ppm": 93333333.0, "source_name": "alonhadat.com.vn", "description": "Bán chung cư N2C Lê Văn Lương Hoàng Minh Giám căn góc 3 ngủ 2 vệ sinh View công viên", "status": "pending", "cluster_key": "Quận Thanh Xuân::70-90::3BR", "expert_id": "expert_2"}, {"ep_id": 27, "property_id": 3371, "district": "Quận Thanh Xuân", "area_m2": 90.0, "bedrooms": 2, "listing_price": 7800000000.0, "listing_ppm": 86666667.0, "source_name": "alonhadat.com.vn", "description": "Bán Chung Cư thanh Xuân Complex, Diện  90m2, Giá Chỉ Hơn 7 tỷ", "status": "pending", "cluster_key": "Quận Thanh Xuân::90-120::2BR", "expert_id": "expert_2"}, {"ep_id": 19, "property_id": 3314, "district": "Quận Thanh Xuân", "area_m2": 92.0, "bedrooms": 3, "listing_price": 6400000000.0, "listing_ppm": 69565217.0, "source_name": "alonhadat.com.vn", "description": "CHUNG CƯ 54 HẠ ĐÌNH THANH XUÂN CĂN HỘ 3 NGỦ SIÊU ĐẸP 92m 6.4 TỶ", "status": "pending", "cluster_key": "Quận Thanh Xuân::90-120::3BR", "expert_id": "expert_2"}, {"ep_id": 49, "property_id": 60, "district": "Quận Thanh Xuân", "area_m2": 115.0, "bedrooms": 3, "listing_price": 9800000000.0, "listing_ppm": 85217391.0, "source_name": "alonhadat.com.vn", "description": "9.8 tỷ/115 m2 Căn Hộ Hoàng Đạo Thúy/ Thanh Xuân", "status": "pending", "cluster_key": "Quận Thanh Xuân::90-120::3BR", "expert_id": "expert_2"}, {"ep_id": 43, "property_id": 3448, "district": "Quận Đống Đa", "area_m2": 50.0, "bedrooms": 2, "listing_price": 2420000000.0, "listing_ppm": 48400000.0, "source_name": "alonhadat.com.vn", "description": "NHỈNH 2 TỶ CÓ CHUNG CƯ MINI PHỐ TÂY SƠN 50M,2 NGỦ,Ở SƯỚNG", "status": "pending", "cluster_key": "Quận Đống Đa::50-70::2BR", "expert_id": "expert_2"}, {"ep_id": 48, "property_id": 110, "district": "Quận Đống Đa", "area_m2": 70.0, "bedrooms": 3, "listing_price": 6500000000.0, "listing_ppm": 92857143.0, "source_name": "alonhadat.com.vn", "description": "💥CỰC KHỦNG💥Cập nhật toàn bộ quỹ căn hộ The Ninety Complex Đống Đa", "status": "pending", "cluster_key": "Quận Đống Đa::70-90::3BR", "expert_id": "expert_2"}, {"ep_id": 39, "property_id": 114, "district": "Quận Đống Đa", "area_m2": 115.0, "bedrooms": 3, "listing_price": 12300000000.0, "listing_ppm": 106956522.0, "source_name": "alonhadat.com.vn", "description": "Chuyển nhượng căn hộ 3 ngủ Hà Thành Plaza, 102 Thái Thịnh, Đống Đa chỉ 12,3 tỷ", "status": "pending", "cluster_key": "Quận Đống Đa::90-120::3BR", "expert_id": "expert_2"}], "expert_3": [{"ep_id": 11, "property_id": 25, "district": "Quận Cầu Giấy", "area_m2": 124.0, "bedrooms": 3, "listing_price": 17500000000.0, "listing_ppm": 141129032.0, "source_name": "alonhadat.com.vn", "description": "SIÊU PHẨM CĂN HỘ HẠNG SANG MIPEC XUÂN THUỶ - TRUNG TÂM CẦU GIẤY - LÔ GÓC RẤT THOÁNG - KHU", "status": "pending", "cluster_key": "Quận Cầu Giấy::120+::3BR", "expert_id": "expert_3"}, {"ep_id": 3, "property_id": 1509, "district": "Quận Cầu Giấy", "area_m2": 53.0, "bedrooms": 2, "listing_price": 2750000000.0, "listing_ppm": 51886792.0, "source_name": "batdongsan.com.vn", "description": "23Quỹ Căn Thưởng Toà F1&F5 Sun FourS Tower Độc Quyền 2,55 tỷ. 0% lãi suất 3 năm, vốn 25% từ 600 triệu2,75 tỷ·53 m²·51,89 tr/m²·2·1·Đà NẵngCơ hội An cư - Lập nghiệp sở hữu chung cư căn hộ cao cấp của chủ đầu tư Sun Group, dành cho các bạn trẻ sinh sống và làm việc tại Đà Nẵng với mức vốn ban đầu chỉ 400 triệu sở hữu căn hộ biển Đà Nẵng tuyệt đẹp.Siêu phẩm 4 toà \"Tùng - Cúc - Trúc - Mai\" với đầy đủ tiện ích all in one ngay tại trung tâm KĐT Nam Hoà Xuân. Chỉ thanh toán 25% giá trị căn hộ cho đến khi nhận nhà!Căn hộ Sun FourS Tower toạ lạc ngã tư đường Nguyễn Phước Lan và Minh Mạng Đà...‎Căn Hộ Hoà Xuân - Sun GroupĐăng hôm nay0901 076 *** · Hiện số", "status": "pending", "cluster_key": "Quận Cầu Giấy::50-70::2BR", "expert_id": "expert_3"}, {"ep_id": 15, "property_id": 39, "district": "Quận Cầu Giấy", "area_m2": 85.0, "bedrooms": 3, "listing_price": 7500000000.0, "listing_ppm": 88235294.0, "source_name": "alonhadat.com.vn", "description": "GIÁ CỰC TỐT! CĂN HỘ N16 TRẦN QUÝ KIÊN - DT: 85M2 - 3N 2 VS - CỰC THOÁNG - 7.5 TỶ", "status": "pending", "cluster_key": "Quận Cầu Giấy::70-90::3BR", "expert_id": "expert_3"}, {"ep_id": 7, "property_id": 2611, "district": "Quận Cầu Giấy", "area_m2": 104.0, "bedrooms": 3, "listing_price": 4280000000.0000005, "listing_ppm": 41153846.0, "source_name": "batdongsan.com.vn", "description": "24Căn hộ 3PN - 2WC sẵn sổ hồng, hỗ trợ lãi suất cố định 5%/năm trong 48 tháng4,28 tỷ·104 m²·41,12 tr/m²·3·2·Bình Dương (Hồ Chí Minh mới)Căn hộ 3PN Phú Đông Sky Garden \"nhận nhà ở ngay - nhận sổ liền t", "status": "pending", "cluster_key": "Quận Cầu Giấy::90-120::3BR", "expert_id": "expert_3"}, {"ep_id": 24, "property_id": 61, "district": "Quận Thanh Xuân", "area_m2": 129.0, "bedrooms": 2, "listing_price": 14500000000.0, "listing_ppm": 112403101.0, "source_name": "alonhadat.com.vn", "description": "Bán căn hộ chung cư ở Royal City Nguyễn Trãi, Thanh Xuân,2 ngủ,2 wc,DT 129m2, 14,5 tỉ.", "status": "pending", "cluster_key": "Quận Thanh Xuân::120+::2BR", "expert_id": "expert_3"}, {"ep_id": 36, "property_id": 3439, "district": "Quận Thanh Xuân", "area_m2": 72.0, "bedrooms": 2, "listing_price": 6990000000.0, "listing_ppm": 97083333.0, "source_name": "alonhadat.com.vn", "description": "Thanh Xuân Căn hộ tầng trung 72m hơn 6 tỷ", "status": "pending", "cluster_key": "Quận Thanh Xuân::70-90::2BR", "expert_id": "expert_3"}, {"ep_id": 32, "property_id": 65, "district": "Quận Thanh Xuân", "area_m2": 80.0, "bedrooms": 3, "listing_price": 7500000000.0, "listing_ppm": 93750000.0, "source_name": "alonhadat.com.vn", "description": "Chung cư lô góc phố Lê Văn Lương, Thanh Xuân. 80m2, 3 ngủ, 2wc, view hồ điều hoà", "status": "pending", "cluster_key": "Quận Thanh Xuân::70-90::3BR", "expert_id": "expert_3"}, {"ep_id": 28, "property_id": 3079, "district": "Quận Thanh Xuân", "area_m2": 92.0, "bedrooms": 2, "listing_price": 8860000000.0, "listing_ppm": 96304348.0, "source_name": "alonhadat.com.vn", "description": "HIẾM - CẦN BÁN CĂN HỘ CHUNG CƯ 92M2, PHỐ LÊ TRỌNG TẤN, THANH XUÂN - VIEW TÔN THẤT TÙNG KÉO", "status": "pending", "cluster_key": "Quận Thanh Xuân::90-120::2BR", "expert_id": "expert_3"}, {"ep_id": 20, "property_id": 3415, "district": "Quận Thanh Xuân", "area_m2": 92.0, "bedrooms": 3, "listing_price": 8000000000.0, "listing_ppm": 86956522.0, "source_name": "alonhadat.com.vn", "description": "Bán Căn Hộ Gold Season 47 Nguyễn Tuân DT 92m 3PN Full NT SĐCC hướng ĐN giá 8 tỷ", "status": "pending", "cluster_key": "Quận Thanh Xuân::90-120::3BR", "expert_id": "expert_3"}, {"ep_id": 44, "property_id": 2703, "district": "Quận Đống Đa", "area_m2": 52.0, "bedrooms": 2, "listing_price": 1750000000.0, "listing_ppm": 33653846.0, "source_name": "nhatot.com", "description": "SỔ ĐỎ TRAO TAY ! CHUNG CƯ C1 CHÙA BỘC - PHẠM NGỌC THẠCH - ĐỐNG ĐA", "status": "pending", "cluster_key": "Quận Đống Đa::50-70::2BR", "expert_id": "expert_3"}, {"ep_id": 40, "property_id": 115, "district": "Quận Đống Đa", "area_m2": 115.0, "bedrooms": 3, "listing_price": 11500000000.0, "listing_ppm": 100000000.0, "source_name": "alonhadat.com.vn", "description": "Bán căn hộ Hà Thành Plaza, 102 Thái Thịnh, Đống Đa, 3 ngủ full đồ đẹp chỉ 11,5 tỷ", "status": "pending", "cluster_key": "Quận Đống Đa::90-120::3BR", "expert_id": "expert_3"}]};
+let submittedIds = new Set();
+
+function loadSubmitted() {
+  try {
+    const saved = localStorage.getItem("expert_submitted_v2");
+    if (saved) submittedIds = new Set(JSON.parse(saved));
+  } catch(e) {}
+  updateAllCards();
+}
+
+function saveSubmitted() {
+  try {
+    localStorage.setItem("expert_submitted_v2", JSON.stringify([...submittedIds]));
+  } catch(e) {}
+}
+
+async function checkAPI() {
+  const statusEl = document.getElementById("apiStatus");
+  try {
+    const res = await fetch(API_BASE + "/api/health", { mode: "cors" });
+    if (res.ok) {
+      const data = await res.json();
+      statusEl.className = "api-status success";
+      statusEl.textContent = "✅ API connected — " + data.db_total + " properties in DB";
+      // Load already-submitted ratings from server
+      try {
+        const r = await fetch(API_BASE + "/api/research/expert-ratings?expert_id=" + (document.getElementById("expertId").value || "expert_1"), { mode: "cors" });
+        if (r.ok) {
+          const rd = await r.json();
+          rd.ratings.forEach(rating => submittedIds.add(rating.property_id));
+          updateAllCards();
+        }
+      } catch(e) {}
+      return true;
+    }
+  } catch(e) {
+    statusEl.className = "api-status error";
+    statusEl.textContent = "⚠️ Không kết nối được API. Chạy: python -m uvicorn src.backend.main:app --reload --port 8002";
+  }
+  return false;
+}
+
+function formatVND(n) {
+  if (!n) return "—";
+  return Math.round(n / 1e9 * 100) / 100 + " tỷ";
+}
+
+function getFormData(card) {
+  return {
+    property_id: parseInt(card.dataset.propertyId),
+    ep_id: parseInt(card.dataset.epId),
+    expert_id: document.getElementById("expertId").value,
+    expert_name: EXPERT_NAMES[document.getElementById("expertId").value] || "Expert",
+    low: parseFloat(card.querySelector('[name="low"]').value),
+    mid: parseFloat(card.querySelector('[name="mid"]').value),
+    high: parseFloat(card.querySelector('[name="high"]').value),
+    confidence: card.querySelector('.confidence-btn.selected')?.dataset.value || "medium",
+    comment: card.querySelector('[name="comment"]').value || null,
+  };
+}
+
+async function submitRating(btn) {
+  const card = btn.closest(".property-card");
+  const expertId = document.getElementById("expertId").value;
+  if (!expertId) { alert("Vui lòng chọn Expert ID!"); return; }
+
+  const data = getFormData(card);
+  if (!data.low || !data.mid || !data.high) { alert("Vui lòng nhập đầy đủ Low/Mid/High!"); return; }
+  if (data.low > data.mid || data.mid > data.high) { alert("Low ≤ Mid ≤ High!"); return; }
+
+  btn.disabled = true;
+  btn.textContent = "⏳ Đang lưu...";
+
+  try {
+    const res = await fetch(API_BASE + "/api/research/expert-rating", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+      mode: "cors",
+    });
+
+    if (res.ok) {
+      const result = await res.json();
+      submittedIds.add(data.property_id);
+      saveSubmitted();
+      const section = card.querySelector(".rating-section");
+      const existing = section.querySelector(".success-msg");
+      if (existing) existing.remove();
+      const msg = document.createElement("div");
+      msg.className = "success-msg";
+      msg.textContent = "✅ Đã lưu! " + (result.remaining > 0 ? "Còn " + result.remaining + " đánh giá." : "Đã hoàn thành property này!");
+      section.appendChild(msg);
+      card.classList.add("submitted");
+      updateProgress();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert("Lỗi: " + (err.detail || res.statusText));
+      btn.disabled = false;
+      btn.textContent = "Submit đánh giá";
+    }
+  } catch(e) {
+    alert("Lỗi kết nối: " + e.message);
+    btn.disabled = false;
+    btn.textContent = "Submit đánh giá";
+  }
+}
+
+function setConfidence(btn) {
+  btn.closest(".confidence-row").querySelectorAll(".confidence-btn").forEach(b => b.classList.remove("selected"));
+  btn.classList.add("selected");
+}
+
+function updateProgress() {
+  const expertId = document.getElementById("expertId").value;
+  const myProps = ASSIGNMENTS[expertId] || [];
+  const total = myProps.length;
+  const done = myProps.filter(p => submittedIds.has(p.property_id)).length;
+  const pct = total > 0 ? Math.round(done / total * 100) : 0;
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressText").textContent = done + "/" + total + " (" + pct + "%)";
+}
+
+function updateAllCards() {
+  document.querySelectorAll(".property-card").forEach(card => {
+    const propId = parseInt(card.dataset.propertyId);
+    const section = card.querySelector(".rating-section");
+    if (submittedIds.has(propId) && !section.querySelector(".success-msg")) {
+      const msg = document.createElement("div");
+      msg.className = "success-msg";
+      msg.textContent = "✅ Đã đánh giá";
+      section.appendChild(msg);
+      card.classList.add("submitted");
+    }
+  });
+  updateProgress();
+}
+
+function filterProperties() {
+  const expertId = document.getElementById("expertId").value;
+  document.querySelectorAll(".property-card").forEach(card => {
+    const epId = parseInt(card.dataset.epId);
+    const myProps = ASSIGNMENTS[expertId] || [];
+    const isMine = myProps.some(p => p.ep_id === epId);
+    card.style.display = isMine ? "block" : "none";
+  });
+  updateProgress();
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  loadSubmitted();
+  checkAPI();
+  document.getElementById("expertId").value = "expert_1";
+  filterProperties();
+});
+</script>
+
+</body>
+</html>

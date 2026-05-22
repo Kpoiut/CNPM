@@ -1,0 +1,39 @@
+# FastAPI and server
+fastapi==0.109.0
+uvicorn==0.27.0
+python-multipart==0.0.6
+aiofiles==23.2.1
+
+# Database
+sqlalchemy==2.0.25
+alembic==1.13.1
+
+# Machine Learning
+scikit-learn==1.4.0
+xgboost==2.0.3
+lightgbm==4.3.0
+
+# Data processing
+pandas==2.2.0
+numpy==1.26.3
+
+# API and validation
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# Development
+pytest==7.4.4
+pytest-asyncio==0.23.3
+httpx==0.26.0
+
+# Data Collection (Round 16: Real AVM — thu thập dữ liệu thực)
+beautifulsoup4==4.12.3  # HTML parsing cho scraper
+requests==2.31.0        # HTTP client cho scraper + API
+
+# Auth (JWT + RBAC)
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.1.2
+
+# Rate Limiting
+slowapi==0.1.9

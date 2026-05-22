@@ -1,0 +1,40 @@
+{
+  "timestamp": "2026-05-13T20:21:46.046885",
+  "db_path": "C:\\Users\\Admin\\Documents\\real-estate-avm\\real_estate_avm.db",
+  "checks": {
+    "hash_integrity": {
+      "total_chains": 9900,
+      "chains_checked": 5595,
+      "null_hashes": 0,
+      "broken_prev_step_refs": 0,
+      "hash_mismatches": 0,
+      "pass": true,
+      "errors": []
+    },
+    "verified_properties": {
+      "total_verified": 264,
+      "with_chain": 264,
+      "without_chain": 0,
+      "missing_property_ids": [],
+      "pass": true,
+      "errors": []
+    },
+    "all_properties": {
+      "total_with_price": 3560,
+      "with_chain": 3560,
+      "without_chain": 0,
+      "pass": true,
+      "errors": []
+    },
+    "sources": {
+      "total": 9900,
+      "null_source": 3471,
+      "invalid_url": 3043,
+      "pass": true,
+      "errors": [
+        "  3471 chains have NULL/empty source",
+        "  3043 chains have non-URL sources (may be intentional for self-collected)"
+      ]
+    }
+  }
+}

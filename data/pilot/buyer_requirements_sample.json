@@ -1,0 +1,73 @@
+{
+  "metadata": {
+    "description": "Sample buyer requirements for SDEV pilot",
+    "note": "This is DECLARED budget, NOT true willingness-to-pay",
+    "data_source": "manual_survey",
+    "fields": [
+      "id",
+      "desired_city",
+      "desired_district",
+      "desired_ward",
+      "property_type",
+      "min_area_m2",
+      "max_area_m2",
+      "min_budget",
+      "max_budget",
+      "bedrooms",
+      "legal_requirement",
+      "move_in_urgency",
+      "source",
+      "notes"
+    ]
+  },
+  "sample": [
+    {
+      "id": "req_001",
+      "desired_city": "Hà Nội",
+      "desired_district": "Quận Cầu Giấy",
+      "desired_ward": "",
+      "property_type": "apartment",
+      "min_area_m2": 60,
+      "max_area_m2": 90,
+      "min_budget": 4000000000,
+      "max_budget": 7000000000,
+      "bedrooms": 2,
+      "legal_requirement": "red_book",
+      "move_in_urgency": "3_months",
+      "source": "manual_survey",
+      "notes": "Cần căn hộ view đẹp, gần trường học"
+    },
+    {
+      "id": "req_002",
+      "desired_city": "Hà Nội",
+      "desired_district": "Quận Thanh Xuân",
+      "desired_ward": "",
+      "property_type": "apartment",
+      "min_area_m2": 70,
+      "max_area_m2": 110,
+      "min_budget": 5500000000,
+      "max_budget": 9000000000,
+      "bedrooms": 3,
+      "legal_requirement": "red_book",
+      "move_in_urgency": "6_months",
+      "source": "manual_survey",
+      "notes": "Ưu tiên dự án Vinhomes, gần metro"
+    },
+    {
+      "id": "req_003",
+      "desired_city": "Hà Nội",
+      "desired_district": "Quận Đống Đa",
+      "desired_ward": "",
+      "property_type": "apartment",
+      "min_area_m2": 50,
+      "max_area_m2": 75,
+      "min_budget": 3500000000,
+      "max_budget": 6000000000,
+      "bedrooms": 2,
+      "legal_requirement": "any",
+      "move_in_urgency": "1_year",
+      "source": "manual_survey",
+      "notes": ""
+    }
+  ]
+}

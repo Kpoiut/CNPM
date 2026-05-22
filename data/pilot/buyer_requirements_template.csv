@@ -1,0 +1,4 @@
+id,desired_city,desired_district,desired_ward,property_type,min_area_m2,max_area_m2,min_budget,max_budget,bedrooms,legal_requirement,move_in_urgency,source,notes
+req_001,Hà Nội,Quận Cầu Giấy,,apartment,60,90,4000000000,7000000000,2,red_book,3_months,manual_survey,"Cần căn hộ view đẹp, gần trường học"
+req_002,Hà Nội,Quận Thanh Xuân,,apartment,70,110,5500000000,9000000000,3,red_book,6_months,manual_survey,"Ưu tiên dự án Vinhomes, gần metro"
+req_003,Hà Nội,Quận Đống Đa,,apartment,50,75,3500000000,6000000000,2,any,1_year,manual_survey,

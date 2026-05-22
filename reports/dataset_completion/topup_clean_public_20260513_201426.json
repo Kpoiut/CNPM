@@ -1,0 +1,19 @@
+{
+  "started_at": "2026-05-13T13:11:07.625089+00:00",
+  "mode": "apply",
+  "before_public": 2996,
+  "target_public": 3000,
+  "cache_candidates": 2521,
+  "cafeland_pages_seen": 91,
+  "cafeland_records_seen": 210,
+  "inserted": 4,
+  "duplicates": 2726,
+  "invalid": 0,
+  "fetch_errors": 0,
+  "by_source": {
+    "nhadat_cafeland": 4
+  },
+  "max_rss_mb": 87.3,
+  "stop_reason": "target_public_reached",
+  "after_public": 3000
+}

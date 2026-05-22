@@ -1,0 +1,2965 @@
+{
+  "total_records": 1259,
+  "records_to_delete": 707,
+  "records_to_keep": 552,
+  "rule_results": {
+    "R1_ppm_too_high": 655,
+    "R2_iqr_outlier": 7,
+    "R3_no_provenance": 0,
+    "R4_outside_scope": 0,
+    "R5_batch_fingerprint": 0,
+    "R6_duplicates": 75,
+    "R7_e5_suspicious": 0,
+    "R8_system_demo": 0,
+    "R9_unverifiable_cheap_high_ppm": 0,
+    "R10_price_too_low": 13
+  },
+  "rule_detail": {
+    "R1_ppm_too_high": [
+      1,
+      2,
+      4,
+      5,
+      6,
+      7,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      20,
+      25,
+      41,
+      42,
+      43,
+      44,
+      45,
+      46,
+      47,
+      48,
+      49,
+      52,
+      53,
+      55,
+      56,
+      57,
+      58,
+      59,
+      71,
+      72,
+      78,
+      79,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87,
+      88,
+      90,
+      93,
+      94,
+      95,
+      96,
+      97,
+      98,
+      99,
+      103,
+      105,
+      109,
+      388,
+      391,
+      392,
+      395,
+      396,
+      397,
+      399,
+      400,
+      401,
+      403,
+      406,
+      407,
+      429,
+      430,
+      431,
+      432,
+      433,
+      434,
+      436,
+      437,
+      440,
+      441,
+      444,
+      445,
+      446,
+      447,
+      466,
+      650,
+      651,
+      652,
+      653,
+      655,
+      661,
+      662,
+      663,
+      664,
+      665,
+      666,
+      667,
+      668,
+      669,
+      670,
+      845,
+      846,
+      847,
+      848,
+      849,
+      850,
+      851,
+      852,
+      853,
+      854,
+      995,
+      1008,
+      1010,
+      1016,
+      1028,
+      1033,
+      1036,
+      1047,
+      1051,
+      1053,
+      1057,
+      1495,
+      1498,
+      1501,
+      1502,
+      1503,
+      1504,
+      1505,
+      1507,
+      1508,
+      1510,
+      1511,
+      1551,
+      1558,
+      1561,
+      1566,
+      1569,
+      2580,
+      2582,
+      2586,
+      2590,
+      2594,
+      2595,
+      2603,
+      2612,
+      2613,
+      2619,
+      2621,
+      2622,
+      2625,
+      2626,
+      2630,
+      2638,
+      2647,
+      2650,
+      2652,
+      2653,
+      2655,
+      2670,
+      2672,
+      2681,
+      2682,
+      2683,
+      2685,
+      2686,
+      2691,
+      2697,
+      2698,
+      2701,
+      2704,
+      2705,
+      2707,
+      2708,
+      2714,
+      2716,
+      2717,
+      2719,
+      2722,
+      2723,
+      2724,
+      2726,
+      2728,
+      2730,
+      2731,
+      2732,
+      2733,
+      2737,
+      2739,
+      2740,
+      2741,
+      2743,
+      2744,
+      2747,
+      2750,
+      2755,
+      2756,
+      2758,
+      2760,
+      2761,
+      2765,
+      2767,
+      2768,
+      2769,
+      2770,
+      2771,
+      2772,
+      2773,
+      2777,
+      2782,
+      2783,
+      2785,
+      2786,
+      2788,
+      2789,
+      2790,
+      2791,
+      2793,
+      2796,
+      2797,
+      2798,
+      2800,
+      2801,
+      2802,
+      2803,
+      2804,
+      2805,
+      2806,
+      2808,
+      2809,
+      2812,
+      2813,
+      2820,
+      2821,
+      2824,
+      2836,
+      2837,
+      2841,
+      2842,
+      2845,
+      2848,
+      2851,
+      2852,
+      2853,
+      2854,
+      2855,
+      2856,
+      2857,
+      2858,
+      2859,
+      2860,
+      2861,
+      2862,
+      2863,
+      2864,
+      2865,
+      2866,
+      2867,
+      2868,
+      2869,
+      2870,
+      2871,
+      2872,
+      2873,
+      2874,
+      2875,
+      2876,
+      2877,
+      2878,
+      2879,
+      2880,
+      2881,
+      2882,
+      2883,
+      2884,
+      2885,
+      2886,
+      2887,
+      2888,
+      2889,
+      2890,
+      2891,
+      2892,
+      2893,
+      2894,
+      2895,
+      2896,
+      2897,
+      2898,
+      2899,
+      2915,
+      2916,
+      2917,
+      2918,
+      2919,
+      2920,
+      2921,
+      2922,
+      2923,
+      2924,
+      2925,
+      2926,
+      2927,
+      2928,
+      2929,
+      2930,
+      2931,
+      2932,
+      2933,
+      2934,
+      2935,
+      2936,
+      2937,
+      2938,
+      2939,
+      2940,
+      2955,
+      2957,
+      2960,
+      2962,
+      2967,
+      2974,
+      2975,
+      2977,
+      2979,
+      2980,
+      2981,
+      2982,
+      2983,
+      2984,
+      2985,
+      2988,
+      2989,
+      2990,
+      2991,
+      2992,
+      2993,
+      2994,
+      2995,
+      2996,
+      2997,
+      2998,
+      2999,
+      3000,
+      3001,
+      3002,
+      3003,
+      3004,
+      3005,
+      3006,
+      3007,
+      3008,
+      3009,
+      3010,
+      3011,
+      3012,
+      3013,
+      3014,
+      3015,
+      3016,
+      3017,
+      3018,
+      3019,
+      3020,
+      3021,
+      3022,
+      3023,
+      3024,
+      3025,
+      3026,
+      3027,
+      3028,
+      3030,
+      3031,
+      3033,
+      3034,
+      3036,
+      3037,
+      3038,
+      3039,
+      3040,
+      3041,
+      3042,
+      3043,
+      3044,
+      3045,
+      3047,
+      3048,
+      3049,
+      3050,
+      3051,
+      3052,
+      3053,
+      3054,
+      3055,
+      3056,
+      3057,
+      3059,
+      3060,
+      3061,
+      3062,
+      3063,
+      3064,
+      3065,
+      3066,
+      3067,
+      3068,
+      3069,
+      3071,
+      3073,
+      3074,
+      3075,
+      3076,
+      3078,
+      3080,
+      3082,
+      3083,
+      3084,
+      3085,
+      3086,
+      3088,
+      3089,
+      3090,
+      3091,
+      3092,
+      3093,
+      3095,
+      3096,
+      3098,
+      3100,
+      3101,
+      3104,
+      3105,
+      3106,
+      3108,
+      3109,
+      3110,
+      3111,
+      3112,
+      3113,
+      3114,
+      3115,
+      3116,
+      3119,
+      3121,
+      3122,
+      3123,
+      3124,
+      3125,
+      3126,
+      3127,
+      3128,
+      3129,
+      3130,
+      3131,
+      3132,
+      3133,
+      3134,
+      3135,
+      3136,
+      3137,
+      3138,
+      3140,
+      3141,
+      3142,
+      3143,
+      3144,
+      3145,
+      3146,
+      3147,
+      3148,
+      3149,
+      3150,
+      3151,
+      3152,
+      3153,
+      3154,
+      3155,
+      3156,
+      3157,
+      3158,
+      3159,
+      3161,
+      3162,
+      3163,
+      3164,
+      3165,
+      3166,
+      3167,
+      3168,
+      3169,
+      3170,
+      3171,
+      3172,
+      3173,
+      3174,
+      3175,
+      3176,
+      3177,
+      3178,
+      3179,
+      3180,
+      3181,
+      3182,
+      3183,
+      3184,
+      3185,
+      3186,
+      3187,
+      3188,
+      3189,
+      3191,
+      3192,
+      3193,
+      3194,
+      3195,
+      3196,
+      3198,
+      3201,
+      3202,
+      3203,
+      3204,
+      3205,
+      3206,
+      3207,
+      3208,
+      3211,
+      3213,
+      3214,
+      3215,
+      3216,
+      3219,
+      3220,
+      3233,
+      3234,
+      3235,
+      3236,
+      3237,
+      3241,
+      3243,
+      3245,
+      3246,
+      3247,
+      3248,
+      3249,
+      3251,
+      3252,
+      3253,
+      3254,
+      3255,
+      3256,
+      3260,
+      3272,
+      3273,
+      3276,
+      3285,
+      3305,
+      3311,
+      3357,
+      3387,
+      3397,
+      3398,
+      3400,
+      3401,
+      3402,
+      3408,
+      3411,
+      3445,
+      3452,
+      3453,
+      3454,
+      3455,
+      3456,
+      3458,
+      3459,
+      3460,
+      3461,
+      3462,
+      3464,
+      3465,
+      3467,
+      3468,
+      3469,
+      3470,
+      3471,
+      3472,
+      3473,
+      3480,
+      3486,
+      3487,
+      3489,
+      3490,
+      3491,
+      3492,
+      3493,
+      3494,
+      3498,
+      3515,
+      3519,
+      3522,
+      3528,
+      3529,
+      3534,
+      3535,
+      3539,
+      3540,
+      3543,
+      3544,
+      3548,
+      3549,
+      3552,
+      3556,
+      3563,
+      3566,
+      3570,
+      3571,
+      3572,
+      3573,
+      3574,
+      3575,
+      3577,
+      3579,
+      3580,
+      3584,
+      3585,
+      3586,
+      3588,
+      3589,
+      3591,
+      3595,
+      3597,
+      3611,
+      3613,
+      3615,
+      3616,
+      3620,
+      3621,
+      3622,
+      3623,
+      3626,
+      3627,
+      3628,
+      3629,
+      3630,
+      3631,
+      3633,
+      3635,
+      3637,
+      3638,
+      3642,
+      3643,
+      3644,
+      3646,
+      3647,
+      3648,
+      3649,
+      3650,
+      3651
+    ],
+    "R2_iqr_outlier": [
+      46,
+      2982,
+      3006,
+      3056,
+      3116,
+      3206,
+      3562
+    ],
+    "R3_no_provenance": [],
+    "R4_outside_scope": [],
+    "R5_batch_fingerprint": [],
+    "R6_duplicates": [
+      18,
+      34,
+      108,
+      396,
+      417,
+      422,
+      424,
+      663,
+      852,
+      2598,
+      2612,
+      2655,
+      2666,
+      2667,
+      2668,
+      2669,
+      2671,
+      2672,
+      2673,
+      2674,
+      2675,
+      2676,
+      2677,
+      2678,
+      2679,
+      2680,
+      2681,
+      2682,
+      2707,
+      2719,
+      2749,
+      2758,
+      2759,
+      2760,
+      2761,
+      2762,
+      2763,
+      2773,
+      2776,
+      2777,
+      2778,
+      2779,
+      2780,
+      2781,
+      2782,
+      2783,
+      2784,
+      2929,
+      2935,
+      2939,
+      2940,
+      2985,
+      3008,
+      3010,
+      3028,
+      3063,
+      3068,
+      3074,
+      3113,
+      3115,
+      3118,
+      3124,
+      3274,
+      3282,
+      3286,
+      3291,
+      3325,
+      3375,
+      3377,
+      3390,
+      3469,
+      3471,
+      3472,
+      3473,
+      3575
+    ],
+    "R7_e5_suspicious": [],
+    "R8_system_demo": [],
+    "R9_unverifiable_cheap_high_ppm": [],
+    "R10_price_too_low": [
+      74,
+      75,
+      76,
+      92,
+      3264,
+      3355,
+      3383,
+      3421,
+      3431,
+      3433,
+      3506,
+      3507,
+      3587
+    ]
+  },
+  "record_reasons": {
+    "1": [
+      "R1_ppm_too_high"
+    ],
+    "2": [
+      "R1_ppm_too_high"
+    ],
+    "4": [
+      "R1_ppm_too_high"
+    ],
+    "5": [
+      "R1_ppm_too_high"
+    ],
+    "6": [
+      "R1_ppm_too_high"
+    ],
+    "7": [
+      "R1_ppm_too_high"
+    ],
+    "10": [
+      "R1_ppm_too_high"
+    ],
+    "11": [
+      "R1_ppm_too_high"
+    ],
+    "12": [
+      "R1_ppm_too_high"
+    ],
+    "13": [
+      "R1_ppm_too_high"
+    ],
+    "14": [
+      "R1_ppm_too_high"
+    ],
+    "15": [
+      "R1_ppm_too_high"
+    ],
+    "16": [
+      "R1_ppm_too_high"
+    ],
+    "17": [
+      "R1_ppm_too_high"
+    ],
+    "18": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "20": [
+      "R1_ppm_too_high"
+    ],
+    "25": [
+      "R1_ppm_too_high"
+    ],
+    "41": [
+      "R1_ppm_too_high"
+    ],
+    "42": [
+      "R1_ppm_too_high"
+    ],
+    "43": [
+      "R1_ppm_too_high"
+    ],
+    "44": [
+      "R1_ppm_too_high"
+    ],
+    "45": [
+      "R1_ppm_too_high"
+    ],
+    "46": [
+      "R1_ppm_too_high",
+      "R2_iqr_outlier"
+    ],
+    "47": [
+      "R1_ppm_too_high"
+    ],
+    "48": [
+      "R1_ppm_too_high"
+    ],
+    "49": [
+      "R1_ppm_too_high"
+    ],
+    "52": [
+      "R1_ppm_too_high"
+    ],
+    "53": [
+      "R1_ppm_too_high"
+    ],
+    "55": [
+      "R1_ppm_too_high"
+    ],
+    "56": [
+      "R1_ppm_too_high"
+    ],
+    "57": [
+      "R1_ppm_too_high"
+    ],
+    "58": [
+      "R1_ppm_too_high"
+    ],
+    "59": [
+      "R1_ppm_too_high"
+    ],
+    "71": [
+      "R1_ppm_too_high"
+    ],
+    "72": [
+      "R1_ppm_too_high"
+    ],
+    "78": [
+      "R1_ppm_too_high"
+    ],
+    "79": [
+      "R1_ppm_too_high"
+    ],
+    "81": [
+      "R1_ppm_too_high"
+    ],
+    "82": [
+      "R1_ppm_too_high"
+    ],
+    "83": [
+      "R1_ppm_too_high"
+    ],
+    "84": [
+      "R1_ppm_too_high"
+    ],
+    "85": [
+      "R1_ppm_too_high"
+    ],
+    "86": [
+      "R1_ppm_too_high"
+    ],
+    "87": [
+      "R1_ppm_too_high"
+    ],
+    "88": [
+      "R1_ppm_too_high"
+    ],
+    "90": [
+      "R1_ppm_too_high"
+    ],
+    "93": [
+      "R1_ppm_too_high"
+    ],
+    "94": [
+      "R1_ppm_too_high"
+    ],
+    "95": [
+      "R1_ppm_too_high"
+    ],
+    "96": [
+      "R1_ppm_too_high"
+    ],
+    "97": [
+      "R1_ppm_too_high"
+    ],
+    "98": [
+      "R1_ppm_too_high"
+    ],
+    "99": [
+      "R1_ppm_too_high"
+    ],
+    "103": [
+      "R1_ppm_too_high"
+    ],
+    "105": [
+      "R1_ppm_too_high"
+    ],
+    "109": [
+      "R1_ppm_too_high"
+    ],
+    "388": [
+      "R1_ppm_too_high"
+    ],
+    "391": [
+      "R1_ppm_too_high"
+    ],
+    "392": [
+      "R1_ppm_too_high"
+    ],
+    "395": [
+      "R1_ppm_too_high"
+    ],
+    "396": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "397": [
+      "R1_ppm_too_high"
+    ],
+    "399": [
+      "R1_ppm_too_high"
+    ],
+    "400": [
+      "R1_ppm_too_high"
+    ],
+    "401": [
+      "R1_ppm_too_high"
+    ],
+    "403": [
+      "R1_ppm_too_high"
+    ],
+    "406": [
+      "R1_ppm_too_high"
+    ],
+    "407": [
+      "R1_ppm_too_high"
+    ],
+    "429": [
+      "R1_ppm_too_high"
+    ],
+    "430": [
+      "R1_ppm_too_high"
+    ],
+    "431": [
+      "R1_ppm_too_high"
+    ],
+    "432": [
+      "R1_ppm_too_high"
+    ],
+    "433": [
+      "R1_ppm_too_high"
+    ],
+    "434": [
+      "R1_ppm_too_high"
+    ],
+    "436": [
+      "R1_ppm_too_high"
+    ],
+    "437": [
+      "R1_ppm_too_high"
+    ],
+    "440": [
+      "R1_ppm_too_high"
+    ],
+    "441": [
+      "R1_ppm_too_high"
+    ],
+    "444": [
+      "R1_ppm_too_high"
+    ],
+    "445": [
+      "R1_ppm_too_high"
+    ],
+    "446": [
+      "R1_ppm_too_high"
+    ],
+    "447": [
+      "R1_ppm_too_high"
+    ],
+    "466": [
+      "R1_ppm_too_high"
+    ],
+    "650": [
+      "R1_ppm_too_high"
+    ],
+    "651": [
+      "R1_ppm_too_high"
+    ],
+    "652": [
+      "R1_ppm_too_high"
+    ],
+    "653": [
+      "R1_ppm_too_high"
+    ],
+    "655": [
+      "R1_ppm_too_high"
+    ],
+    "661": [
+      "R1_ppm_too_high"
+    ],
+    "662": [
+      "R1_ppm_too_high"
+    ],
+    "663": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "664": [
+      "R1_ppm_too_high"
+    ],
+    "665": [
+      "R1_ppm_too_high"
+    ],
+    "666": [
+      "R1_ppm_too_high"
+    ],
+    "667": [
+      "R1_ppm_too_high"
+    ],
+    "668": [
+      "R1_ppm_too_high"
+    ],
+    "669": [
+      "R1_ppm_too_high"
+    ],
+    "670": [
+      "R1_ppm_too_high"
+    ],
+    "845": [
+      "R1_ppm_too_high"
+    ],
+    "846": [
+      "R1_ppm_too_high"
+    ],
+    "847": [
+      "R1_ppm_too_high"
+    ],
+    "848": [
+      "R1_ppm_too_high"
+    ],
+    "849": [
+      "R1_ppm_too_high"
+    ],
+    "850": [
+      "R1_ppm_too_high"
+    ],
+    "851": [
+      "R1_ppm_too_high"
+    ],
+    "852": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "853": [
+      "R1_ppm_too_high"
+    ],
+    "854": [
+      "R1_ppm_too_high"
+    ],
+    "995": [
+      "R1_ppm_too_high"
+    ],
+    "1008": [
+      "R1_ppm_too_high"
+    ],
+    "1010": [
+      "R1_ppm_too_high"
+    ],
+    "1016": [
+      "R1_ppm_too_high"
+    ],
+    "1028": [
+      "R1_ppm_too_high"
+    ],
+    "1033": [
+      "R1_ppm_too_high"
+    ],
+    "1036": [
+      "R1_ppm_too_high"
+    ],
+    "1047": [
+      "R1_ppm_too_high"
+    ],
+    "1051": [
+      "R1_ppm_too_high"
+    ],
+    "1053": [
+      "R1_ppm_too_high"
+    ],
+    "1057": [
+      "R1_ppm_too_high"
+    ],
+    "1495": [
+      "R1_ppm_too_high"
+    ],
+    "1498": [
+      "R1_ppm_too_high"
+    ],
+    "1501": [
+      "R1_ppm_too_high"
+    ],
+    "1502": [
+      "R1_ppm_too_high"
+    ],
+    "1503": [
+      "R1_ppm_too_high"
+    ],
+    "1504": [
+      "R1_ppm_too_high"
+    ],
+    "1505": [
+      "R1_ppm_too_high"
+    ],
+    "1507": [
+      "R1_ppm_too_high"
+    ],
+    "1508": [
+      "R1_ppm_too_high"
+    ],
+    "1510": [
+      "R1_ppm_too_high"
+    ],
+    "1511": [
+      "R1_ppm_too_high"
+    ],
+    "1551": [
+      "R1_ppm_too_high"
+    ],
+    "1558": [
+      "R1_ppm_too_high"
+    ],
+    "1561": [
+      "R1_ppm_too_high"
+    ],
+    "1566": [
+      "R1_ppm_too_high"
+    ],
+    "1569": [
+      "R1_ppm_too_high"
+    ],
+    "2580": [
+      "R1_ppm_too_high"
+    ],
+    "2582": [
+      "R1_ppm_too_high"
+    ],
+    "2586": [
+      "R1_ppm_too_high"
+    ],
+    "2590": [
+      "R1_ppm_too_high"
+    ],
+    "2594": [
+      "R1_ppm_too_high"
+    ],
+    "2595": [
+      "R1_ppm_too_high"
+    ],
+    "2603": [
+      "R1_ppm_too_high"
+    ],
+    "2612": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2613": [
+      "R1_ppm_too_high"
+    ],
+    "2619": [
+      "R1_ppm_too_high"
+    ],
+    "2621": [
+      "R1_ppm_too_high"
+    ],
+    "2622": [
+      "R1_ppm_too_high"
+    ],
+    "2625": [
+      "R1_ppm_too_high"
+    ],
+    "2626": [
+      "R1_ppm_too_high"
+    ],
+    "2630": [
+      "R1_ppm_too_high"
+    ],
+    "2638": [
+      "R1_ppm_too_high"
+    ],
+    "2647": [
+      "R1_ppm_too_high"
+    ],
+    "2650": [
+      "R1_ppm_too_high"
+    ],
+    "2652": [
+      "R1_ppm_too_high"
+    ],
+    "2653": [
+      "R1_ppm_too_high"
+    ],
+    "2655": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2670": [
+      "R1_ppm_too_high"
+    ],
+    "2672": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2681": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2682": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2683": [
+      "R1_ppm_too_high"
+    ],
+    "2685": [
+      "R1_ppm_too_high"
+    ],
+    "2686": [
+      "R1_ppm_too_high"
+    ],
+    "2691": [
+      "R1_ppm_too_high"
+    ],
+    "2697": [
+      "R1_ppm_too_high"
+    ],
+    "2698": [
+      "R1_ppm_too_high"
+    ],
+    "2701": [
+      "R1_ppm_too_high"
+    ],
+    "2704": [
+      "R1_ppm_too_high"
+    ],
+    "2705": [
+      "R1_ppm_too_high"
+    ],
+    "2707": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2708": [
+      "R1_ppm_too_high"
+    ],
+    "2714": [
+      "R1_ppm_too_high"
+    ],
+    "2716": [
+      "R1_ppm_too_high"
+    ],
+    "2717": [
+      "R1_ppm_too_high"
+    ],
+    "2719": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2722": [
+      "R1_ppm_too_high"
+    ],
+    "2723": [
+      "R1_ppm_too_high"
+    ],
+    "2724": [
+      "R1_ppm_too_high"
+    ],
+    "2726": [
+      "R1_ppm_too_high"
+    ],
+    "2728": [
+      "R1_ppm_too_high"
+    ],
+    "2730": [
+      "R1_ppm_too_high"
+    ],
+    "2731": [
+      "R1_ppm_too_high"
+    ],
+    "2732": [
+      "R1_ppm_too_high"
+    ],
+    "2733": [
+      "R1_ppm_too_high"
+    ],
+    "2737": [
+      "R1_ppm_too_high"
+    ],
+    "2739": [
+      "R1_ppm_too_high"
+    ],
+    "2740": [
+      "R1_ppm_too_high"
+    ],
+    "2741": [
+      "R1_ppm_too_high"
+    ],
+    "2743": [
+      "R1_ppm_too_high"
+    ],
+    "2744": [
+      "R1_ppm_too_high"
+    ],
+    "2747": [
+      "R1_ppm_too_high"
+    ],
+    "2750": [
+      "R1_ppm_too_high"
+    ],
+    "2755": [
+      "R1_ppm_too_high"
+    ],
+    "2756": [
+      "R1_ppm_too_high"
+    ],
+    "2758": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2760": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2761": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2765": [
+      "R1_ppm_too_high"
+    ],
+    "2767": [
+      "R1_ppm_too_high"
+    ],
+    "2768": [
+      "R1_ppm_too_high"
+    ],
+    "2769": [
+      "R1_ppm_too_high"
+    ],
+    "2770": [
+      "R1_ppm_too_high"
+    ],
+    "2771": [
+      "R1_ppm_too_high"
+    ],
+    "2772": [
+      "R1_ppm_too_high"
+    ],
+    "2773": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2777": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2782": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2783": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2785": [
+      "R1_ppm_too_high"
+    ],
+    "2786": [
+      "R1_ppm_too_high"
+    ],
+    "2788": [
+      "R1_ppm_too_high"
+    ],
+    "2789": [
+      "R1_ppm_too_high"
+    ],
+    "2790": [
+      "R1_ppm_too_high"
+    ],
+    "2791": [
+      "R1_ppm_too_high"
+    ],
+    "2793": [
+      "R1_ppm_too_high"
+    ],
+    "2796": [
+      "R1_ppm_too_high"
+    ],
+    "2797": [
+      "R1_ppm_too_high"
+    ],
+    "2798": [
+      "R1_ppm_too_high"
+    ],
+    "2800": [
+      "R1_ppm_too_high"
+    ],
+    "2801": [
+      "R1_ppm_too_high"
+    ],
+    "2802": [
+      "R1_ppm_too_high"
+    ],
+    "2803": [
+      "R1_ppm_too_high"
+    ],
+    "2804": [
+      "R1_ppm_too_high"
+    ],
+    "2805": [
+      "R1_ppm_too_high"
+    ],
+    "2806": [
+      "R1_ppm_too_high"
+    ],
+    "2808": [
+      "R1_ppm_too_high"
+    ],
+    "2809": [
+      "R1_ppm_too_high"
+    ],
+    "2812": [
+      "R1_ppm_too_high"
+    ],
+    "2813": [
+      "R1_ppm_too_high"
+    ],
+    "2820": [
+      "R1_ppm_too_high"
+    ],
+    "2821": [
+      "R1_ppm_too_high"
+    ],
+    "2824": [
+      "R1_ppm_too_high"
+    ],
+    "2836": [
+      "R1_ppm_too_high"
+    ],
+    "2837": [
+      "R1_ppm_too_high"
+    ],
+    "2841": [
+      "R1_ppm_too_high"
+    ],
+    "2842": [
+      "R1_ppm_too_high"
+    ],
+    "2845": [
+      "R1_ppm_too_high"
+    ],
+    "2848": [
+      "R1_ppm_too_high"
+    ],
+    "2851": [
+      "R1_ppm_too_high"
+    ],
+    "2852": [
+      "R1_ppm_too_high"
+    ],
+    "2853": [
+      "R1_ppm_too_high"
+    ],
+    "2854": [
+      "R1_ppm_too_high"
+    ],
+    "2855": [
+      "R1_ppm_too_high"
+    ],
+    "2856": [
+      "R1_ppm_too_high"
+    ],
+    "2857": [
+      "R1_ppm_too_high"
+    ],
+    "2858": [
+      "R1_ppm_too_high"
+    ],
+    "2859": [
+      "R1_ppm_too_high"
+    ],
+    "2860": [
+      "R1_ppm_too_high"
+    ],
+    "2861": [
+      "R1_ppm_too_high"
+    ],
+    "2862": [
+      "R1_ppm_too_high"
+    ],
+    "2863": [
+      "R1_ppm_too_high"
+    ],
+    "2864": [
+      "R1_ppm_too_high"
+    ],
+    "2865": [
+      "R1_ppm_too_high"
+    ],
+    "2866": [
+      "R1_ppm_too_high"
+    ],
+    "2867": [
+      "R1_ppm_too_high"
+    ],
+    "2868": [
+      "R1_ppm_too_high"
+    ],
+    "2869": [
+      "R1_ppm_too_high"
+    ],
+    "2870": [
+      "R1_ppm_too_high"
+    ],
+    "2871": [
+      "R1_ppm_too_high"
+    ],
+    "2872": [
+      "R1_ppm_too_high"
+    ],
+    "2873": [
+      "R1_ppm_too_high"
+    ],
+    "2874": [
+      "R1_ppm_too_high"
+    ],
+    "2875": [
+      "R1_ppm_too_high"
+    ],
+    "2876": [
+      "R1_ppm_too_high"
+    ],
+    "2877": [
+      "R1_ppm_too_high"
+    ],
+    "2878": [
+      "R1_ppm_too_high"
+    ],
+    "2879": [
+      "R1_ppm_too_high"
+    ],
+    "2880": [
+      "R1_ppm_too_high"
+    ],
+    "2881": [
+      "R1_ppm_too_high"
+    ],
+    "2882": [
+      "R1_ppm_too_high"
+    ],
+    "2883": [
+      "R1_ppm_too_high"
+    ],
+    "2884": [
+      "R1_ppm_too_high"
+    ],
+    "2885": [
+      "R1_ppm_too_high"
+    ],
+    "2886": [
+      "R1_ppm_too_high"
+    ],
+    "2887": [
+      "R1_ppm_too_high"
+    ],
+    "2888": [
+      "R1_ppm_too_high"
+    ],
+    "2889": [
+      "R1_ppm_too_high"
+    ],
+    "2890": [
+      "R1_ppm_too_high"
+    ],
+    "2891": [
+      "R1_ppm_too_high"
+    ],
+    "2892": [
+      "R1_ppm_too_high"
+    ],
+    "2893": [
+      "R1_ppm_too_high"
+    ],
+    "2894": [
+      "R1_ppm_too_high"
+    ],
+    "2895": [
+      "R1_ppm_too_high"
+    ],
+    "2896": [
+      "R1_ppm_too_high"
+    ],
+    "2897": [
+      "R1_ppm_too_high"
+    ],
+    "2898": [
+      "R1_ppm_too_high"
+    ],
+    "2899": [
+      "R1_ppm_too_high"
+    ],
+    "2915": [
+      "R1_ppm_too_high"
+    ],
+    "2916": [
+      "R1_ppm_too_high"
+    ],
+    "2917": [
+      "R1_ppm_too_high"
+    ],
+    "2918": [
+      "R1_ppm_too_high"
+    ],
+    "2919": [
+      "R1_ppm_too_high"
+    ],
+    "2920": [
+      "R1_ppm_too_high"
+    ],
+    "2921": [
+      "R1_ppm_too_high"
+    ],
+    "2922": [
+      "R1_ppm_too_high"
+    ],
+    "2923": [
+      "R1_ppm_too_high"
+    ],
+    "2924": [
+      "R1_ppm_too_high"
+    ],
+    "2925": [
+      "R1_ppm_too_high"
+    ],
+    "2926": [
+      "R1_ppm_too_high"
+    ],
+    "2927": [
+      "R1_ppm_too_high"
+    ],
+    "2928": [
+      "R1_ppm_too_high"
+    ],
+    "2929": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2930": [
+      "R1_ppm_too_high"
+    ],
+    "2931": [
+      "R1_ppm_too_high"
+    ],
+    "2932": [
+      "R1_ppm_too_high"
+    ],
+    "2933": [
+      "R1_ppm_too_high"
+    ],
+    "2934": [
+      "R1_ppm_too_high"
+    ],
+    "2935": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2936": [
+      "R1_ppm_too_high"
+    ],
+    "2937": [
+      "R1_ppm_too_high"
+    ],
+    "2938": [
+      "R1_ppm_too_high"
+    ],
+    "2939": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2940": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2955": [
+      "R1_ppm_too_high"
+    ],
+    "2957": [
+      "R1_ppm_too_high"
+    ],
+    "2960": [
+      "R1_ppm_too_high"
+    ],
+    "2962": [
+      "R1_ppm_too_high"
+    ],
+    "2967": [
+      "R1_ppm_too_high"
+    ],
+    "2974": [
+      "R1_ppm_too_high"
+    ],
+    "2975": [
+      "R1_ppm_too_high"
+    ],
+    "2977": [
+      "R1_ppm_too_high"
+    ],
+    "2979": [
+      "R1_ppm_too_high"
+    ],
+    "2980": [
+      "R1_ppm_too_high"
+    ],
+    "2981": [
+      "R1_ppm_too_high"
+    ],
+    "2982": [
+      "R1_ppm_too_high",
+      "R2_iqr_outlier"
+    ],
+    "2983": [
+      "R1_ppm_too_high"
+    ],
+    "2984": [
+      "R1_ppm_too_high"
+    ],
+    "2985": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "2988": [
+      "R1_ppm_too_high"
+    ],
+    "2989": [
+      "R1_ppm_too_high"
+    ],
+    "2990": [
+      "R1_ppm_too_high"
+    ],
+    "2991": [
+      "R1_ppm_too_high"
+    ],
+    "2992": [
+      "R1_ppm_too_high"
+    ],
+    "2993": [
+      "R1_ppm_too_high"
+    ],
+    "2994": [
+      "R1_ppm_too_high"
+    ],
+    "2995": [
+      "R1_ppm_too_high"
+    ],
+    "2996": [
+      "R1_ppm_too_high"
+    ],
+    "2997": [
+      "R1_ppm_too_high"
+    ],
+    "2998": [
+      "R1_ppm_too_high"
+    ],
+    "2999": [
+      "R1_ppm_too_high"
+    ],
+    "3000": [
+      "R1_ppm_too_high"
+    ],
+    "3001": [
+      "R1_ppm_too_high"
+    ],
+    "3002": [
+      "R1_ppm_too_high"
+    ],
+    "3003": [
+      "R1_ppm_too_high"
+    ],
+    "3004": [
+      "R1_ppm_too_high"
+    ],
+    "3005": [
+      "R1_ppm_too_high"
+    ],
+    "3006": [
+      "R1_ppm_too_high",
+      "R2_iqr_outlier"
+    ],
+    "3007": [
+      "R1_ppm_too_high"
+    ],
+    "3008": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "3009": [
+      "R1_ppm_too_high"
+    ],
+    "3010": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "3011": [
+      "R1_ppm_too_high"
+    ],
+    "3012": [
+      "R1_ppm_too_high"
+    ],
+    "3013": [
+      "R1_ppm_too_high"
+    ],
+    "3014": [
+      "R1_ppm_too_high"
+    ],
+    "3015": [
+      "R1_ppm_too_high"
+    ],
+    "3016": [
+      "R1_ppm_too_high"
+    ],
+    "3017": [
+      "R1_ppm_too_high"
+    ],
+    "3018": [
+      "R1_ppm_too_high"
+    ],
+    "3019": [
+      "R1_ppm_too_high"
+    ],
+    "3020": [
+      "R1_ppm_too_high"
+    ],
+    "3021": [
+      "R1_ppm_too_high"
+    ],
+    "3022": [
+      "R1_ppm_too_high"
+    ],
+    "3023": [
+      "R1_ppm_too_high"
+    ],
+    "3024": [
+      "R1_ppm_too_high"
+    ],
+    "3025": [
+      "R1_ppm_too_high"
+    ],
+    "3026": [
+      "R1_ppm_too_high"
+    ],
+    "3027": [
+      "R1_ppm_too_high"
+    ],
+    "3028": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "3030": [
+      "R1_ppm_too_high"
+    ],
+    "3031": [
+      "R1_ppm_too_high"
+    ],
+    "3033": [
+      "R1_ppm_too_high"
+    ],
+    "3034": [
+      "R1_ppm_too_high"
+    ],
+    "3036": [
+      "R1_ppm_too_high"
+    ],
+    "3037": [
+      "R1_ppm_too_high"
+    ],
+    "3038": [
+      "R1_ppm_too_high"
+    ],
+    "3039": [
+      "R1_ppm_too_high"
+    ],
+    "3040": [
+      "R1_ppm_too_high"
+    ],
+    "3041": [
+      "R1_ppm_too_high"
+    ],
+    "3042": [
+      "R1_ppm_too_high"
+    ],
+    "3043": [
+      "R1_ppm_too_high"
+    ],
+    "3044": [
+      "R1_ppm_too_high"
+    ],
+    "3045": [
+      "R1_ppm_too_high"
+    ],
+    "3047": [
+      "R1_ppm_too_high"
+    ],
+    "3048": [
+      "R1_ppm_too_high"
+    ],
+    "3049": [
+      "R1_ppm_too_high"
+    ],
+    "3050": [
+      "R1_ppm_too_high"
+    ],
+    "3051": [
+      "R1_ppm_too_high"
+    ],
+    "3052": [
+      "R1_ppm_too_high"
+    ],
+    "3053": [
+      "R1_ppm_too_high"
+    ],
+    "3054": [
+      "R1_ppm_too_high"
+    ],
+    "3055": [
+      "R1_ppm_too_high"
+    ],
+    "3056": [
+      "R1_ppm_too_high",
+      "R2_iqr_outlier"
+    ],
+    "3057": [
+      "R1_ppm_too_high"
+    ],
+    "3059": [
+      "R1_ppm_too_high"
+    ],
+    "3060": [
+      "R1_ppm_too_high"
+    ],
+    "3061": [
+      "R1_ppm_too_high"
+    ],
+    "3062": [
+      "R1_ppm_too_high"
+    ],
+    "3063": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "3064": [
+      "R1_ppm_too_high"
+    ],
+    "3065": [
+      "R1_ppm_too_high"
+    ],
+    "3066": [
+      "R1_ppm_too_high"
+    ],
+    "3067": [
+      "R1_ppm_too_high"
+    ],
+    "3068": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "3069": [
+      "R1_ppm_too_high"
+    ],
+    "3071": [
+      "R1_ppm_too_high"
+    ],
+    "3073": [
+      "R1_ppm_too_high"
+    ],
+    "3074": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "3075": [
+      "R1_ppm_too_high"
+    ],
+    "3076": [
+      "R1_ppm_too_high"
+    ],
+    "3078": [
+      "R1_ppm_too_high"
+    ],
+    "3080": [
+      "R1_ppm_too_high"
+    ],
+    "3082": [
+      "R1_ppm_too_high"
+    ],
+    "3083": [
+      "R1_ppm_too_high"
+    ],
+    "3084": [
+      "R1_ppm_too_high"
+    ],
+    "3085": [
+      "R1_ppm_too_high"
+    ],
+    "3086": [
+      "R1_ppm_too_high"
+    ],
+    "3088": [
+      "R1_ppm_too_high"
+    ],
+    "3089": [
+      "R1_ppm_too_high"
+    ],
+    "3090": [
+      "R1_ppm_too_high"
+    ],
+    "3091": [
+      "R1_ppm_too_high"
+    ],
+    "3092": [
+      "R1_ppm_too_high"
+    ],
+    "3093": [
+      "R1_ppm_too_high"
+    ],
+    "3095": [
+      "R1_ppm_too_high"
+    ],
+    "3096": [
+      "R1_ppm_too_high"
+    ],
+    "3098": [
+      "R1_ppm_too_high"
+    ],
+    "3100": [
+      "R1_ppm_too_high"
+    ],
+    "3101": [
+      "R1_ppm_too_high"
+    ],
+    "3104": [
+      "R1_ppm_too_high"
+    ],
+    "3105": [
+      "R1_ppm_too_high"
+    ],
+    "3106": [
+      "R1_ppm_too_high"
+    ],
+    "3108": [
+      "R1_ppm_too_high"
+    ],
+    "3109": [
+      "R1_ppm_too_high"
+    ],
+    "3110": [
+      "R1_ppm_too_high"
+    ],
+    "3111": [
+      "R1_ppm_too_high"
+    ],
+    "3112": [
+      "R1_ppm_too_high"
+    ],
+    "3113": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "3114": [
+      "R1_ppm_too_high"
+    ],
+    "3115": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "3116": [
+      "R1_ppm_too_high",
+      "R2_iqr_outlier"
+    ],
+    "3119": [
+      "R1_ppm_too_high"
+    ],
+    "3121": [
+      "R1_ppm_too_high"
+    ],
+    "3122": [
+      "R1_ppm_too_high"
+    ],
+    "3123": [
+      "R1_ppm_too_high"
+    ],
+    "3124": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "3125": [
+      "R1_ppm_too_high"
+    ],
+    "3126": [
+      "R1_ppm_too_high"
+    ],
+    "3127": [
+      "R1_ppm_too_high"
+    ],
+    "3128": [
+      "R1_ppm_too_high"
+    ],
+    "3129": [
+      "R1_ppm_too_high"
+    ],
+    "3130": [
+      "R1_ppm_too_high"
+    ],
+    "3131": [
+      "R1_ppm_too_high"
+    ],
+    "3132": [
+      "R1_ppm_too_high"
+    ],
+    "3133": [
+      "R1_ppm_too_high"
+    ],
+    "3134": [
+      "R1_ppm_too_high"
+    ],
+    "3135": [
+      "R1_ppm_too_high"
+    ],
+    "3136": [
+      "R1_ppm_too_high"
+    ],
+    "3137": [
+      "R1_ppm_too_high"
+    ],
+    "3138": [
+      "R1_ppm_too_high"
+    ],
+    "3140": [
+      "R1_ppm_too_high"
+    ],
+    "3141": [
+      "R1_ppm_too_high"
+    ],
+    "3142": [
+      "R1_ppm_too_high"
+    ],
+    "3143": [
+      "R1_ppm_too_high"
+    ],
+    "3144": [
+      "R1_ppm_too_high"
+    ],
+    "3145": [
+      "R1_ppm_too_high"
+    ],
+    "3146": [
+      "R1_ppm_too_high"
+    ],
+    "3147": [
+      "R1_ppm_too_high"
+    ],
+    "3148": [
+      "R1_ppm_too_high"
+    ],
+    "3149": [
+      "R1_ppm_too_high"
+    ],
+    "3150": [
+      "R1_ppm_too_high"
+    ],
+    "3151": [
+      "R1_ppm_too_high"
+    ],
+    "3152": [
+      "R1_ppm_too_high"
+    ],
+    "3153": [
+      "R1_ppm_too_high"
+    ],
+    "3154": [
+      "R1_ppm_too_high"
+    ],
+    "3155": [
+      "R1_ppm_too_high"
+    ],
+    "3156": [
+      "R1_ppm_too_high"
+    ],
+    "3157": [
+      "R1_ppm_too_high"
+    ],
+    "3158": [
+      "R1_ppm_too_high"
+    ],
+    "3159": [
+      "R1_ppm_too_high"
+    ],
+    "3161": [
+      "R1_ppm_too_high"
+    ],
+    "3162": [
+      "R1_ppm_too_high"
+    ],
+    "3163": [
+      "R1_ppm_too_high"
+    ],
+    "3164": [
+      "R1_ppm_too_high"
+    ],
+    "3165": [
+      "R1_ppm_too_high"
+    ],
+    "3166": [
+      "R1_ppm_too_high"
+    ],
+    "3167": [
+      "R1_ppm_too_high"
+    ],
+    "3168": [
+      "R1_ppm_too_high"
+    ],
+    "3169": [
+      "R1_ppm_too_high"
+    ],
+    "3170": [
+      "R1_ppm_too_high"
+    ],
+    "3171": [
+      "R1_ppm_too_high"
+    ],
+    "3172": [
+      "R1_ppm_too_high"
+    ],
+    "3173": [
+      "R1_ppm_too_high"
+    ],
+    "3174": [
+      "R1_ppm_too_high"
+    ],
+    "3175": [
+      "R1_ppm_too_high"
+    ],
+    "3176": [
+      "R1_ppm_too_high"
+    ],
+    "3177": [
+      "R1_ppm_too_high"
+    ],
+    "3178": [
+      "R1_ppm_too_high"
+    ],
+    "3179": [
+      "R1_ppm_too_high"
+    ],
+    "3180": [
+      "R1_ppm_too_high"
+    ],
+    "3181": [
+      "R1_ppm_too_high"
+    ],
+    "3182": [
+      "R1_ppm_too_high"
+    ],
+    "3183": [
+      "R1_ppm_too_high"
+    ],
+    "3184": [
+      "R1_ppm_too_high"
+    ],
+    "3185": [
+      "R1_ppm_too_high"
+    ],
+    "3186": [
+      "R1_ppm_too_high"
+    ],
+    "3187": [
+      "R1_ppm_too_high"
+    ],
+    "3188": [
+      "R1_ppm_too_high"
+    ],
+    "3189": [
+      "R1_ppm_too_high"
+    ],
+    "3191": [
+      "R1_ppm_too_high"
+    ],
+    "3192": [
+      "R1_ppm_too_high"
+    ],
+    "3193": [
+      "R1_ppm_too_high"
+    ],
+    "3194": [
+      "R1_ppm_too_high"
+    ],
+    "3195": [
+      "R1_ppm_too_high"
+    ],
+    "3196": [
+      "R1_ppm_too_high"
+    ],
+    "3198": [
+      "R1_ppm_too_high"
+    ],
+    "3201": [
+      "R1_ppm_too_high"
+    ],
+    "3202": [
+      "R1_ppm_too_high"
+    ],
+    "3203": [
+      "R1_ppm_too_high"
+    ],
+    "3204": [
+      "R1_ppm_too_high"
+    ],
+    "3205": [
+      "R1_ppm_too_high"
+    ],
+    "3206": [
+      "R1_ppm_too_high",
+      "R2_iqr_outlier"
+    ],
+    "3207": [
+      "R1_ppm_too_high"
+    ],
+    "3208": [
+      "R1_ppm_too_high"
+    ],
+    "3211": [
+      "R1_ppm_too_high"
+    ],
+    "3213": [
+      "R1_ppm_too_high"
+    ],
+    "3214": [
+      "R1_ppm_too_high"
+    ],
+    "3215": [
+      "R1_ppm_too_high"
+    ],
+    "3216": [
+      "R1_ppm_too_high"
+    ],
+    "3219": [
+      "R1_ppm_too_high"
+    ],
+    "3220": [
+      "R1_ppm_too_high"
+    ],
+    "3233": [
+      "R1_ppm_too_high"
+    ],
+    "3234": [
+      "R1_ppm_too_high"
+    ],
+    "3235": [
+      "R1_ppm_too_high"
+    ],
+    "3236": [
+      "R1_ppm_too_high"
+    ],
+    "3237": [
+      "R1_ppm_too_high"
+    ],
+    "3241": [
+      "R1_ppm_too_high"
+    ],
+    "3243": [
+      "R1_ppm_too_high"
+    ],
+    "3245": [
+      "R1_ppm_too_high"
+    ],
+    "3246": [
+      "R1_ppm_too_high"
+    ],
+    "3247": [
+      "R1_ppm_too_high"
+    ],
+    "3248": [
+      "R1_ppm_too_high"
+    ],
+    "3249": [
+      "R1_ppm_too_high"
+    ],
+    "3251": [
+      "R1_ppm_too_high"
+    ],
+    "3252": [
+      "R1_ppm_too_high"
+    ],
+    "3253": [
+      "R1_ppm_too_high"
+    ],
+    "3254": [
+      "R1_ppm_too_high"
+    ],
+    "3255": [
+      "R1_ppm_too_high"
+    ],
+    "3256": [
+      "R1_ppm_too_high"
+    ],
+    "3260": [
+      "R1_ppm_too_high"
+    ],
+    "3272": [
+      "R1_ppm_too_high"
+    ],
+    "3273": [
+      "R1_ppm_too_high"
+    ],
+    "3276": [
+      "R1_ppm_too_high"
+    ],
+    "3285": [
+      "R1_ppm_too_high"
+    ],
+    "3305": [
+      "R1_ppm_too_high"
+    ],
+    "3311": [
+      "R1_ppm_too_high"
+    ],
+    "3357": [
+      "R1_ppm_too_high"
+    ],
+    "3387": [
+      "R1_ppm_too_high"
+    ],
+    "3397": [
+      "R1_ppm_too_high"
+    ],
+    "3398": [
+      "R1_ppm_too_high"
+    ],
+    "3400": [
+      "R1_ppm_too_high"
+    ],
+    "3401": [
+      "R1_ppm_too_high"
+    ],
+    "3402": [
+      "R1_ppm_too_high"
+    ],
+    "3408": [
+      "R1_ppm_too_high"
+    ],
+    "3411": [
+      "R1_ppm_too_high"
+    ],
+    "3445": [
+      "R1_ppm_too_high"
+    ],
+    "3452": [
+      "R1_ppm_too_high"
+    ],
+    "3453": [
+      "R1_ppm_too_high"
+    ],
+    "3454": [
+      "R1_ppm_too_high"
+    ],
+    "3455": [
+      "R1_ppm_too_high"
+    ],
+    "3456": [
+      "R1_ppm_too_high"
+    ],
+    "3458": [
+      "R1_ppm_too_high"
+    ],
+    "3459": [
+      "R1_ppm_too_high"
+    ],
+    "3460": [
+      "R1_ppm_too_high"
+    ],
+    "3461": [
+      "R1_ppm_too_high"
+    ],
+    "3462": [
+      "R1_ppm_too_high"
+    ],
+    "3464": [
+      "R1_ppm_too_high"
+    ],
+    "3465": [
+      "R1_ppm_too_high"
+    ],
+    "3467": [
+      "R1_ppm_too_high"
+    ],
+    "3468": [
+      "R1_ppm_too_high"
+    ],
+    "3469": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "3470": [
+      "R1_ppm_too_high"
+    ],
+    "3471": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "3472": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "3473": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "3480": [
+      "R1_ppm_too_high"
+    ],
+    "3486": [
+      "R1_ppm_too_high"
+    ],
+    "3487": [
+      "R1_ppm_too_high"
+    ],
+    "3489": [
+      "R1_ppm_too_high"
+    ],
+    "3490": [
+      "R1_ppm_too_high"
+    ],
+    "3491": [
+      "R1_ppm_too_high"
+    ],
+    "3492": [
+      "R1_ppm_too_high"
+    ],
+    "3493": [
+      "R1_ppm_too_high"
+    ],
+    "3494": [
+      "R1_ppm_too_high"
+    ],
+    "3498": [
+      "R1_ppm_too_high"
+    ],
+    "3515": [
+      "R1_ppm_too_high"
+    ],
+    "3519": [
+      "R1_ppm_too_high"
+    ],
+    "3522": [
+      "R1_ppm_too_high"
+    ],
+    "3528": [
+      "R1_ppm_too_high"
+    ],
+    "3529": [
+      "R1_ppm_too_high"
+    ],
+    "3534": [
+      "R1_ppm_too_high"
+    ],
+    "3535": [
+      "R1_ppm_too_high"
+    ],
+    "3539": [
+      "R1_ppm_too_high"
+    ],
+    "3540": [
+      "R1_ppm_too_high"
+    ],
+    "3543": [
+      "R1_ppm_too_high"
+    ],
+    "3544": [
+      "R1_ppm_too_high"
+    ],
+    "3548": [
+      "R1_ppm_too_high"
+    ],
+    "3549": [
+      "R1_ppm_too_high"
+    ],
+    "3552": [
+      "R1_ppm_too_high"
+    ],
+    "3556": [
+      "R1_ppm_too_high"
+    ],
+    "3563": [
+      "R1_ppm_too_high"
+    ],
+    "3566": [
+      "R1_ppm_too_high"
+    ],
+    "3570": [
+      "R1_ppm_too_high"
+    ],
+    "3571": [
+      "R1_ppm_too_high"
+    ],
+    "3572": [
+      "R1_ppm_too_high"
+    ],
+    "3573": [
+      "R1_ppm_too_high"
+    ],
+    "3574": [
+      "R1_ppm_too_high"
+    ],
+    "3575": [
+      "R1_ppm_too_high",
+      "R6_duplicates"
+    ],
+    "3577": [
+      "R1_ppm_too_high"
+    ],
+    "3579": [
+      "R1_ppm_too_high"
+    ],
+    "3580": [
+      "R1_ppm_too_high"
+    ],
+    "3584": [
+      "R1_ppm_too_high"
+    ],
+    "3585": [
+      "R1_ppm_too_high"
+    ],
+    "3586": [
+      "R1_ppm_too_high"
+    ],
+    "3588": [
+      "R1_ppm_too_high"
+    ],
+    "3589": [
+      "R1_ppm_too_high"
+    ],
+    "3591": [
+      "R1_ppm_too_high"
+    ],
+    "3595": [
+      "R1_ppm_too_high"
+    ],
+    "3597": [
+      "R1_ppm_too_high"
+    ],
+    "3611": [
+      "R1_ppm_too_high"
+    ],
+    "3613": [
+      "R1_ppm_too_high"
+    ],
+    "3615": [
+      "R1_ppm_too_high"
+    ],
+    "3616": [
+      "R1_ppm_too_high"
+    ],
+    "3620": [
+      "R1_ppm_too_high"
+    ],
+    "3621": [
+      "R1_ppm_too_high"
+    ],
+    "3622": [
+      "R1_ppm_too_high"
+    ],
+    "3623": [
+      "R1_ppm_too_high"
+    ],
+    "3626": [
+      "R1_ppm_too_high"
+    ],
+    "3627": [
+      "R1_ppm_too_high"
+    ],
+    "3628": [
+      "R1_ppm_too_high"
+    ],
+    "3629": [
+      "R1_ppm_too_high"
+    ],
+    "3630": [
+      "R1_ppm_too_high"
+    ],
+    "3631": [
+      "R1_ppm_too_high"
+    ],
+    "3633": [
+      "R1_ppm_too_high"
+    ],
+    "3635": [
+      "R1_ppm_too_high"
+    ],
+    "3637": [
+      "R1_ppm_too_high"
+    ],
+    "3638": [
+      "R1_ppm_too_high"
+    ],
+    "3642": [
+      "R1_ppm_too_high"
+    ],
+    "3643": [
+      "R1_ppm_too_high"
+    ],
+    "3644": [
+      "R1_ppm_too_high"
+    ],
+    "3646": [
+      "R1_ppm_too_high"
+    ],
+    "3647": [
+      "R1_ppm_too_high"
+    ],
+    "3648": [
+      "R1_ppm_too_high"
+    ],
+    "3649": [
+      "R1_ppm_too_high"
+    ],
+    "3650": [
+      "R1_ppm_too_high"
+    ],
+    "3651": [
+      "R1_ppm_too_high"
+    ],
+    "3562": [
+      "R2_iqr_outlier"
+    ],
+    "34": [
+      "R6_duplicates"
+    ],
+    "108": [
+      "R6_duplicates"
+    ],
+    "417": [
+      "R6_duplicates"
+    ],
+    "422": [
+      "R6_duplicates"
+    ],
+    "424": [
+      "R6_duplicates"
+    ],
+    "2598": [
+      "R6_duplicates"
+    ],
+    "2666": [
+      "R6_duplicates"
+    ],
+    "2667": [
+      "R6_duplicates"
+    ],
+    "2668": [
+      "R6_duplicates"
+    ],
+    "2669": [
+      "R6_duplicates"
+    ],
+    "2671": [
+      "R6_duplicates"
+    ],
+    "2673": [
+      "R6_duplicates"
+    ],
+    "2674": [
+      "R6_duplicates"
+    ],
+    "2675": [
+      "R6_duplicates"
+    ],
+    "2676": [
+      "R6_duplicates"
+    ],
+    "2677": [
+      "R6_duplicates"
+    ],
+    "2678": [
+      "R6_duplicates"
+    ],
+    "2679": [
+      "R6_duplicates"
+    ],
+    "2680": [
+      "R6_duplicates"
+    ],
+    "2749": [
+      "R6_duplicates"
+    ],
+    "2759": [
+      "R6_duplicates"
+    ],
+    "2762": [
+      "R6_duplicates"
+    ],
+    "2763": [
+      "R6_duplicates"
+    ],
+    "2776": [
+      "R6_duplicates"
+    ],
+    "2778": [
+      "R6_duplicates"
+    ],
+    "2779": [
+      "R6_duplicates"
+    ],
+    "2780": [
+      "R6_duplicates"
+    ],
+    "2781": [
+      "R6_duplicates"
+    ],
+    "2784": [
+      "R6_duplicates"
+    ],
+    "3118": [
+      "R6_duplicates"
+    ],
+    "3274": [
+      "R6_duplicates"
+    ],
+    "3282": [
+      "R6_duplicates"
+    ],
+    "3286": [
+      "R6_duplicates"
+    ],
+    "3291": [
+      "R6_duplicates"
+    ],
+    "3325": [
+      "R6_duplicates"
+    ],
+    "3375": [
+      "R6_duplicates"
+    ],
+    "3377": [
+      "R6_duplicates"
+    ],
+    "3390": [
+      "R6_duplicates"
+    ],
+    "74": [
+      "R10_price_too_low"
+    ],
+    "75": [
+      "R10_price_too_low"
+    ],
+    "76": [
+      "R10_price_too_low"
+    ],
+    "92": [
+      "R10_price_too_low"
+    ],
+    "3264": [
+      "R10_price_too_low"
+    ],
+    "3355": [
+      "R10_price_too_low"
+    ],
+    "3383": [
+      "R10_price_too_low"
+    ],
+    "3421": [
+      "R10_price_too_low"
+    ],
+    "3431": [
+      "R10_price_too_low"
+    ],
+    "3433": [
+      "R10_price_too_low"
+    ],
+    "3506": [
+      "R10_price_too_low"
+    ],
+    "3507": [
+      "R10_price_too_low"
+    ],
+    "3587": [
+      "R10_price_too_low"
+    ]
+  },
+  "ppm_distribution": {
+    "0-30M": 54,
+    "30-50M": 71,
+    "50-80M": 210,
+    "80-120M": 268,
+    "120-300M": 385,
+    "300M+": 271
+  },
+  "district_counts": {
+    "Quận Cầu Giấy": 448,
+    "Quận Thanh Xuân": 413,
+    "Quận Đống Đa": 101,
+    "Quận Bình Thạnh": 123,
+    "Quận Tân Bình": 108,
+    "Quận 7": 66
+  }
+}

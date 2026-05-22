@@ -1,0 +1,30 @@
+{
+  "started_at": "2026-05-13T11:22:30.401712+00:00",
+  "before": {
+    "public": 3000,
+    "self_collected": 263,
+    "self_collected_e3_plus": 151,
+    "total": 3263
+  },
+  "target_public": 3000,
+  "target_self_collected": 151,
+  "need_public": 0,
+  "need_self_collected": 0,
+  "pages_seen": 0,
+  "records_seen": 0,
+  "public_inserted": 0,
+  "self_inserted": 0,
+  "duplicates": 0,
+  "fetch_errors": 0,
+  "district_counts": {},
+  "mode": "apply",
+  "stop_reason": "targets_reached",
+  "max_rss_mb": 0.0,
+  "after": {
+    "public": 3000,
+    "self_collected": 263,
+    "self_collected_e3_plus": 151,
+    "total": 3263
+  },
+  "raw_candidates_path": "C:\\Users\\Admin\\Documents\\real-estate-avm\\reports\\dataset_completion\\raw_candidates_20260513_182230.jsonl"
+}

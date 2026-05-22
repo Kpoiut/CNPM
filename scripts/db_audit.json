@@ -1,0 +1,59 @@
+{
+  "by_collection_method": {
+    "NULL": 13,
+    "batch_generator": 2500,
+    "field_survey": 60,
+    "manual_entry": 112,
+    "playwright_stealth": 112,
+    "public_scraped": 537,
+    "smartphone_sensor_capture": 22
+  },
+  "by_evidence_tier": {
+    "E1": 46,
+    "E2": 160,
+    "E3": 2316,
+    "E4": 834
+  },
+  "verified_count": 181,
+  "verified_with_chain": 0,
+  "verified_by_method": {
+    "field_survey": 60,
+    "manual_entry": 99,
+    "smartphone_sensor_capture": 22
+  },
+  "total_chains": 3196,
+  "null_hash_chains": 0,
+  "broken_prev_step": 0,
+  "model_versions": [
+    {
+      "model_version": "20260503_185422",
+      "verified_record_count": 0,
+      "train_record_count": 3037
+    },
+    {
+      "model_version": "20260504_005814",
+      "verified_record_count": 0,
+      "train_record_count": 3037
+    },
+    {
+      "model_version": "20260504_005810",
+      "verified_record_count": 0,
+      "train_record_count": 2125
+    },
+    {
+      "model_version": "20260504_133948",
+      "verified_record_count": 0,
+      "train_record_count": 3179
+    },
+    {
+      "model_version": "20260504_134317",
+      "verified_record_count": 0,
+      "train_record_count": 3179
+    },
+    {
+      "model_version": "20260504_144802",
+      "verified_record_count": 0,
+      "train_record_count": 3231
+    }
+  ]
+}

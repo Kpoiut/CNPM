@@ -1,0 +1,216 @@
+{
+  "training_standard": "CVX-BDS/IoT 1.1-VN Research Extension",
+  "best_model": "ReliabilityAwareGradientBoosting",
+  "all_results": {
+    "QualityWeightedRandomForest": {
+      "mae": 977025810.2027436,
+      "rmse": 1461817955.2971714,
+      "r2": 0.8471822474484323,
+      "cv_mae_mean": 1214013873.0011947,
+      "cv_mae_std": 181658909.69710073
+    },
+    "ReliabilityAwareGradientBoosting": {
+      "mae": 818857289.9356678,
+      "rmse": 1772387018.9064047,
+      "r2": 0.7753510745675806,
+      "cv_mae_mean": 976148167.2473046,
+      "cv_mae_std": 162062296.5769686,
+      "test_mae": 867849740.0145323,
+      "test_median_ae": 458179421.50988865,
+      "test_mape": 16.910890010497578,
+      "test_rmse": 1653481089.312961,
+      "test_r2": 0.8187696704902536,
+      "n_test": 477
+    },
+    "ConfidenceWeightedXGBoost": {
+      "mae": 2931883934.669008,
+      "rmse": 3800164784.698413,
+      "r2": -0.03274257838776018,
+      "cv_mae_mean": 3059442743.6613646,
+      "cv_mae_std": 211346511.87056202
+    }
+  },
+  "train_size": 2225,
+  "validation_size": 477,
+  "test_size": 477,
+  "n_features": 53,
+  "feature_names": [
+    "area_m2_norm",
+    "bedrooms_norm",
+    "bathrooms_norm",
+    "floor_count",
+    "frontage_m",
+    "latitude_norm",
+    "longitude_norm",
+    "is_house",
+    "is_apartment",
+    "is_land",
+    "is_townhouse",
+    "is_villa",
+    "province_HN",
+    "province_HCM",
+    "province_DN",
+    "province_HP",
+    "province_CT",
+    "province_BD",
+    "noise_level_norm",
+    "temperature_norm",
+    "humidity_norm",
+    "light_level_norm",
+    "distance_to_center",
+    "area_type",
+    "legal_status",
+    "furnishing",
+    "province_price_mean",
+    "rqs_norm",
+    "provenance_score_norm",
+    "verification_score_norm",
+    "market_anchor_score_norm",
+    "timeliness_score_norm",
+    "training_weight_norm",
+    "evidence_weight_norm",
+    "confidence_stage1_score_norm",
+    "confidence_prob_a_norm",
+    "confidence_prob_b_norm",
+    "confidence_prob_c_norm",
+    "confidence_prob_d_norm",
+    "anchor_flag_feature",
+    "has_iot_signal_feature",
+    "area_bedrooms_interaction",
+    "floor_bedrooms_interaction",
+    "knn5_price_density",
+    "knn10_price_density"
+  ],
+  "trained_at": "2026-05-04T13:43:10.184181",
+  "training_quality_summary": {
+    "profile_count": 3179,
+    "avg_rqs": 4.49,
+    "median_rqs": 4.0,
+    "avg_training_weight": 0.29,
+    "max_training_weight": 0.7912,
+    "min_training_weight": 0.2071,
+    "evidence_distribution": {
+      "E3": 537,
+      "E5": 2642
+    },
+    "grade_distribution": {
+      "C": 313,
+      "B": 224,
+      "D": 2642
+    },
+    "anchor_rate": 0.0
+  },
+  "confidence_metadata": {
+    "stage_name": "Confidence Classification \u2014 OOF external labels (no leakage)",
+    "best_model": "HybridConfidenceForest",
+    "feature_names": [
+      "support_volume_score",
+      "support_quality_score",
+      "support_completeness_score",
+      "support_anchor_share",
+      "support_source_count",
+      "support_volatility",
+      "district_support_count",
+      "province_support_count",
+      "property_type_support_count",
+      "effective_sample_size",
+      "input_completeness_score",
+      "input_iot_signal_count",
+      "input_has_legal_status",
+      "input_has_coordinates",
+      "input_has_furnishing",
+      "local_price_gap_ratio",
+      "self_collected_hint"
+    ],
+    "validation_results": {
+      "EntropyTree": {
+        "accuracy": 0.2976939203354298,
+        "precision_macro": 0.29732811254550384,
+        "recall_macro": 0.30902520385470716,
+        "f1_macro": 0.2484174420071856
+      },
+      "GiniTree": {
+        "accuracy": 0.2662473794549266,
+        "precision_macro": 0.27144386478399485,
+        "recall_macro": 0.2652365950086484,
+        "f1_macro": 0.23093942871975565
+      },
+      "HybridConfidenceForest": {
+        "accuracy": 0.33542976939203356,
+        "precision_macro": 0.2935302537166593,
+        "recall_macro": 0.2933847603162837,
+        "f1_macro": 0.28461560044893375
+      }
+    },
+    "test_metrics": {
+      "accuracy": 0.3312368972746331,
+      "precision_macro": 0.3103817301588344,
+      "recall_macro": 0.3050994563874475,
+      "f1_macro": 0.29356798920658855
+    },
+    "split_summary": {
+      "train_size": 2225,
+      "validation_size": 477,
+      "test_size": 477,
+      "strategy": "70/15/15 holdout split"
+    },
+    "label_distribution": {
+      "A": 475,
+      "B": 474,
+      "C": 632,
+      "D": 1598
+    },
+    "tree_rules": "|--- input_completeness_score <= 9.39\n|   |--- district_support_count <= 56.50\n|   |   |--- support_quality_score <= 4.11\n|   |   |   |--- local_price_gap_ratio <= 0.01\n|   |   |   |   |--- class: 2.0\n|   |   |   |--- local_price_gap_ratio >  0.01\n|   |   |   |   |--- local_price_gap_ratio <= 0.05\n|   |   |   |   |   |--- truncated branch of depth 2\n|   |   |   |   |--- local_price_gap_ratio >  0.05\n|   |   |   |   |   |--- truncated branch of depth 5\n|   |   |--- support_quality_score >  4.11\n|   |   |   |--- local_price_gap_ratio <= 0.21\n|   |   |   |   |--- support_quality_score <= 4.18\n|   |   |   |   |   |--- truncated branch of depth 2\n|   |   |   |   |--- support_quality_score >  4.18\n|   |   |   |   |   |--- truncated branch of depth 5\n|   |   |   |--- local_price_gap_ratio >  0.21\n|   |   |   |   |--- local_price_gap_ratio <= 0.27\n|   |   |   |   |   |--- truncated branch of depth 3\n|   |   |   |   |--- local_price_gap_ratio >  0.27\n|   |   |   |   |   |--- truncated branch of depth 2\n|   |--- district_support_count >  56.50\n|   |   |--- support_volatility <= 0.28\n|   |   |   |--- support_completeness_score <= 8.89\n|   |   |   |   |--- self_collected_hint <= 0.50\n|   |   |   |   |   |--- truncated branch of depth 5\n|   |   |   |   |--- self_collected_hint >  0.50\n|   |   |   |   |   |--- class: 2.0\n|   |   |   |--- support_completeness_score >  8.89\n|   |   |   |   |--- support_volatility <= 0.16\n|   |   |   |   |   |--- class: 2.0\n|   |   |   |   |--- support_volatility >  0.16\n|   |   |   |   |   |--- truncated branch of depth 5\n|   |   |--- support_volatility >  0.28\n|   |   |   |--- local_price_gap_ratio <= 1.48\n|   |   |   |   |--- support_completeness_score <= 9.01\n|   |   |   |   |   |--- truncated branch of depth 5\n|   |   |   |   |--- support_completeness_score >  9.01\n|   |   |   |   |   |--- truncated branch of depth 5\n|   |   |   |--- local_price_gap_ratio >  1.48\n|   |   |   |   |--- class: 1.0\n|--- input_completeness_score >  9.39\n|   |--- support_quality_score <= 4.38\n|   |   |--- class: 3.0\n|   |--- support_quality_score >  4.38\n|   |   |--- class: 3.0\n",
+    "label_source": "OOF_cross_validation_error"
+  },
+  "conformal_calibration": {
+    "A": {
+      "count": 0,
+      "ratio_q90": 0.12,
+      "ratio_median": 0.08
+    },
+    "B": {
+      "count": 104,
+      "ratio_q90": 0.2410277447122321,
+      "ratio_median": 0.0726455283558955
+    },
+    "C": {
+      "count": 350,
+      "ratio_q90": 0.3237708858843829,
+      "ratio_median": 0.10299729399040547
+    },
+    "D": {
+      "count": 23,
+      "ratio_q90": 0.2498903763003962,
+      "ratio_median": 0.13536081945237655
+    }
+  },
+  "sample_weight_summary": {
+    "min": 0.2071,
+    "max": 0.7912,
+    "mean": 0.29004844290657433
+  },
+  "split_strategy": "70/15/15 holdout with validation-driven model selection",
+  "interval_strategy": "quality-weighted point models + quantile interval heads + grouped conformal calibration",
+  "training_flow_tree": {
+    "name": "Research Training Pipeline",
+    "children": [
+      {
+        "name": "Dataset",
+        "value": 3179
+      },
+      {
+        "name": "Stage 1 - Confidence Classifier",
+        "value": "HybridConfidenceForest"
+      },
+      {
+        "name": "Stage 2 - Price Interval Model",
+        "value": "ReliabilityAwareGradientBoosting"
+      },
+      {
+        "name": "Calibration",
+        "value": "Grouped conformal by trust band"
+      }
+    ]
+  }
+}

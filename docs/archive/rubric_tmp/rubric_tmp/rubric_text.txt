@@ -1,0 +1,125 @@
+﻿Rubric Ä‘Ã¡nh giÃ¡ há»c pháº§n
+Äá»“ Ã¡n cÆ¡ sá»Ÿ 
+CNTT
+Chuáº©n Ä‘áº§u ra há»c pháº§n (C
+L
+O):
+CLO1: 
+Ãp dá»¥ng ká»¹ nÄƒng xÃ¡c Ä‘á»‹nh, mÃ´ hÃ¬nh hÃ³a vÃ  phÃ¢n tÃ­ch váº¥n Ä‘á» Ä‘á»ƒ Ä‘á» xuáº¥t giáº£i phÃ¡p phÃ¹ há»£p trong lÄ©nh vá»±c 
+CNTT
+.
+CLO2: 
+Váº­n dá»¥ng kiáº¿n thá»©c Ä‘Ã£ há»c Ä‘á»ƒ xÃ¢y dá»±ng, triá»ƒn kh
+ai
+ vÃ  Ä‘Ã¡nh giÃ¡ má»™t á»©ng dá»¥ng hoáº·c giáº£i phÃ¡p thá»±c táº¿ Ä‘Ã¡p á»©ng yÃªu cáº§u vá»
+ CNTT
+CLO3: 
+TrÃ¬nh bÃ y hiá»‡u quáº£ káº¿t quáº£ thá»±c hiá»‡n, thá»ƒ hiá»‡n kháº£ nÄƒng lÃ m viá»‡c nhÃ³m, viáº¿t bÃ¡o cÃ¡o, thuyáº¿t trÃ¬nh vÃ  tá»± há»c, tá»± nghiÃªn cá»©u.
+Thang Ä‘o Rubric Ä‘Ã¡nh giÃ¡ há»c pháº§n 
+Äá»“
+ Ã¡n cÆ¡ cá»Ÿ 
+CNTT
+TÃªn giáº£ng viÃªn: â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦ Khoa/Viá»‡n: â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦..
+Há» tÃªn SV: â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦ MÃ£ SV: â€¦â€¦â€¦â€¦â€¦â€¦.. Lá»›p: â€¦â€¦â€¦â€¦â€¦â€¦
+Há»c ká»³: â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦.. NÄƒm há»c: â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦â€¦.
+CÄR
+TiÃªu chÃ­
+Tá»· lá»‡ (%)
+Má»©c cháº¥t lÆ°á»£ng
+Äiá»ƒm
+Tá»‘t
+(
+10 â€“ 9)
+KhÃ¡
+(
+8
+.
+9 â€“ 7)
+Trung bÃ¬nh
+(
+6
+.
+9 â€“ 5)
+Yáº¿u
+(
+< 5)
+CLO1
+Ná»™i dung bÃ¡o cÃ¡o
+PhÃ¢n tÃ­ch, mÃ´ hÃ¬nh hÃ³a váº¥n Ä‘á»
+10
+PhÃ¢n tÃ­ch rÃµ rÃ ng, mÃ´ hÃ¬nh hÃ³a logic Ä‘áº§y Ä‘á»§
+PhÃ¢n tÃ­ch tÆ°Æ¡ng Ä‘á»‘i Ä‘áº§y Ä‘á»§, cÃ²n thiáº¿u vÃ i yáº¿u tá»‘
+PhÃ¢n tÃ­ch sÆ¡ sÃ i, thiáº¿u logic
+KhÃ´ng cÃ³ hoáº·c 
+sai
+ Ä‘á»‹nh hÆ°á»›ng phÃ¢n tÃ­ch
+â€¦
+CLO1
+Äá» xuáº¥t giáº£i phÃ¡p
+10
+Giáº£i phÃ¡p sÃ¡ng táº¡o, kháº£ thi, phÃ¹ há»£p bÃ i toÃ¡n
+Giáº£i phÃ¡p phÃ¹ há»£p, cÃ³ tÃ­nh thá»±c tiá»…n
+Giáº£i phÃ¡p cÃ²n chung chung, chÆ°a rÃµ tÃ­nh kháº£ thi
+KhÃ´ng cÃ³ hoáº·c khÃ´ng kháº£ thi
+â€¦
+CLO3
+BÃ¡o cÃ¡o trÃ¬nh bÃ y, bá»‘ cá»¥c, chÃ­nh táº£
+10
+Bá»‘ cá»¥c rÃµ rÃ ng, Ä‘Ãºng chuáº©n há»c thuáº­t, Ã­t lá»—i
+TrÃ¬nh bÃ y há»£p lÃ½, cÃ³ lá»—i nhá»
+TrÃ¬nh bÃ y thiáº¿u logic, nhiá»u lá»—i
+Lá»—i nghiÃªm trá»ng, bá»‘ cá»¥c lá»™n xá»™n
+â€¦
+CLO3
+TrÃ¬nh bÃ y thuyáº¿t trÃ¬nh
+10
+TrÃ¬nh bÃ y trÃ´i cháº£y, rÃµ rÃ ng, tÆ°Æ¡ng tÃ¡c tá»‘t
+TrÃ¬nh bÃ y rÃµ, cÃ²n thiáº¿u tá»± tin/tÆ°Æ¡ng tÃ¡c
+TrÃ¬nh bÃ y rá»i ráº¡c, thiáº¿u máº¡ch láº¡c
+KhÃ´ng rÃµ rÃ ng, khÃ´ng tÆ°Æ¡ng tÃ¡c, lÃºng tÃºng
+â€¦
+CLO2
+Káº¿t quáº£  cá»§a Ä‘á»“ Ã¡n
+ Má»©c Ä‘á»™ hoÃ n thiá»‡n chá»©c nÄƒng
+15
+Chá»©c nÄƒng Ä‘áº§y Ä‘á»§, cháº¡y á»•n Ä‘á»‹nh, khÃ´ng cÃ³ lá»—i lá»›n
+Chá»©c nÄƒng cÆ¡ báº£n Ä‘áº§y Ä‘á»§, Ã­t lá»—i nhá»
+Thiáº¿u nhiá»u chá»©c nÄƒng hoáº·c lá»—i nghiÃªm trá»ng
+KhÃ´ng hoáº¡t Ä‘á»™ng hoáº·c khÃ´ng Ä‘Ã¡p á»©ng yÃªu cáº§u
+â€¦
+CLO2
+TÃ­nh Ä‘Ãºng vÃ  cháº¥t lÆ°á»£ng ká»¹ thuáº­t
+15
+MÃ£ nguá»“n rÃµ rÃ ng, hiá»‡u suáº¥t tá»‘t, khÃ´ng cÃ³ lá»—i logic
+MÃ£ nguá»“n há»£p lÃ½, hiá»‡u suáº¥t cháº¥p nháº­n Ä‘Æ°á»£c, lá»—i nhá»
+MÃ£ nguá»“n rá»‘i ráº¯m, hiá»‡u suáº¥t kÃ©m, cÃ³ lá»—i logic
+Nhiá»u lá»—i nghiÃªm trá»ng, khÃ´ng thá»ƒ Ä‘Ã¡nh giÃ¡ ká»¹ thuáº­t
+â€¦
+CLO2
+TÃ­nh má»›i/á»©ng dá»¥ng thá»±c táº¿
+ cá»§a Ä‘á»“ Ã¡n
+TÃ­nh tiá»‡n dá»¥ng vÃ  kháº£ nÄƒng á»©ng dá»¥ng
+10
+Dá»… sá»­ dá»¥ng, thÃ¢n thiá»‡n, cÃ³ kháº£ nÄƒng á»©ng dá»¥ng thá»±c táº¿ cao
+KhÃ¡ dá»… dÃ¹ng, cÃ³ thá»ƒ Ã¡p dá»¥ng nhÆ°ng cáº§n Ä‘iá»u chá»‰nh
+KhÃ³ dÃ¹ng, khÃ³ á»©ng dá»¥ng vÃ o thá»±c táº¿
+KhÃ´ng thÃ¢n thiá»‡n, khÃ´ng thá»ƒ á»©ng dá»¥ng thá»±c táº¿
+CLO2
+Ãp dá»¥ng cÃ´ng nghá»‡/ká»¹ thuáº­t má»›i
+10
+Ãp dá»¥ng hiá»‡u quáº£ cÃ´ng nghá»‡ phÃ¹ há»£p, cáº­p nháº­t
+CÃ³ sá»­ dá»¥ng cÃ´ng nghá»‡ má»›i, nhÆ°ng chÆ°a tá»‘i Æ°u
+CÃ´ng nghá»‡ lá»—i thá»i hoáº·c dÃ¹ng sai má»¥c Ä‘Ã­ch
+KhÃ´ng Ã¡p dá»¥ng cÃ´ng nghá»‡ má»›i
+â€¦
+CLO3
+ThÃ¡i Ä‘á»™ 
+lÃ m
+ viá»‡c
+LÃ m viá»‡c vá»›i GVHD, tinh tháº§n há»c táº­p
+10
+Chá»§ Ä‘á»™ng, Ä‘á»u Ä‘áº·n, thÃ¡i Ä‘á»™ há»c táº­p nghiÃªm tÃºc
+CÃ³ gáº·p GVHD thÆ°á»ng xuyÃªn, tinh tháº§n há»c táº­p tá»‘t
+Gáº·p khÃ´ng thÆ°á»ng xuyÃªn, Ã­t chá»§ Ä‘á»™ng
+Thiáº¿u tÆ°Æ¡ng tÃ¡c, thiáº¿u trÃ¡ch nhiá»‡m trong há»c táº­p
+â€¦

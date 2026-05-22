@@ -1,0 +1,190 @@
+{
+  "timestamp": "2026-05-13T13:14:45+00:00",
+  "mode": "dry-run",
+  "before": {
+    "active_total": 3269,
+    "by_origin": {
+      "public_collected": 3000,
+      "self_collected": 269
+    },
+    "by_tier": {
+      "E1": 91,
+      "E2": 2603,
+      "E3": 523,
+      "E4": 39,
+      "E5": 13
+    },
+    "outside_scope": 0,
+    "duplicate_listing_source_url_groups": 0,
+    "official_e5_active": 0,
+    "auction_e5_active": 13
+  },
+  "archive_candidate_count": 15,
+  "archive_reason_counts": {
+    "address_text_contradicts_project_scope": 2,
+    "duplicate_normalized_address_area_price_source": 13
+  },
+  "archive_candidates": [
+    {
+      "rowid": 5958,
+      "property_id": 9065,
+      "reason": "duplicate_normalized_address_area_price_source",
+      "detail": {
+        "group_key_hash": "545016279700d9aff6822ecd6e558b232cfd2e9b148f18d5c79340bd3e2aa511",
+        "kept_property_id": 9066,
+        "kept_rowid": 5959
+      }
+    },
+    {
+      "rowid": 5960,
+      "property_id": 9067,
+      "reason": "address_text_contradicts_project_scope",
+      "detail": {}
+    },
+    {
+      "rowid": 5961,
+      "property_id": 9068,
+      "reason": "address_text_contradicts_project_scope",
+      "detail": {}
+    },
+    {
+      "rowid": 5962,
+      "property_id": 9069,
+      "reason": "duplicate_normalized_address_area_price_source",
+      "detail": {
+        "group_key_hash": "ac6b9e1562573a1a31bdce80af541a9188c973c36eb36e21d4b83bf181fe6bd2",
+        "kept_property_id": 9070,
+        "kept_rowid": 5963
+      }
+    },
+    {
+      "rowid": 5965,
+      "property_id": 9072,
+      "reason": "duplicate_normalized_address_area_price_source",
+      "detail": {
+        "group_key_hash": "595acb50ac365bf5b9a33f09fb923fc8e7b9c4dbb4591613df9295b9c33d1f2d",
+        "kept_property_id": 9073,
+        "kept_rowid": 5966
+      }
+    },
+    {
+      "rowid": 5972,
+      "property_id": 9079,
+      "reason": "duplicate_normalized_address_area_price_source",
+      "detail": {
+        "group_key_hash": "b046b4a7ffa82db06df134fff80f8065de4b7b32533a9c5fed6ddc416c4e66b4",
+        "kept_property_id": 9080,
+        "kept_rowid": 5973
+      }
+    },
+    {
+      "rowid": 5983,
+      "property_id": 9090,
+      "reason": "duplicate_normalized_address_area_price_source",
+      "detail": {
+        "group_key_hash": "baadba8bbd2588cdfc2d8314893a58fdfc9133946eb3bf2d63ce5ca94464e84f",
+        "kept_property_id": 9091,
+        "kept_rowid": 5984
+      }
+    },
+    {
+      "rowid": 5987,
+      "property_id": 9094,
+      "reason": "duplicate_normalized_address_area_price_source",
+      "detail": {
+        "group_key_hash": "0dc7a411b7f12ad21ba11a3a71a811e68509e591148da3553f2846301ef9d6be",
+        "kept_property_id": 9095,
+        "kept_rowid": 5988
+      }
+    },
+    {
+      "rowid": 6004,
+      "property_id": 9111,
+      "reason": "duplicate_normalized_address_area_price_source",
+      "detail": {
+        "group_key_hash": "d829d4ea306b91c3643a9454f0ad5e164bb62eb3e987f4b58477bdbf4ce4d43a",
+        "kept_property_id": 9112,
+        "kept_rowid": 6005
+      }
+    },
+    {
+      "rowid": 6008,
+      "property_id": 9115,
+      "reason": "duplicate_normalized_address_area_price_source",
+      "detail": {
+        "group_key_hash": "6de28856fba94865891ef9e78b62cf0f70795c6eb68ae59cc892bd03dd6f2f0d",
+        "kept_property_id": 9116,
+        "kept_rowid": 6009
+      }
+    },
+    {
+      "rowid": 6026,
+      "property_id": 9133,
+      "reason": "duplicate_normalized_address_area_price_source",
+      "detail": {
+        "group_key_hash": "929433728a6abd725a0733a791aed93269dded2a444d2ef1098346cd3609a1fd",
+        "kept_property_id": 9134,
+        "kept_rowid": 6027
+      }
+    },
+    {
+      "rowid": 6036,
+      "property_id": 9143,
+      "reason": "duplicate_normalized_address_area_price_source",
+      "detail": {
+        "group_key_hash": "30daba5747abca4df565b5c237d06de5e3ef26974e62e73645c16fa81e7724ac",
+        "kept_property_id": 9144,
+        "kept_rowid": 6037
+      }
+    },
+    {
+      "rowid": 6038,
+      "property_id": 9145,
+      "reason": "duplicate_normalized_address_area_price_source",
+      "detail": {
+        "group_key_hash": "4649882e0e66644966b5ef65115b7c3adadd4ba2bf010249be2419fff640c69b",
+        "kept_property_id": 9146,
+        "kept_rowid": 6039
+      }
+    },
+    {
+      "rowid": 6040,
+      "property_id": 9147,
+      "reason": "duplicate_normalized_address_area_price_source",
+      "detail": {
+        "group_key_hash": "2426cf626e818ab03a4147a7141a734d97c55b4de9cd7636f57ac49d8c056545",
+        "kept_property_id": 9148,
+        "kept_rowid": 6041
+      }
+    },
+    {
+      "rowid": 6042,
+      "property_id": 9149,
+      "reason": "duplicate_normalized_address_area_price_source",
+      "detail": {
+        "group_key_hash": "450a2a4ab7315de7a95a59d2815b7fff7f45e3c1eb3b1ca69b4a6047831a2819",
+        "kept_property_id": 9150,
+        "kept_rowid": 6043
+      }
+    }
+  ],
+  "after": {
+    "active_total": 3269,
+    "by_origin": {
+      "public_collected": 3000,
+      "self_collected": 269
+    },
+    "by_tier": {
+      "E1": 91,
+      "E2": 2603,
+      "E3": 523,
+      "E4": 39,
+      "E5": 13
+    },
+    "outside_scope": 0,
+    "duplicate_listing_source_url_groups": 0,
+    "official_e5_active": 0,
+    "auction_e5_active": 13
+  },
+  "report_path": "C:\\Users\\Admin\\Documents\\real-estate-avm\\reports\\strict_clean_data_audit_20260513_201446.json"
+}

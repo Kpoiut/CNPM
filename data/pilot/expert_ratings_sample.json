@@ -1,0 +1,305 @@
+{
+  "metadata": {
+    "note": "SIMULATED expert ratings for pilot testing only",
+    "warning": "DO NOT USE for real evaluation"
+  },
+  "ratings": [
+    {
+      "property_id": 3290,
+      "district": "Quận Thanh Xuân",
+      "area_m2": 60.0,
+      "bedrooms": 2,
+      "expert_low": 3429000000.0,
+      "expert_mid": 3820000000.0,
+      "expert_high": 4212000000.0,
+      "confidence": "high",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 39,
+      "district": "Quận Cầu Giấy",
+      "area_m2": 85.0,
+      "bedrooms": 3,
+      "expert_low": 5811000000.0,
+      "expert_mid": 6559000000.0,
+      "expert_high": 7306000000.0,
+      "confidence": "low",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 23,
+      "district": "Quận Cầu Giấy",
+      "area_m2": 126.0,
+      "bedrooms": 4,
+      "expert_low": 10788000000.0,
+      "expert_mid": 13306000000.0,
+      "expert_high": 15824000000.0,
+      "confidence": "low",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 100,
+      "district": "Quận Đống Đa",
+      "area_m2": 80.0,
+      "bedrooms": 2,
+      "expert_low": 7256000000.0,
+      "expert_mid": 8091000000.0,
+      "expert_high": 8925000000.0,
+      "confidence": "low",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 112,
+      "district": "Quận Đống Đa",
+      "area_m2": 48.0,
+      "bedrooms": 1,
+      "expert_low": 3629000000.0,
+      "expert_mid": 4272000000.0,
+      "expert_high": 4915000000.0,
+      "confidence": "low",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 98,
+      "district": "Quận Đống Đa",
+      "area_m2": 131.0,
+      "bedrooms": 3,
+      "expert_low": 12761000000.0,
+      "expert_mid": 15404000000.0,
+      "expert_high": 18047000000.0,
+      "confidence": "medium",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 1510,
+      "district": "Quận Cầu Giấy",
+      "area_m2": 74.1,
+      "bedrooms": 2,
+      "expert_low": 6826000000.0,
+      "expert_mid": 7983000000.0,
+      "expert_high": 9140000000.0,
+      "confidence": "high",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 114,
+      "district": "Quận Đống Đa",
+      "area_m2": 115.0,
+      "bedrooms": 3,
+      "expert_low": 10298000000.0,
+      "expert_mid": 11451000000.0,
+      "expert_high": 12603000000.0,
+      "confidence": "medium",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 1503,
+      "district": "Quận Cầu Giấy",
+      "area_m2": 120.0,
+      "bedrooms": 2,
+      "expert_low": 13414000000.0,
+      "expert_mid": 15490000000.0,
+      "expert_high": 17566000000.0,
+      "confidence": "medium",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 3046,
+      "district": "Quận Cầu Giấy",
+      "area_m2": 100.0,
+      "bedrooms": 3,
+      "expert_low": 7896000000.0,
+      "expert_mid": 9587000000.0,
+      "expert_high": 11277000000.0,
+      "confidence": "low",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 2597,
+      "district": "Quận Cầu Giấy",
+      "area_m2": 55.0,
+      "bedrooms": 2,
+      "expert_low": 2280000000.0,
+      "expert_mid": 2561000000.0,
+      "expert_high": 2841000000.0,
+      "confidence": "high",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 3390,
+      "district": "Quận Thanh Xuân",
+      "area_m2": 66.0,
+      "bedrooms": 2,
+      "expert_low": 4065000000.0,
+      "expert_mid": 4962000000.0,
+      "expert_high": 5858000000.0,
+      "confidence": "medium",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 3314,
+      "district": "Quận Thanh Xuân",
+      "area_m2": 92.0,
+      "bedrooms": 3,
+      "expert_low": 4642000000.0,
+      "expert_mid": 5783000000.0,
+      "expert_high": 6924000000.0,
+      "confidence": "medium",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 3032,
+      "district": "Quận Cầu Giấy",
+      "area_m2": 120.0,
+      "bedrooms": 3,
+      "expert_low": 6947000000.0,
+      "expert_mid": 7978000000.0,
+      "expert_high": 9010000000.0,
+      "confidence": "medium",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 36,
+      "district": "Quận Cầu Giấy",
+      "area_m2": 67.0,
+      "bedrooms": 2,
+      "expert_low": 5748000000.0,
+      "expert_mid": 6654000000.0,
+      "expert_high": 7560000000.0,
+      "confidence": "medium",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 3448,
+      "district": "Quận Đống Đa",
+      "area_m2": 50.0,
+      "bedrooms": 2,
+      "expert_low": 1995000000.0,
+      "expert_mid": 2228000000.0,
+      "expert_high": 2460000000.0,
+      "confidence": "medium",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 3323,
+      "district": "Quận Thanh Xuân",
+      "area_m2": 110.0,
+      "bedrooms": 3,
+      "expert_low": 7432000000.0,
+      "expert_mid": 9273000000.0,
+      "expert_high": 11114000000.0,
+      "confidence": "medium",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 3332,
+      "district": "Quận Thanh Xuân",
+      "area_m2": 179.0,
+      "bedrooms": 4,
+      "expert_low": 9689000000.0,
+      "expert_mid": 11240000000.0,
+      "expert_high": 12791000000.0,
+      "confidence": "medium",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 3438,
+      "district": "Quận Thanh Xuân",
+      "area_m2": 131.0,
+      "bedrooms": 3,
+      "expert_low": 10650000000.0,
+      "expert_mid": 12333000000.0,
+      "expert_high": 14016000000.0,
+      "confidence": "high",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 3302,
+      "district": "Quận Thanh Xuân",
+      "area_m2": 90.0,
+      "bedrooms": 2,
+      "expert_low": 5606000000.0,
+      "expert_mid": 6730000000.0,
+      "expert_high": 7854000000.0,
+      "confidence": "low",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 3424,
+      "district": "Quận Thanh Xuân",
+      "area_m2": 100.0,
+      "bedrooms": 3,
+      "expert_low": 6016000000.0,
+      "expert_mid": 6814000000.0,
+      "expert_high": 7612000000.0,
+      "confidence": "medium",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 110,
+      "district": "Quận Đống Đa",
+      "area_m2": 70.0,
+      "bedrooms": 3,
+      "expert_low": 4854000000.0,
+      "expert_mid": 5631000000.0,
+      "expert_high": 6408000000.0,
+      "confidence": "medium",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 115,
+      "district": "Quận Đống Đa",
+      "area_m2": 115.0,
+      "bedrooms": 3,
+      "expert_low": 8700000000.0,
+      "expert_mid": 10028000000.0,
+      "expert_high": 11355000000.0,
+      "confidence": "low",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 102,
+      "district": "Quận Đống Đa",
+      "area_m2": 70.0,
+      "bedrooms": 3,
+      "expert_low": 3757000000.0,
+      "expert_mid": 4190000000.0,
+      "expert_high": 4622000000.0,
+      "confidence": "high",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 89,
+      "district": "Quận Đống Đa",
+      "area_m2": 90.0,
+      "bedrooms": 3,
+      "expert_low": 7753000000.0,
+      "expert_mid": 8679000000.0,
+      "expert_high": 9604000000.0,
+      "confidence": "medium",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 3107,
+      "district": "Quận Thanh Xuân",
+      "area_m2": 86.0,
+      "bedrooms": 3,
+      "expert_low": 7329000000.0,
+      "expert_mid": 8439000000.0,
+      "expert_high": 9548000000.0,
+      "confidence": "medium",
+      "comment": "Simulated expert rating for pilot test"
+    },
+    {
+      "property_id": 24,
+      "district": "Quận Cầu Giấy",
+      "area_m2": 138.0,
+      "bedrooms": 3,
+      "expert_low": 9063000000.0,
+      "expert_mid": 11208000000.0,
+      "expert_high": 13354000000.0,
+      "confidence": "medium",
+      "comment": "Simulated expert rating for pilot test"
+    }
+  ]
+}

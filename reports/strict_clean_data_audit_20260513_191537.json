@@ -1,0 +1,42 @@
+{
+  "timestamp": "2026-05-13T12:15:37+00:00",
+  "mode": "dry-run",
+  "before": {
+    "active_total": 3263,
+    "by_origin": {
+      "public_collected": 3000,
+      "self_collected": 263
+    },
+    "by_tier": {
+      "E1": 91,
+      "E2": 2599,
+      "E3": 529,
+      "E4": 32,
+      "E5": 12
+    },
+    "outside_scope": 0,
+    "duplicate_listing_source_url_groups": 0,
+    "official_e5_active": 12
+  },
+  "archive_candidate_count": 0,
+  "archive_reason_counts": {},
+  "archive_candidates": [],
+  "after": {
+    "active_total": 3263,
+    "by_origin": {
+      "public_collected": 3000,
+      "self_collected": 263
+    },
+    "by_tier": {
+      "E1": 91,
+      "E2": 2599,
+      "E3": 529,
+      "E4": 32,
+      "E5": 12
+    },
+    "outside_scope": 0,
+    "duplicate_listing_source_url_groups": 0,
+    "official_e5_active": 12
+  },
+  "report_path": "C:\\Users\\Admin\\Documents\\real-estate-avm\\reports\\strict_clean_data_audit_20260513_191537.json"
+}

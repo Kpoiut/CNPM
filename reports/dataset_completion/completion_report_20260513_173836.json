@@ -1,0 +1,34 @@
+{
+  "started_at": "2026-05-13T10:38:16.046254+00:00",
+  "before": {
+    "public": 3000,
+    "self_collected": 206,
+    "self_collected_e3_plus": 106,
+    "total": 3206
+  },
+  "target_public": 3000,
+  "target_self_collected": 107,
+  "need_public": 0,
+  "need_self_collected": 1,
+  "pages_seen": 3,
+  "records_seen": 59,
+  "public_inserted": 0,
+  "self_inserted": 0,
+  "duplicates": 0,
+  "fetch_errors": 0,
+  "district_counts": {
+    "Quận Cầu Giấy": 20,
+    "Quận Thanh Xuân": 19,
+    "Quận Đống Đa": 20
+  },
+  "mode": "dry-run",
+  "stop_reason": "max_runtime_seconds=20",
+  "max_rss_mb": 49.4,
+  "after": {
+    "public": 3000,
+    "self_collected": 206,
+    "self_collected_e3_plus": 106,
+    "total": 3206
+  },
+  "raw_candidates_path": "C:\\Users\\Admin\\Documents\\real-estate-avm\\reports\\dataset_completion\\raw_candidates_20260513_173816.jsonl"
+}

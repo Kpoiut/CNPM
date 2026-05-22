@@ -1,0 +1,59 @@
+{
+  "best_model": "GradientBoosting",
+  "all_results": {
+    "RandomForest": {
+      "mae": 1198907088.7157884,
+      "rmse": 2014119574.904218,
+      "r2": 0.8365331585628473,
+      "cv_mae_mean": 1157370426.4141617,
+      "cv_mae_std": 86921420.7363566
+    },
+    "GradientBoosting": {
+      "mae": 993781855.6294359,
+      "rmse": 1664645188.1870506,
+      "r2": 0.8883387385110901,
+      "cv_mae_mean": 1025267308.5334972,
+      "cv_mae_std": 62370234.58141046
+    },
+    "XGBoost": {
+      "mae": 1110251839.947619,
+      "rmse": 1920552289.8987067,
+      "r2": 0.8513683009254175,
+      "cv_mae_mean": 1056225037.2375,
+      "cv_mae_std": 89080169.69385354
+    }
+  },
+  "train_size": 1680,
+  "test_size": 420,
+  "n_features": 27,
+  "feature_names": [
+    "area_m2_norm",
+    "bedrooms_norm",
+    "bathrooms_norm",
+    "floor_count",
+    "frontage_m",
+    "latitude_norm",
+    "longitude_norm",
+    "is_house",
+    "is_apartment",
+    "is_land",
+    "is_townhouse",
+    "is_villa",
+    "province_HN",
+    "province_HCM",
+    "province_DN",
+    "province_HP",
+    "province_CT",
+    "province_BD",
+    "noise_level_norm",
+    "temperature_norm",
+    "humidity_norm",
+    "light_level_norm",
+    "distance_to_center",
+    "area_type",
+    "legal_status",
+    "furnishing",
+    "province_price_mean"
+  ],
+  "trained_at": "2026-03-12T23:03:27.904603"
+}

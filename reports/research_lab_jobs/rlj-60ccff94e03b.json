@@ -1,0 +1,21 @@
+{
+  "id": "rlj-60ccff94e03b",
+  "operation": "train_full",
+  "label": "Full retrain model",
+  "group": "training",
+  "status": "succeeded",
+  "admin_id": 1,
+  "created_at": "2026-05-22T17:37:36.586932Z",
+  "started_at": "2026-05-22T17:37:36.614307Z",
+  "finished_at": "2026-05-22T17:38:34.744362Z",
+  "timeout_seconds": 2400,
+  "return_code": 0,
+  "stdout": "\n[Step 1/6] Validating data quality...\n\n============================================================\nDATA VALIDATION FOR ML TRAINING\n============================================================\nTotal records: 3269\nClean records (ppm 5-500M): 3269\nOverall pass: True\n\n  [PASS] ppm_range: {'pass': True, 'clean': 3269, 'total': 3269}\n  [PASS] scope: {'pass': True, 'in_scope': 3269, 'total': 3269}\n  [PASS] tier_distribution: {'pass': True, 'max_share': 0.603, 'dominant_tier': 'E3', 'tiers': {'E4': 522, 'E3': 1970, 'E5': 263, 'E2': 514}, 'note': 'Acceptable: dominant tier E3 at 60.3%'}\n  [PASS] no_batch_fingerprint: {'pass': True, 'batch_groups': 0, 'note': 'Excludes real scraper methods'}\n  [PASS] provenance: {'pass': True, 'has_prov': 3269, 'total': 3269}\n  [PASS] cluster_min: {'pass': True, 'min_count': 6}\n  [PASS] self_collected: {'pass': True, 'ratio': 0.082, 'count': 269}\n============================================================\n[OK] Data validation passed — 3269 clean records\n\n[Step 2/6] Loading data from DB...\n[OK] Loaded 3269 properties\n\n[Step 3/6] Running ML training pipeline...\n\n============================================================\nML PIPELINE - RESEARCH TRAINING\n============================================================\n\nTraining data: 2287 samples\nValidation data: 491 samples\nTest data: 491 samples\nFeatures: 53\nAverage RQS: 7.49\nAverage training weight: 0.822\n\n--- Training QualityWeightedRandomForest ---\n  Validation MAE: 4,343,698,929 VND\n  Validation RMSE: 11,275,252,428 VND\n  Validation R2: 0.7436\n  Weighted CV MAE: 5,101,144,561 (+/- 617,568,933)\n\n--- Training ReliabilityAwareGradientBoosting ---\n  Validation MAE: 3,736,415,414 VND\n  Validation RMSE: 9,949,674,679 VND\n  Validation R2: 0.8003\n  Weighted CV MAE: 4,385,828,360 (+/- 449,926,378)\n\n--- Training ConfidenceWeightedXGBoost ---\n  Validation MAE: 12,349,778,739 VND\n  Validation RMSE: 22,269,124,633 VND\n  Validation R2: -0.0003\n  Weighted CV MAE: 13,380,402,441 (+/- 457,439,596)\n\n*** Best Model: ReliabilityAwareGradientBoosting ***\n    Validation MAE:  3,736,415,414 VND\n    Test MAE:      3,346,239,287 VND\n    Test MedianAE: 1,389,284,402 VND\n    Test MAPE:     42.4%\n    Test R2:       0.6355\n[OK] Training complete: ReliabilityAwareGradientBoosting\n     Test MAE: 3,346,239,287 VND\n     Test MAPE: 42.4%\n     Test R2: 0.6355336963834044\n\n[Step 4/6] Saving model...\n\nModel saved to: C:\\Users\\Admin\\Documents\\real-estate-avm\\models\\model_20260523_003819.pkl\nMetadata saved to: C:\\Users\\Admin\\Documents\\real-estate-avm\\models\\metadata_20260523_003819.json\n[OK] Model saved: C:\\Users\\Admin\\Documents\\real-estate-avm\\models\\model_20260523_003819.pkl\n\n[Step 5/6] Computing SHAP explanations...\n[OK] SHAP explanations computed and cached\n\n[Step 6/6] Registering model version...\n[OK] Registered as version 20260523_003832 (id=9)\n\n============================================================\nRetrain complete!\n  Model: ReliabilityAwareGradientBoosting\n  Version: 20260523_003832\n  Records: 3269\n  MAE: 3,346,239,287 VND\n  R2: 0.6355336963834044\n  MAPE: 42.4%\n============================================================\n",
+  "stderr": "",
+  "params": {
+    "test_size": 0.15,
+    "min_clean": 500
+  },
+  "command": "C:\\Users\\Admin\\AppData\\Local\\Python\\pythoncore-3.13-64\\python.exe scripts/retrain_v2.py --test-size 0.15 --min-clean 500",
+  "cwd": "C:\\Users\\Admin\\Documents\\real-estate-avm"
+}
