@@ -1,8 +1,34 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { icon } from '../../components/ui/icons'
+import { VisualStrip } from '../../components/ui'
+import { VISUAL_ASSETS } from '../../constants/visuals'
 import { PROPERTY_TYPES, VERIFICATION_STATUS, DATA_ORIGIN } from '../../constants/vnStrings'
 
 const API = '/api'
+
+const explorerVisuals = [
+  {
+    src: VISUAL_ASSETS.citySkyline,
+    alt: 'Aerial view of a city skyline at night',
+    kicker: 'Data scope',
+    title: 'Theo dõi thị trường',
+    caption: 'Lọc, so sánh và khám phá dữ liệu thật.',
+  },
+  {
+    src: VISUAL_ASSETS.houseExterior,
+    alt: 'Modern house exterior with metal fence and downspout',
+    kicker: 'Records',
+    title: 'Hồ sơ tài sản',
+    caption: 'Bản ghi được nhìn theo provenance và trạng thái.',
+  },
+  {
+    src: VISUAL_ASSETS.officeInterior,
+    alt: 'Modern office interior with glass walls and walkways',
+    kicker: 'Ops',
+    title: 'Bàn điều khiển dữ liệu',
+    caption: 'Cho thao tác tìm, xem và kiểm tra nhanh hơn.',
+  },
+]
 
 const PROPERTY_ICONS = {
   house: 'house', apartment: 'apartment', land: 'land', townhouse: 'townhouse', villa: 'villa',
@@ -315,9 +341,16 @@ export default function DataExplorer() {
             <input type="file" accept=".csv" onChange={handleCSVImport} style={{ display: 'none' }} disabled={importing} />
           </label>
           <button className="btn btn-sm" onClick={exportCSV}>Export CSV</button>
-          <button className="btn btn-sm btn-ghost" onClick={clearFilters}>�ặt lại lọc</button>
+          <button className="btn btn-sm btn-ghost" onClick={clearFilters}>Đặt lại lọc</button>
         </div>
       </div>
+
+      <VisualStrip
+        label="Explorer context"
+        title="Trải nghiệm dữ liệu trực quan hơn, ít cảm giác tách khối hơn"
+        description="Banner ảnh thật giúp màn tra cứu bớt cứng, đồng thời giữ mắt người dùng ở đúng nhịp giữa hồ sơ, bộ lọc và provenance."
+        items={explorerVisuals}
+      />
 
       {/* Summary */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>

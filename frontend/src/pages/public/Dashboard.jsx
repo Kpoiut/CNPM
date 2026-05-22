@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
   CardContent,
+  VisualStrip,
   ProgressBar,
   SkeletonStatCard,
   SkeletonChart,
@@ -26,11 +27,35 @@ import {
   TIER_COLORS, EVIDENCE_LABELS, EVIDENCE_WEIGHTS, PRICE_RANGES,
   PROPERTY_TYPE_COLORS, PIE_CHART_COLORS, API_BASE,
 } from '../../lib'
+import { VISUAL_ASSETS } from '../../constants/visuals'
 
 const PIE_COLORS = PIE_CHART_COLORS
 const EvidenceColors = TIER_COLORS
 const LOCAL_CODE_KEY = 'research_lab_local_code'
 const LOCAL_CODE_EXPIRES_KEY = 'research_lab_local_code_expires_at'
+const dashboardVisuals = [
+  {
+    src: VISUAL_ASSETS.citySkyline,
+    alt: 'Aerial view of a city skyline at night',
+    kicker: 'Phạm vi',
+    title: 'Đô thị & khu vực',
+    caption: 'Tổng quan theo tỉnh và quận.',
+  },
+  {
+    src: VISUAL_ASSETS.houseExterior,
+    alt: 'Modern house exterior with metal fence and downspout',
+    kicker: 'Tài sản',
+    title: 'Nhà ở & căn hộ',
+    caption: 'Mẫu tài sản thật đã chuẩn hóa.',
+  },
+  {
+    src: VISUAL_ASSETS.officeInterior,
+    alt: 'Modern office interior with glass walls and walkways',
+    kicker: 'Kiểm soát',
+    title: 'Bàn điều khiển',
+    caption: 'Luồng dữ liệu và mô hình.',
+  },
+]
 
 function makeResearchCode() {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -307,6 +332,13 @@ function Dashboard() {
       </div>
 
       <ResearchLabAccessPanel />
+
+      <VisualStrip
+        label="Dashboard visuals"
+        title="Ảnh thật để khung nhìn bớt phẳng"
+        description="Mỗi banner nhỏ đại diện cho một lớp bối cảnh: tài sản, đô thị và điều khiển hệ thống."
+        items={dashboardVisuals}
+      />
 
       {chartsError && (
         <div className="card mb-6" style={{ background: 'var(--danger-bg)', border: '1px solid var(--danger-border)' }}>

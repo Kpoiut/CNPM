@@ -1,10 +1,36 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { ResponsiveContainer, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts'
 import ChartWrapper from '../../components/ui/ChartWrapper'
+import { VisualStrip } from '../../components/ui'
 import { icon } from '../../components/ui/icons'
+import { VISUAL_ASSETS } from '../../constants/visuals'
 import { PROPERTY_TYPES } from '../../constants/vnStrings'
 
 const API_BASE = '/api'
+
+const qualityVisuals = [
+  {
+    src: VISUAL_ASSETS.officeInterior,
+    alt: 'Modern office interior with glass walls and walkways',
+    kicker: 'Assessment',
+    title: 'Kiểm tra dữ liệu',
+    caption: 'Đánh giá chất lượng trước khi định giá.',
+  },
+  {
+    src: VISUAL_ASSETS.houseExterior,
+    alt: 'Modern house exterior with metal fence and downspout',
+    kicker: 'Evidence',
+    title: 'Bằng chứng hiện trường',
+    caption: 'Đầu vào phải đủ thật để chấm độ tin cậy.',
+  },
+  {
+    src: VISUAL_ASSETS.citySkyline,
+    alt: 'Aerial view of a city skyline at night',
+    kicker: 'Scope',
+    title: 'Phạm vi khu vực',
+    caption: 'Soi mức phủ theo thành phố và quận.',
+  },
+]
 
 function DataQuality() {
   const [provinces, setProvinces] = useState([])
@@ -123,6 +149,13 @@ function DataQuality() {
           Phân hệ riêng để kiểm tra mức độ phù hợp của dữ liệu đầu vào trước khi đưa vào định giá.
         </p>
       </div>
+
+      <VisualStrip
+        label="Data quality"
+        title="Không gian kiểm tra trực quan"
+        description="Mỗi ảnh chỉ đóng vai trò dẫn mắt, còn kết quả vẫn dựa trên các chỉ số hỗ trợ, provenance và độ đầy đủ thật."
+        items={qualityVisuals}
+      />
 
       <div className="grid-2" style={{ gridTemplateColumns: '1.1fr 1fr', gap: '1.5rem' }}>
         {/* Left: Form */}

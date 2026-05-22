@@ -710,8 +710,8 @@ p { color: var(--text-secondary); line-height: 1.7; }
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 1.5rem;
+  border-radius: 12px;
+  padding: 1.25rem;
   transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
   position: relative;
   overflow: hidden;
@@ -730,8 +730,8 @@ p { color: var(--text-secondary); line-height: 1.7; }
 
 .card:hover {
   border-color: var(--border-glow);
-  box-shadow: var(--shadow-card-hover);
-  transform: translateY(-2px);
+  box-shadow: 0 14px 36px rgba(0,0,0,0.38), 0 0 0 1px rgba(59,130,246,0.12);
+  transform: translateY(-1px);
 }
 
 .card-glow { box-shadow: var(--shadow-glow); border-color: var(--border-glow); }
@@ -740,8 +740,8 @@ p { color: var(--text-secondary); line-height: 1.7; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.25rem;
-  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
   border-bottom: 1px solid var(--border-light);
   gap: 0.75rem;
 }
@@ -1110,6 +1110,112 @@ p { color: var(--text-secondary); line-height: 1.7; }
 }
 
 .page-actions { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }
+
+/* ============================================================
+   VISUAL STRIPS / MEDIA BANNERS
+   ============================================================ */
+.visual-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: 1rem 0 0;
+}
+
+.visual-strip-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.visual-strip-kicker {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.visual-strip-heading {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.visual-strip-description {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  max-width: 70ch;
+}
+
+.visual-strip-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.visual-strip-tile {
+  position: relative;
+  min-height: 150px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-md);
+  isolation: isolate;
+}
+
+.visual-strip-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transform: scale(1.01);
+  transition: transform 300ms ease, filter 300ms ease;
+  filter: saturate(1.04) contrast(1.02);
+}
+
+.visual-strip-tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(6, 10, 18, 0.06) 0%, rgba(6, 10, 18, 0.28) 48%, rgba(6, 10, 18, 0.84) 100%);
+  z-index: 1;
+}
+
+.visual-strip-tile:hover img {
+  transform: scale(1.05);
+}
+
+.visual-strip-overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 2;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.visual-strip-tile-kicker {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.visual-strip-tile-title {
+  color: #fff;
+  font-size: 0.94rem;
+  line-height: 1.15;
+  font-weight: 800;
+}
+
+.visual-strip-tile-caption {
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
 
 /* ============================================================
    CHARTS (Recharts overrides)
@@ -1962,16 +2068,28 @@ p { color: var(--text-secondary); line-height: 1.7; }
   font-family: 'Space Grotesk', sans-serif;
   font-size: 1.6rem;
 }
-.lab-metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.lab-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
+}
 
 .lab-metric-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 12px;
   padding: 1.25rem;
   transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
   position: relative;
   overflow: hidden;
+  grid-column: span 3;
+  min-height: 118px;
+}
+
+.lab-metric-card.featured {
+  grid-column: span 6;
+  min-height: 136px;
+  background: linear-gradient(145deg, rgba(18, 26, 38, 0.94) 0%, rgba(26, 36, 51, 0.98) 100%);
 }
 
 .lab-metric-card::before {
@@ -3101,7 +3219,9 @@ p { color: var(--text-secondary); line-height: 1.7; }
    ============================================================ */
 @media (max-width: 1200px) {
   .grid-4 { grid-template-columns: repeat(2, 1fr); }
-  .lab-metrics-grid { grid-template-columns: repeat(2, 1fr); }
+  .lab-metrics-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .lab-metric-card { grid-column: span 3; }
+  .lab-metric-card.featured { grid-column: span 6; }
   .lab-algo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lab-definition-grid, .lab-threshold-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lab-sim-workbench { grid-template-columns: 1fr; }
@@ -3120,6 +3240,7 @@ p { color: var(--text-secondary); line-height: 1.7; }
   .lab-admin-op-grid { grid-template-columns: 1fr; }
   .lab-exec-rail,
   .lab-exec-bottom { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .visual-strip-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 900px) {
@@ -3130,7 +3251,9 @@ p { color: var(--text-secondary); line-height: 1.7; }
   .nav-link { padding: 0.35rem 0.6rem; font-size: 0.75rem; }
   .nav-abbr { display: none; }
   .record-hero-panel { grid-template-columns: 1fr; }
-  .lab-metrics-grid { grid-template-columns: repeat(2, 1fr); }
+  .lab-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lab-metric-card,
+  .lab-metric-card.featured { grid-column: span 2; }
   .lab-algo-grid { grid-template-columns: 1fr; }
   .lab-matrix { overflow-x: auto; }
   .lab-matrix-head, .lab-matrix-row { min-width: 900px; }
@@ -3149,6 +3272,7 @@ p { color: var(--text-secondary); line-height: 1.7; }
   .lab-dataset-table { overflow-x: auto; }
   .lab-dataset-table-head,
   .lab-dataset-table button { min-width: 720px; }
+  .visual-strip-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 600px) {
@@ -3161,6 +3285,8 @@ p { color: var(--text-secondary); line-height: 1.7; }
   .stat-value { font-size: 1.4rem; }
   .page-title { font-size: 1.4rem; }
   .lab-metrics-grid { grid-template-columns: 1fr; }
+  .lab-metric-card,
+  .lab-metric-card.featured { grid-column: auto; }
   .lab-definition-grid, .lab-threshold-grid, .lab-trust-ratios { grid-template-columns: 1fr; }
   .lab-workbench-sidebar,
   .lab-preset-row,

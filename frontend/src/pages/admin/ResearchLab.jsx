@@ -16,6 +16,8 @@ import {
 } from 'recharts'
 import { useAuth } from '../../components/auth'
 import { addNotification, openNotificationCenter } from '../../lib/notifications'
+import { VisualStrip } from '../../components/ui'
+import { VISUAL_ASSETS } from '../../constants/visuals'
 
 const API_BASE = '/api'
 const TOKEN_KEY = 'research_lab_token'
@@ -160,9 +162,9 @@ function getStoredLabSession() {
   return { token: storedToken, expiresAt }
 }
 
-function MetricCard({ title, value, subtitle, tone = 'primary' }) {
+function MetricCard({ title, value, subtitle, tone = 'primary', className = '' }) {
   return (
-    <div className={`lab-metric-card ${tone}`}>
+    <div className={`lab-metric-card ${tone} ${className}`.trim()}>
       <div className="lab-metric-title">{title}</div>
       <div className="lab-metric-value">{value}</div>
       <div className="lab-metric-subtitle">{subtitle}</div>
@@ -232,6 +234,30 @@ const LAB_TABS = [
   { key: 'dataTrust', label: 'Độ tin cậy dữ liệu', abbr: 'DT' },
   { key: 'calibration', label: 'Calibration', abbr: 'CL' },
   { key: 'notes', label: 'Ghi chú', abbr: 'NT' },
+]
+
+const researchLabVisuals = [
+  {
+    src: VISUAL_ASSETS.officeInterior,
+    alt: 'Modern office interior with glass walls and walkways',
+    kicker: 'Control',
+    title: 'Bàn điều khiển',
+    caption: 'Luồng admin, job và audit.',
+  },
+  {
+    src: VISUAL_ASSETS.citySkyline,
+    alt: 'Aerial view of a city skyline at night',
+    kicker: 'Scope',
+    title: 'Đô thị & scope',
+    caption: 'Bối cảnh dữ liệu và thị trường.',
+  },
+  {
+    src: VISUAL_ASSETS.houseExterior,
+    alt: 'Modern house exterior with metal fence and downspout',
+    kicker: 'Property',
+    title: 'Tài sản thật',
+    caption: 'Mẫu nhà ở, căn hộ và đất.',
+  },
 ]
 
 function AlgorithmTrackCard({ track }) {
@@ -2409,6 +2435,13 @@ function ResearchLab() {
         </div>
       </div>
 
+      <VisualStrip
+        label="Lab visuals"
+        title="Chèn thêm chất liệu thật vào control center"
+        description="Admin lab cần có cảm giác đang đứng trước bàn điều khiển thật, nên ảnh bối cảnh được dùng để tạo chiều sâu và nhịp thị giác."
+        items={researchLabVisuals}
+      />
+
       {error && <div className="lab-error animate-scaleIn">{error}</div>}
 
       {overview && (
@@ -2428,7 +2461,7 @@ function ResearchLab() {
           {activeLabTab === 'overview' && (
             <>
               <div className="lab-metrics-grid stagger">
-                <MetricCard title="Chuẩn đang dùng" value={overview.standard_name || '—'} subtitle="Standard nội bộ của đề tài" />
+                <MetricCard className="featured" title="Chuẩn đang dùng" value={overview.standard_name || '—'} subtitle="Standard nội bộ của đề tài" />
                 <MetricCard title="Nhánh P-CONF" value={overview.confidence_stage?.model_name || '—'} subtitle="Mức độ tin cậy dự đoán" tone="info" />
                 <MetricCard title="Nhánh AVM-PREDICT" value={overview.price_stage?.best_model || '—'} subtitle="Mô hình dự đoán khoảng giá" tone="success" />
                 <MetricCard title="Verified DB" value={overview.quality_summary?.db_verified_properties?.toLocaleString() || 0} subtitle="Dữ liệu đã xác minh" tone="warning" />

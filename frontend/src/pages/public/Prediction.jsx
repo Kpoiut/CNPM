@@ -14,6 +14,8 @@ import SubEnginePanel from '../../components/valuation/SubEnginePanel'
 import { ImpactAnalysisPanel } from '../../components/valuation/ImpactAnalysisPanel'
 import { useAuth } from '../../components/auth'
 import { predictPipeline, predictSDEV } from '../../api'
+import { VisualStrip } from '../../components/ui'
+import { VISUAL_ASSETS } from '../../constants/visuals'
 
 // Map frontend property_type → v2 canonical asset_type
 const PROPERTY_TO_ASSET = {
@@ -37,6 +39,30 @@ const BASE_TABS = [
   { key: 'form',        label: 'Biểu mẫu + Kết quả', abbr: 'BM', iconKey: 'house' },
   { key: 'comparables', label: 'So sánh',            abbr: 'SS', iconKey: 'table' },
   { key: 'pipeline',    label: 'Pipeline',           abbr: 'PL', iconKey: 'flask' },
+]
+
+const predictionVisuals = [
+  {
+    src: VISUAL_ASSETS.houseExterior,
+    alt: 'Modern house exterior with metal fence and downspout',
+    kicker: 'Dữ liệu',
+    title: 'Nhà ở thật',
+    caption: 'Mẫu đầu vào và ngữ cảnh tài sản.',
+  },
+  {
+    src: VISUAL_ASSETS.citySkyline,
+    alt: 'Aerial view of a city skyline at night',
+    kicker: 'Phạm vi',
+    title: 'Bối cảnh đô thị',
+    caption: 'Khu vực và mặt bằng định giá.',
+  },
+  {
+    src: VISUAL_ASSETS.officeInterior,
+    alt: 'Modern office interior with glass walls and walkways',
+    kicker: 'Pipeline',
+    title: 'Luồng xử lý',
+    caption: 'Mô hình, so sánh và giải thích.',
+  },
 ]
 
 const fmtVnd = (value) => value
@@ -505,6 +531,13 @@ function Prediction() {
           Đang tải scope...
         </div>
       )}
+
+      <VisualStrip
+        label="Prediction visuals"
+        title="Bối cảnh thật cho luồng định giá"
+        description="Hình ảnh chỉ dẫn mắt, còn luồng form, comparable và pipeline vẫn là dữ liệu và logic thật."
+        items={predictionVisuals}
+      />
 
       {/* ── Tabs ── */}
       <div className="flex gap-2 mb-6">

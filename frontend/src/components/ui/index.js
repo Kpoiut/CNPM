@@ -15,6 +15,7 @@ export { Button, buttonVariants } from './button'
 // Data display
 export { Badge, badgeVariants } from './badge'
 export { StatCard, MiniStat } from './stat-card'
+export { VisualStrip } from './VisualStrip'
 
 // Feedback
 export { EmptyState, AlertBanner, StepProgress } from './empty-state'
