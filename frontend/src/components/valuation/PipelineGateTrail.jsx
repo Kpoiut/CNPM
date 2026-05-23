@@ -59,7 +59,7 @@ function fieldLabel(name) {
   return FIELD_LABELS[name] || name
 }
 
-export default function PipelineGateTrail({ gates = [], finalStatus, blockedAt, completeness }) {
+export default function PipelineGateTrail({ gates = [], finalStatus, blockedAt, completeness, compact = false }) {
   const [expandedGate, setExpandedGate] = useState(null);
 
   if (!gates || gates.length === 0) return null;
@@ -77,7 +77,7 @@ export default function PipelineGateTrail({ gates = [], finalStatus, blockedAt, 
   ].filter(group => group.items.length > 0);
 
   return (
-    <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+    <div className={compact ? 'prediction-audit-block' : 'card'} style={{ padding: 0, overflow: 'hidden' }}>
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -154,7 +154,7 @@ export default function PipelineGateTrail({ gates = [], finalStatus, blockedAt, 
       )}
 
       {/* Gate chain */}
-      <div style={{ padding: '0.75rem 1rem' }}>
+      <div style={{ padding: compact ? '0.65rem 0.85rem' : '0.75rem 1rem' }}>
         <div style={{
           marginBottom: '0.75rem',
           padding: '0.7rem 0.85rem',
@@ -178,7 +178,8 @@ export default function PipelineGateTrail({ gates = [], finalStatus, blockedAt, 
                 onClick={() => setExpandedGate(isExpanded ? null : gate.gate_id)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '0.75rem',
-                  padding: '0.5rem 0.75rem', borderRadius: '8px', cursor: 'pointer',
+                  padding: compact ? '0.45rem 0.6rem' : '0.5rem 0.75rem',
+                  borderRadius: '8px', cursor: 'pointer',
                   background: isExpanded ? s.bg : 'transparent',
                   border: `1px solid ${isExpanded ? s.border : 'transparent'}`,
                   transition: 'all 0.2s ease',

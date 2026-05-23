@@ -14,8 +14,7 @@ import SubEnginePanel from '../../components/valuation/SubEnginePanel'
 import { ImpactAnalysisPanel } from '../../components/valuation/ImpactAnalysisPanel'
 import { useAuth } from '../../components/auth'
 import { predictPipeline, predictSDEV } from '../../api'
-import { VisualStrip } from '../../components/ui'
-import { VISUAL_ASSETS } from '../../constants/visuals'
+import { PredictionHeroBand } from '../../components/prediction/PredictionHeroBand'
 
 // Map frontend property_type → v2 canonical asset_type
 const PROPERTY_TO_ASSET = {
@@ -39,30 +38,6 @@ const BASE_TABS = [
   { key: 'form',        label: 'Biểu mẫu + Kết quả', abbr: 'BM', iconKey: 'house' },
   { key: 'comparables', label: 'So sánh',            abbr: 'SS', iconKey: 'table' },
   { key: 'pipeline',    label: 'Pipeline',           abbr: 'PL', iconKey: 'flask' },
-]
-
-const predictionVisuals = [
-  {
-    src: VISUAL_ASSETS.houseExterior,
-    alt: 'Modern house exterior with metal fence and downspout',
-    kicker: 'Dữ liệu',
-    title: 'Nhà ở thật',
-    caption: 'Mẫu đầu vào và ngữ cảnh tài sản.',
-  },
-  {
-    src: VISUAL_ASSETS.citySkyline,
-    alt: 'Aerial view of a city skyline at night',
-    kicker: 'Phạm vi',
-    title: 'Bối cảnh đô thị',
-    caption: 'Khu vực và mặt bằng định giá.',
-  },
-  {
-    src: VISUAL_ASSETS.officeInterior,
-    alt: 'Modern office interior with glass walls and walkways',
-    kicker: 'Pipeline',
-    title: 'Luồng xử lý',
-    caption: 'Mô hình, so sánh và giải thích.',
-  },
 ]
 
 const fmtVnd = (value) => value
@@ -104,29 +79,25 @@ function ComparableInsight({ comparables, input }) {
   const top = comparables[0]
 
   return (
-    <div className="card" style={{
-      marginTop: '1rem',
-      borderColor: 'var(--info-border)',
-      background: 'linear-gradient(135deg, var(--surface-1), var(--bg-elevated))',
-    }}>
-      <div className="card-header">
+    <div className="prediction-note-band" style={{ marginTop: '1rem', borderColor: 'var(--info-border)' }}>
+      <div className="prediction-note-head">
         <span className="stat-icon info">{icon('shieldCheck', 18)}</span>
-        <span className="card-title">Vì sao các mẫu này được chọn?</span>
+        <strong>Vì sao các mẫu này được chọn?</strong>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+      <div className="prediction-note-grid">
         {[
           ['Tổng mẫu đạt ngưỡng gần giống', `${comparables.length} mẫu`],
           ['Cùng khu vực nhập', `${sameDistrict}/${comparables.length}`],
           ['Độ gần giống trung bình', avgSimilarity ? `${(avgSimilarity * 100).toFixed(0)}%` : 'Đang tính theo pipeline'],
           ['Khoảng diện tích mẫu', areas.length ? `${Math.min(...areas).toLocaleString('vi-VN')} - ${Math.max(...areas).toLocaleString('vi-VN')} m²` : 'Chưa đủ diện tích'],
         ].map(([label, value]) => (
-          <div key={label} style={{ padding: '0.75rem', border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface-2)' }}>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{label}</div>
-            <div style={{ marginTop: 4, fontWeight: 800, color: 'var(--text-primary)' }}>{value}</div>
+          <div key={label} className="prediction-note-stat">
+            <div className="prediction-note-stat-label">{label}</div>
+            <div className="prediction-note-stat-value">{value}</div>
           </div>
         ))}
       </div>
-      <div style={{ marginTop: '0.85rem', color: 'var(--text-secondary)', fontSize: '0.82rem', lineHeight: 1.6 }}>
+      <div className="prediction-inline-note" style={{ marginTop: '0.85rem' }}>
         Danh sách này là các comparable pipeline trả về theo mức gần với hồ sơ bạn nhập, ưu tiên cùng quận/huyện, cùng phân khúc diện tích, giá/m² hợp lý và bậc nguồn dữ liệu. <strong>Mức độ tin cậy</strong> phản ánh độ ổn định của dự đoán, trong đó số lượng mẫu gần là yếu tố rất quan trọng. <strong>Độ tin cậy dữ liệu</strong> phản ánh tính minh bạch, bậc nguồn và khả năng truy xuất của từng mẫu.
         {top && (
           <div style={{ marginTop: '0.5rem', color: 'var(--info)' }}>
@@ -151,15 +122,7 @@ function ResultEvidenceSummary({ comparables, input }) {
     .reduce((sum, c, _, arr) => sum + c.similarity_score / arr.length, 0)
   const sameDistrict = comparables.filter(c => input?.district && c.district === input.district).length
   return (
-    <div style={{
-      padding: '0.75rem 0.9rem',
-      borderRadius: 8,
-      border: '1px solid var(--border)',
-      background: 'var(--surface-2)',
-      color: 'var(--text-secondary)',
-      fontSize: '0.82rem',
-      lineHeight: 1.55,
-    }}>
+    <div className="prediction-inline-note">
       Tóm tắt bằng chứng: tìm thấy <strong>{comparables.length}</strong> mẫu đủ gần, trong đó <strong>{sameDistrict}</strong> mẫu cùng khu vực nhập{avgSimilarity ? `, độ gần giống trung bình ${(avgSimilarity * 100).toFixed(0)}%` : ''}. Chi tiết vì sao từng mẫu được chọn nằm trong tab <strong>So sánh</strong>.
     </div>
   )
@@ -176,10 +139,10 @@ function ConfidenceSampleGate({ evidence, comparables }) {
   const tierBreakdown = evidence?.comparable_breakdown || evidence?.confidence_stats?.tier_breakdown || {}
 
   return (
-    <div className="card" style={{ borderColor: 'var(--info-border)', marginBottom: '1rem' }}>
-      <div className="card-header">
+    <div className="prediction-note-band" style={{ borderColor: 'var(--info-border)', marginBottom: '1rem' }}>
+      <div className="prediction-note-head">
         <span className="stat-icon info">{icon('shieldCheck', 18)}</span>
-        <span className="card-title">Mức độ tin cậy dự đoán: chấm theo mẫu gần</span>
+        <strong>Mức độ tin cậy dự đoán: chấm theo mẫu gần</strong>
         <span className={`badge ${grade === 'A' ? 'badge-success' : grade === 'B' ? 'badge-primary' : grade === 'C' ? 'badge-warning' : 'badge-danger'}`} style={{ marginLeft: 'auto' }}>
           Grade {grade}
         </span>
@@ -196,8 +159,8 @@ function ConfidenceSampleGate({ evidence, comparables }) {
               height: '100%',
               background: progress >= 100 ? 'var(--success)' : progress >= 38 ? 'var(--warning)' : 'var(--danger)',
             }} />
-          </div>
-          <div style={{ marginTop: '0.75rem', color: 'var(--text-secondary)', fontSize: '0.83rem', lineHeight: 1.6 }}>
+            </div>
+          <div className="prediction-inline-note" style={{ marginTop: '0.75rem' }}>
             Đây là <strong>mức độ tin cậy dự đoán</strong>, khác với <strong>độ tin cậy dữ liệu</strong>. Nó cần ít nhưng phải tinh: chỉ các mẫu gần với form nhập mới được tính, và mốc A về số lượng là 800 mẫu gần. Nếu pool chỉ có vài chục mẫu, điểm bị chặn thấp dù dữ liệu có nguồn tốt.
           </div>
         </div>
@@ -208,9 +171,9 @@ function ConfidenceSampleGate({ evidence, comparables }) {
             ['Similarity TB', avgSimilarity != null ? `${(avgSimilarity * 100).toFixed(0)}%` : 'Đang tính'],
             ['Bậc nguồn', Object.entries(tierBreakdown).map(([k, v]) => `${k}:${v}`).join(' · ') || '—'],
           ].map(([label, value]) => (
-            <div key={label} style={{ padding: '0.7rem', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface-2)' }}>
-              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{label}</div>
-              <div style={{ marginTop: 4, color: 'var(--text-primary)', fontWeight: 800 }}>{value}</div>
+            <div key={label} className="prediction-note-stat">
+              <div className="prediction-note-stat-label">{label}</div>
+              <div className="prediction-note-stat-value">{value}</div>
             </div>
           ))}
         </div>
@@ -230,10 +193,10 @@ function PipelineDecisionMap({ pipelineResult }) {
   ]
   const statusByGate = Object.fromEntries(pipelineResult.gates.map(g => [g.gate_name, g.status]))
   return (
-    <div className="card" style={{ borderColor: 'var(--success-border)' }}>
-      <div className="card-header">
+    <div className="prediction-note-band" style={{ borderColor: 'var(--success-border)' }}>
+      <div className="prediction-note-head">
         <span className="stat-icon success">{icon('activity', 18)}</span>
-        <span className="card-title">Bản đồ quyết định của pipeline</span>
+        <strong>Bản đồ quyết định của pipeline</strong>
       </div>
       <div style={{ display: 'grid', gap: '0.65rem' }}>
         {rows.map(([label, gate, desc], idx) => {
@@ -433,6 +396,19 @@ function Prediction() {
     staleTime: 10 * 60 * 1000,
   })
 
+  const scopeText = React.useMemo(() => {
+    const provinces = scopesData?.provinces || []
+    if (!provinces.length) return 'Đang tải scope từ backend'
+    const labels = provinces
+      .map(scope => {
+        const count = scope.actual_record_count ?? scope.districts?.reduce((sum, d) => sum + (d.record_count || d.actual_record_count || 0), 0) ?? 0
+        return `${scope.name} (${count} records)`
+      })
+    return labels.length > 3
+      ? `${labels.slice(0, 3).join(' · ')} · +${labels.length - 3} scope khác`
+      : labels.join(' · ')
+  }, [scopesData])
+
   // Districts for selected province
   const [selectedProvince, setSelectedProvince] = useState(null)
   const { data: districtsData } = useQuery({
@@ -506,37 +482,10 @@ function Prediction() {
         </div>
       </div>
 
-      {/* Scope Banner */}
-      {scopesData?.provinces ? (
-        <div style={{
-          padding: '10px 14px', borderRadius: 8, marginBottom: 16,
-          background: 'var(--primary-50)', border: '1px solid var(--primary-200)',
-          fontSize: '0.8rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 8,
-        }}>
-          <span>Scope: </span>
-          <span>
-            {scopesData.provinces.map(scope => (
-              <span key={scope.name}>
-                {scope.name} ({scope.actual_record_count ?? scope.districts?.reduce((sum, d) => sum + (d.record_count || d.actual_record_count || 0), 0) ?? 0} records){'  '}
-              </span>
-            ))}
-          </span>
-        </div>
-      ) : (
-        <div style={{
-          padding: '10px 14px', borderRadius: 8, marginBottom: 16,
-          background: 'var(--primary-50)', border: '1px solid var(--primary-200)',
-          fontSize: '0.8rem', color: 'var(--primary)',
-        }}>
-          Đang tải scope...
-        </div>
-      )}
-
-      <VisualStrip
-        label="Prediction visuals"
-        title="Bối cảnh thật cho luồng định giá"
-        description="Hình ảnh chỉ dẫn mắt, còn luồng form, comparable và pipeline vẫn là dữ liệu và logic thật."
-        items={predictionVisuals}
+      <PredictionHeroBand
+        scopeText={scopeText}
+        engineLabel={engineInfo?.button_label}
+        isAdmin={isAdmin}
       />
 
       {/* ── Tabs ── */}
@@ -580,12 +529,32 @@ function Prediction() {
           Left: intake form | Right: v2 results (no decorative map)
       ════════════════════════════════════════════════════════════ */}
       {activeTab === 'form' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 0.85fr', gap: '1.5rem' }}>
           {/* LEFT — Form */}
           <div className="card animate-fadeIn">
             <div className="card-header">
               <span className="stat-icon primary">{icon('house', 20)}</span>
               <span className="card-title">Thông tin bất động sản</span>
+            </div>
+
+            <div className="prediction-note-band" style={{ marginBottom: '1rem' }}>
+              <div className="prediction-note-head">
+                <span className="stat-icon info">{icon('activity', 18)}</span>
+                <strong>Luồng làm việc</strong>
+              </div>
+              <div className="prediction-note-grid prediction-workflow-grid">
+                {[
+                  ['01', 'Nhập hồ sơ', 'Form thật để kích hoạt pipeline.'],
+                  ['02', 'So sánh mẫu', 'Comparable và evidence đi cùng.'],
+                  ['03', 'Xem audit', 'Pipeline, sub-engine và tác động.'],
+                ].map(([step, title, desc]) => (
+                  <div key={title} className="prediction-note-stat">
+                    <div className="prediction-note-stat-label">{step}</div>
+                    <div className="prediction-note-stat-value" style={{ fontSize: '0.95rem' }}>{title}</div>
+                    <div className="prediction-metric-note">{desc}</div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Property type selector */}
@@ -714,38 +683,40 @@ function Prediction() {
               <ConfidenceSampleGate evidence={v2Result?.confidence_evidence} comparables={comparables} />
 
               {/* Stats row */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.25rem' }}>
-                <div className="card" style={{ textAlign: 'center', background: 'var(--primary-50)', border: '1px solid var(--primary-200)', padding: '1rem' }}>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Số comparable</div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', fontWeight: 800, color: 'var(--primary)' }}>
-                    {comparables.length}
-                  </div>
+              <div className="prediction-metric-strip">
+                <div>
+                  <div className="prediction-metric-label">Số comparable</div>
+                  <div className="prediction-metric-value">{comparables.length}</div>
+                  <div className="prediction-metric-note">Mẫu đủ gần được pipeline trả về.</div>
                 </div>
-                <div className="card" style={{ textAlign: 'center', background: 'var(--info-bg)', border: '1px solid var(--info-border)', padding: '1rem' }}>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Giá trung bình</div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 700, color: 'var(--info)' }}>
+                <div>
+                  <div className="prediction-metric-label">Giá trung bình</div>
+                  <div className="prediction-metric-value">
                     {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(
                       comparables.reduce((s, c) => s + (c.price_per_m2 || 0), 0) / comparables.length
                     )}/m²
                   </div>
+                  <div className="prediction-metric-note">Trung bình giá/m² của pool.</div>
                 </div>
-                <div className="card" style={{ textAlign: 'center', background: 'var(--success-bg)', border: '1px solid var(--success-border)', padding: '1rem' }}>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Trung vị</div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 700, color: 'var(--success)' }}>
+                <div>
+                  <div className="prediction-metric-label">Trung vị</div>
+                  <div className="prediction-metric-value">
                     {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(
                       [...comparables.map(c => c.price_per_m2 || 0)].sort((a, b) => a - b)[Math.floor(comparables.length / 2)]
                     )}/m²
                   </div>
+                  <div className="prediction-metric-note">Điểm giữa của pool hiện tại.</div>
                 </div>
-                <div className="card" style={{ textAlign: 'center', background: 'var(--warning-bg)', border: '1px solid var(--warning-border)', padding: '1rem' }}>
-                  <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Min — Max</div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontSize: '0.85rem', fontWeight: 700, color: 'var(--warning-dark)' }}>
+                <div>
+                  <div className="prediction-metric-label">Min — Max</div>
+                  <div className="prediction-metric-value" style={{ fontSize: '0.95rem' }}>
                     {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(
                       Math.min(...comparables.map(c => c.price_per_m2 || 0))
                     )} — {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(
                       Math.max(...comparables.map(c => c.price_per_m2 || 0))
                     )}
                   </div>
+                  <div className="prediction-metric-note">Dải giá đang quan sát được.</div>
                 </div>
               </div>
 
@@ -771,64 +742,49 @@ function Prediction() {
       ════════════════════════════════════════════════════════════ */}
       {activeTab === 'pipeline' && (
         <div className="animate-fadeIn" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div className="card">
-            <div className="card-header">
-              <span className="stat-icon primary">{icon('flask', 20)}</span>
-              <span className="card-title">9-Gate Production Pipeline</span>
-              {pipelineResult && (
-                <span className={`badge ${pipelineResult.final_status === 'BLOCK' ? 'badge-danger' : pipelineResult.final_status === 'PASS' ? 'badge-success' : 'badge-warning'}`} style={{ marginLeft: 'auto' }}>
-                  {pipelineResult.final_status}
-                </span>
-              )}
-            </div>
-            {pipelineResult ? (
-              <>
-                <PipelineGateTrail
-                  gates={pipelineResult.gates}
-                  finalStatus={pipelineResult.final_status}
-                  blockedAt={pipelineResult.blocked_at_gate}
-                  completeness={pipelineResult.completeness}
-                />
-                <div style={{ marginTop: '1rem' }}>
-                  <PipelineDecisionMap pipelineResult={pipelineResult} />
-                </div>
-                <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                    Completeness: <strong>{completenessPct(pipelineResult.completeness).toFixed(0)}%</strong>
-                  </span>
-                  <div style={{ flex: 1, height: 6, background: 'var(--surface-2)', borderRadius: 3, overflow: 'hidden' }}>
-                    <div style={{
-                      width: `${completenessPct(pipelineResult.completeness).toFixed(0)}%`,
-                      height: '100%',
-                      background: completenessPct(pipelineResult.completeness) >= 70 ? 'var(--success)' : completenessPct(pipelineResult.completeness) >= 40 ? 'var(--warning)' : 'var(--danger)',
-                      borderRadius: 3,
-                      transition: 'width 0.5s ease',
-                    }} />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="empty-state">
-                <div className="empty-icon">{icon('inbox', 40)}</div>
-                <div className="empty-title">Chưa có pipeline data</div>
-                <div className="empty-desc">Gửi dự đoán để xem pipeline audit trail</div>
+          {pipelineResult ? (
+            <>
+              <PipelineGateTrail
+                gates={pipelineResult.gates}
+                finalStatus={pipelineResult.final_status}
+                blockedAt={pipelineResult.blocked_at_gate}
+                completeness={pipelineResult.completeness}
+                compact
+              />
+              <div style={{ marginTop: '0.25rem' }}>
+                <PipelineDecisionMap pipelineResult={pipelineResult} />
               </div>
-            )}
-          </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Completeness: <strong>{completenessPct(pipelineResult.completeness).toFixed(0)}%</strong>
+                </span>
+                <div style={{ flex: 1, height: 6, background: 'var(--surface-2)', borderRadius: 3, overflow: 'hidden' }}>
+                  <div style={{
+                    width: `${completenessPct(pipelineResult.completeness).toFixed(0)}%`,
+                    height: '100%',
+                    background: completenessPct(pipelineResult.completeness) >= 70 ? 'var(--success)' : completenessPct(pipelineResult.completeness) >= 40 ? 'var(--warning)' : 'var(--danger)',
+                    borderRadius: 3,
+                    transition: 'width 0.5s ease',
+                  }} />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="empty-state">
+              <div className="empty-icon">{icon('inbox', 40)}</div>
+              <div className="empty-title">Chưa có pipeline data</div>
+              <div className="empty-desc">Gửi dự đoán để xem pipeline audit trail</div>
+            </div>
+          )}
 
           {/* Sub-Engines */}
           {pipelineResult && (
-            <div className="card">
-              <div className="card-header">
-                <span className="stat-icon success">{icon('check', 20)}</span>
-                <span className="card-title">Sub-Engine Results</span>
-              </div>
-              <SubEnginePanel
-                legal={pipelineResult.legal_result}
-                geometry={pipelineResult.geometry_result}
-                environment={pipelineResult.environment_result}
-              />
-            </div>
+            <SubEnginePanel
+              legal={pipelineResult.legal_result}
+              geometry={pipelineResult.geometry_result}
+              environment={pipelineResult.environment_result}
+              compact
+            />
           )}
 
           {/* Blocked details */}

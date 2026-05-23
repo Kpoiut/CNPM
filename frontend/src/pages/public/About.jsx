@@ -1,31 +1,5 @@
 import React from 'react'
 import { icon } from '../../components/ui/icons'
-import { VisualStrip } from '../../components/ui'
-import { VISUAL_ASSETS } from '../../constants/visuals'
-
-const aboutVisuals = [
-  {
-    src: VISUAL_ASSETS.citySkyline,
-    alt: 'Aerial view of a city skyline at night',
-    kicker: 'Bối cảnh',
-    title: 'Thị trường đô thị',
-    caption: 'Dữ liệu theo khu vực, quận và tỉnh.',
-  },
-  {
-    src: VISUAL_ASSETS.houseExterior,
-    alt: 'Modern house exterior with metal fence and downspout',
-    kicker: 'Tài sản',
-    title: 'Nhà ở thật',
-    caption: 'Mẫu đầu vào bám sát hiện trường.',
-  },
-  {
-    src: VISUAL_ASSETS.officeInterior,
-    alt: 'Modern office interior with glass walls and walkways',
-    kicker: 'Workbench',
-    title: 'Không gian nghiên cứu',
-    caption: 'Luồng kiểm thử, train và giải thích.',
-  },
-]
 
 function About() {
   return (
@@ -34,13 +8,6 @@ function About() {
         <h1 className="page-title">Giới thiệu dự án</h1>
         <p className="page-subtitle">Tổng quan về hệ thống định giá bất động sản tự động (AVM) kết hợp IoT</p>
       </div>
-
-      <VisualStrip
-        label="Visual context"
-        title="Ảnh thật để giữ cho giao diện có chiều sâu"
-        description="Những banner nhỏ này giúp các màn giới thiệu bớt khô và kéo đúng cảm giác dữ liệu thật, không phải demo dựng sẵn."
-        items={aboutVisuals}
-      />
 
       {/* Project Title */}
       <div className="card mb-6 animate-slideUp" style={{ borderLeft: '4px solid var(--primary)', background: 'linear-gradient(135deg, rgba(79,70,229,0.08) 0%, transparent 60%)' }}>

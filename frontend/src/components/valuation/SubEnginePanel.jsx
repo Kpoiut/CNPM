@@ -48,7 +48,7 @@ function FactorRow({ icon, label, value, impact, color }) {
   );
 }
 
-export default function SubEnginePanel({ legal, geometry, environment }) {
+export default function SubEnginePanel({ legal, geometry, environment, compact = false }) {
   const hasAny = legal || geometry || environment;
   if (!hasAny) return null;
 
@@ -57,7 +57,7 @@ export default function SubEnginePanel({ legal, geometry, environment }) {
 
       {/* Legal Assessment */}
       {legal && (
-        <div className="card">
+        <div className={compact ? 'prediction-subengine-block' : 'card'}>
           <div className="card-header" style={{ borderBottom: '1px solid var(--border, #e5e7eb)' }}>
             <span>{icon('shieldCheck', 16)}</span>
             <span style={{ fontWeight: 700, fontSize: '0.85rem', marginLeft: '0.5rem' }}>
@@ -107,7 +107,7 @@ export default function SubEnginePanel({ legal, geometry, environment }) {
 
       {/* Geometry Metrics */}
       {geometry && (
-        <div className="card">
+        <div className={compact ? 'prediction-subengine-block' : 'card'}>
           <div className="card-header" style={{ borderBottom: '1px solid var(--border, #e5e7eb)' }}>
             <span>{icon('layoutGrid', 16)}</span>
             <span style={{ fontWeight: 700, fontSize: '0.85rem', marginLeft: '0.5rem' }}>
@@ -142,7 +142,7 @@ export default function SubEnginePanel({ legal, geometry, environment }) {
 
       {/* Environment Assessment */}
       {environment && (
-        <div className="card">
+        <div className={compact ? 'prediction-subengine-block' : 'card'}>
           <div className="card-header" style={{ borderBottom: '1px solid var(--border, #e5e7eb)' }}>
             <span>{icon('tree', 16)}</span>
             <span style={{ fontWeight: 700, fontSize: '0.85rem', marginLeft: '0.5rem' }}>
