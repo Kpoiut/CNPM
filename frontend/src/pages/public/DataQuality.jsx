@@ -117,14 +117,72 @@ function DataQuality() {
 
   return (
     <div>
-      <div className="page-header">
-        <h1 className="page-title">Đánh giá độ tin cậy dữ liệu</h1>
-        <p className="page-subtitle">
-          Phân hệ riêng để kiểm tra mức độ phù hợp của dữ liệu đầu vào trước khi đưa vào định giá.
-        </p>
+      <div className="quality-hero animate-fadeIn">
+        <div className="quality-hero-copy">
+          <div className="quality-hero-eyebrow">Data quality lab</div>
+          <h1 className="quality-hero-title">Đánh giá độ tin cậy dữ liệu</h1>
+          <p className="quality-hero-description">
+            Phân hệ riêng để kiểm tra mức độ phù hợp của dữ liệu đầu vào trước khi đưa vào định giá.
+            Mỗi lần chạy sẽ trả về điểm tin cậy, rule chặn, và mẫu đối chứng đi kèm.
+          </p>
+          <div className="quality-hero-points">
+            <span className="quality-hero-chip">Cấp độ A-D</span>
+            <span className="quality-hero-chip">Support volume</span>
+            <span className="quality-hero-chip">Input completeness</span>
+            <span className="quality-hero-chip">IoT signals</span>
+          </div>
+        </div>
+
+        <div className="quality-hero-panel">
+          {result ? (
+            <>
+              <div className="quality-hero-score">
+                <span className="quality-hero-score-label">Tổng điểm</span>
+                <strong>{result.assessment.overall_score}/10</strong>
+                <span style={{ color: gradeStyle.color }}>{result.assessment.confidence_grade} · {result.assessment.confidence_label}</span>
+              </div>
+              <div className="quality-hero-mini-grid">
+                <div>
+                  <span className="quality-hero-mini-label">Support</span>
+                  <strong>{result.assessment.support_statistics?.comparable_count || 0}</strong>
+                </div>
+                <div>
+                  <span className="quality-hero-mini-label">Complet.</span>
+                  <strong>{(result.assessment.input_profile?.ratio * 100).toFixed(1)}%</strong>
+                </div>
+                <div>
+                  <span className="quality-hero-mini-label">Mode</span>
+                  <strong>{result.assessment.output_mode || '—'}</strong>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="quality-hero-score">
+                <span className="quality-hero-score-label">Trạng thái gate</span>
+                <strong>Chưa chạy</strong>
+                <span>Điền đủ hồ sơ rồi bấm đánh giá để xem điểm thật.</span>
+              </div>
+              <div className="quality-hero-mini-grid">
+                <div>
+                  <span className="quality-hero-mini-label">Grade</span>
+                  <strong>A/B/C/D</strong>
+                </div>
+                <div>
+                  <span className="quality-hero-mini-label">Rule</span>
+                  <strong>Block / Warn / Pass</strong>
+                </div>
+                <div>
+                  <span className="quality-hero-mini-label">Chain</span>
+                  <strong>Sample-backed</strong>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
-      <div className="grid-2" style={{ gridTemplateColumns: '1.1fr 1fr', gap: '1.5rem' }}>
+      <div className="quality-workbench-grid">
         {/* Left: Form */}
         <div className="card animate-fadeIn">
           <div className="card-header">
@@ -132,6 +190,13 @@ function DataQuality() {
           </div>
 
           <form onSubmit={handleSubmit}>
+            <div className="quality-section-title">
+              <span>01</span>
+              <div>
+                <strong>Bối cảnh tài sản</strong>
+                <p>Chọn loại bất động sản, diện tích và khu vực.</p>
+              </div>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
               <div className="form-group">
                 <label className="form-label required">Loại BĐS</label>
@@ -145,6 +210,13 @@ function DataQuality() {
               </div>
             </div>
 
+            <div className="quality-section-title">
+              <span>02</span>
+              <div>
+                <strong>Định vị không gian</strong>
+                <p>Khu vực, mặt tiền và các yếu tố địa lý cơ bản.</p>
+              </div>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">Tỉnh / TP</label>
@@ -172,6 +244,13 @@ function DataQuality() {
               </div>
             </div>
 
+            <div className="quality-section-title">
+              <span>03</span>
+              <div>
+                <strong>Hồ sơ vật lý</strong>
+                <p>Hình thái ngôi nhà và trạng thái pháp lý sơ bộ.</p>
+              </div>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">Phòng ngủ</label>
@@ -198,6 +277,13 @@ function DataQuality() {
               </div>
             </div>
 
+            <div className="quality-section-title">
+              <span>04</span>
+              <div>
+                <strong>Tín hiệu hiện trường</strong>
+                <p>GPS và các chỉ số IoT dùng để tăng độ tin cậy.</p>
+              </div>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
               <div className="form-group">
                 <label className="form-label">Vĩ độ GPS</label>

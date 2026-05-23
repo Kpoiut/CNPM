@@ -1,32 +1,87 @@
 import React from 'react'
 import { icon } from '../../components/ui/icons'
+import { VISUAL_ASSETS } from '../../constants/visuals'
 
 function About() {
   return (
     <div>
-      <div className="page-header">
-        <h1 className="page-title">Giới thiệu dự án</h1>
-        <p className="page-subtitle">Tổng quan về hệ thống định giá bất động sản tự động (AVM) kết hợp IoT</p>
-      </div>
-
-      {/* Project Title */}
-      <div className="card mb-6 animate-slideUp" style={{ borderLeft: '4px solid var(--primary)', background: 'linear-gradient(135deg, rgba(79,70,229,0.08) 0%, transparent 60%)' }}>
-        <div style={{ fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--primary-light)', marginBottom: '0.75rem' }}>
-          Tên đề tài
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1.2fr) minmax(280px, 0.8fr)',
+        gap: '1rem',
+        marginBottom: '1rem',
+        padding: '1rem',
+        border: '1px solid var(--border)',
+        borderRadius: 16,
+        background: 'linear-gradient(135deg, rgba(79,70,229,0.08) 0%, rgba(6,182,212,0.05) 100%), var(--bg-card)',
+        boxShadow: 'var(--shadow-sm)',
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', minWidth: 0 }}>
+          <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--primary-light)' }}>
+            Giới thiệu dự án
+          </div>
+          <h1 className="page-title" style={{ margin: 0 }}>
+            Nghiên cứu và xây dựng hệ thống dự đoán giá bất động sản theo khu vực bằng học máy kết hợp dữ liệu IoT từ điện thoại thông minh
+          </h1>
+          <p className="page-subtitle" style={{ marginTop: 0, maxWidth: '72ch' }}>
+            Hệ thống định giá bất động sản tự động (AVM) sử dụng Machine Learning kết hợp dữ liệu IoT từ smartphone.
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            {['AVM + IoT', 'Conformal prediction', 'Pilot dữ liệu thật', 'Bằng chứng có provenance'].map(tag => (
+              <span key={tag} className="badge badge-primary">{tag}</span>
+            ))}
+          </div>
         </div>
-        <h2 style={{
-          fontFamily: 'var(--font-display)',
-          fontSize: '1.3rem',
-          fontWeight: 800,
-          color: 'var(--text-primary)',
-          lineHeight: 1.4,
-          marginBottom: '0.75rem',
+
+        <div style={{
+          display: 'grid',
+          gap: '0.75rem',
+          alignContent: 'start',
         }}>
-          Nghiên cứu và xây dựng hệ thống dự đoán giá bất động sản theo khu vực bằng học máy kết hợp dữ liệu IoT từ điện thoại thông minh
-        </h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-          Hệ thống định giá bất động sản tự động (AVM) sử dụng Machine Learning kết hợp dữ liệu IoT từ smartphone.
-        </p>
+          <div style={{
+            position: 'relative',
+            overflow: 'hidden',
+            minHeight: 210,
+            borderRadius: 14,
+            border: '1px solid var(--border)',
+            background: 'var(--surface-1)',
+            boxShadow: 'var(--shadow-md)',
+          }}>
+            <img
+              src={VISUAL_ASSETS.officeInterior}
+              alt="Khu làm việc nghiên cứu AVM"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+            <div style={{
+              position: 'absolute',
+              inset: 'auto 0 0 0',
+              padding: '0.85rem',
+              background: 'linear-gradient(180deg, rgba(6,10,18,0.02) 0%, rgba(6,10,18,0.75) 100%)',
+              color: 'white',
+            }}>
+              <div style={{ fontSize: '0.62rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', opacity: 0.8 }}>
+                Research workspace
+              </div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 700, lineHeight: 1.35 }}>
+                Từ dữ liệu thực địa đến mô hình định giá có thể giải thích.
+              </div>
+            </div>
+          </div>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+            gap: '0.75rem',
+          }}>
+            <div style={{ padding: '0.85rem 0.95rem', border: '1px solid var(--border)', borderRadius: 12, background: 'var(--bg-card)' }}>
+              <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Input</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--text-primary)', marginTop: 4 }}>Field + IoT</div>
+            </div>
+            <div style={{ padding: '0.85rem 0.95rem', border: '1px solid var(--border)', borderRadius: 12, background: 'var(--bg-card)' }}>
+              <div style={{ fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Output</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--text-primary)', marginTop: 4 }}>Price + band</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Key Features */}

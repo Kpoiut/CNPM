@@ -111,19 +111,39 @@ function RecordExplorer() {
 
   return (
     <div>
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-header-row">
-          <div>
-            <h1 className="page-title">Trung tâm quan sát bản ghi dữ liệu</h1>
-            <p className="page-subtitle">Xem từng mẫu, lọc theo nguồn và mở chi tiết truy vết của mỗi record</p>
+      <div className="record-explorer-hero animate-fadeIn">
+        <div className="record-explorer-hero-copy">
+          <div className="record-explorer-eyebrow">Record explorer</div>
+          <h1 className="record-explorer-title">Trung tâm quan sát bản ghi dữ liệu</h1>
+          <p className="record-explorer-description">
+            Xem từng mẫu, lọc theo nguồn và mở chi tiết truy vết của mỗi record.
+            Đây là khu làm việc cho audit, provenance và xem hồ sơ thật.
+          </p>
+          <div className="record-explorer-points">
+            <span className="record-explorer-chip">{records.length.toLocaleString()} bản ghi</span>
+            <span className="record-explorer-chip">{summary.verified.toLocaleString()} đã xác minh</span>
+            <span className="record-explorer-chip">{summary.traceReady.toLocaleString()} trace-ready</span>
+            <span className="record-explorer-chip">{summary.withIot.toLocaleString()} có IoT</span>
           </div>
-          <span className="badge badge-primary">{records.length.toLocaleString()} bản ghi</span>
+        </div>
+        <div className="record-explorer-hero-rail">
+          <div className="record-explorer-hero-stat">
+            <span>Tổng hồ sơ</span>
+            <strong>{records.length.toLocaleString('vi-VN')}</strong>
+          </div>
+          <div className="record-explorer-hero-stat">
+            <span>Đang lọc</span>
+            <strong>{filteredRecords.length.toLocaleString('vi-VN')}</strong>
+          </div>
+          <div className="record-explorer-hero-note">
+            {icon('shieldCheck', 16)}
+            <span>Provenance chain, evidence tier và source trace đều có thể mở ra từng bản ghi.</span>
+          </div>
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid-4 mb-6 stagger">
+      <div className="grid-4 mb-6 stagger record-explorer-summary-grid">
         {[
           { label: 'Đang hiển thị', value: filteredRecords.length.toLocaleString(), color: 'primary', icon: icon('table', 18) },
           { label: 'Đã xác minh', value: summary.verified.toLocaleString(), color: 'success', icon: icon('shieldCheck', 18) },
@@ -143,7 +163,7 @@ function RecordExplorer() {
       </div>
 
       {/* Filters */}
-      <div className="card mb-6 animate-fadeIn">
+      <div className="card mb-6 animate-fadeIn record-explorer-filter-card">
         <div className="card-header"><span className="card-title">Bộ lọc dữ liệu</span></div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
           <div className="form-group">
@@ -204,7 +224,7 @@ function RecordExplorer() {
       </div>
 
       {/* Table */}
-      <div className="card animate-fadeIn">
+      <div className="card animate-fadeIn record-explorer-table-card">
         <div className="table-wrapper">
           <table className="table">
             <thead>

@@ -361,17 +361,23 @@ export default function MapExplorer() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 60px)' }}>
-      {/* Header */}
-      <div className="page-header" style={{ flexShrink: 0 }}>
-        <div>
-          <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            Bản đồ thị trường BĐS
-          </h1>
-          <p className="page-subtitle">
-            {geoProps.length} tài sản có tọa độ · Click bản đồ để lấy GPS · Chọn điểm để định giá
+      <div className="map-explorer-hero">
+        <div className="map-explorer-copy">
+          <div className="map-explorer-eyebrow">Map intelligence</div>
+          <h1 className="map-explorer-title">Bản đồ thị trường BĐS</h1>
+          <p className="map-explorer-description">
+            {geoProps.length} tài sản có tọa độ · Click bản đồ để lấy GPS · Chọn điểm để định giá.
+            Mỗi marker phản ánh mức giá hoặc độ tin cậy thật.
           </p>
+          <div className="map-explorer-points">
+            <span className="map-explorer-chip">{marketStats.total} tài sản có tọa độ</span>
+            <span className="map-explorer-chip">{formatVnd(marketStats.avgPricePerM2)}/m² trung bình</span>
+            <span className="map-explorer-chip">{selectedDistrict || 'Chưa chọn quận'}</span>
+            <span className="map-explorer-chip">{activeView === 'price_tier' ? 'Đang xem mức giá' : 'Đang xem độ tin cậy'}</span>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+
+        <div className="map-explorer-controls">
           {/* Market view toggle */}
           <div style={{
             display: 'flex', borderRadius: 8, overflow: 'hidden',

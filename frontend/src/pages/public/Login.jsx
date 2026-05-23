@@ -72,6 +72,12 @@ function Login() {
           </button>
         </div>
 
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+          <span className="badge badge-primary">Research admin</span>
+          <span className="badge badge-info">JWT session</span>
+          <span className="badge badge-neutral">Lab access</span>
+        </div>
+
         {/* Error */}
         {error && (
           <div className="login-error animate-slideUp">

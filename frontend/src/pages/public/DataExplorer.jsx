@@ -301,26 +301,39 @@ export default function DataExplorer() {
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: 4 }}>Data Explorer</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-            Toàn bộ bản ghi · provenance chain · evidence tier · RQS scoring
+      <div className="data-explorer-hero animate-fadeIn">
+        <div className="data-explorer-hero-copy">
+          <div className="data-explorer-eyebrow">Data explorer</div>
+          <h1 className="data-explorer-title">Trung tâm quan sát bản ghi dữ liệu</h1>
+          <p className="data-explorer-description">
+            Toàn bộ bản ghi, provenance chain, evidence tier và RQS scoring trong một console duy nhất.
+            Mọi thao tác import, export và lọc đều chạy trên dữ liệu thật.
           </p>
+          <div className="data-explorer-points">
+            <span className="data-explorer-chip">{records.length.toLocaleString('vi-VN')} bản ghi</span>
+            <span className="data-explorer-chip">{filteredRecords.length.toLocaleString('vi-VN')} đang lọc</span>
+            <span className="data-explorer-chip">{summary.traceReady.toLocaleString('vi-VN')} trace-ready</span>
+            <span className="data-explorer-chip">{summary.withIot.toLocaleString('vi-VN')} có IoT</span>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <label className="btn btn-sm" style={{ cursor: 'pointer' }}>
-            {importing ? 'Đang nhập...' : 'Import CSV'}
-            <input type="file" accept=".csv" onChange={handleCSVImport} style={{ display: 'none' }} disabled={importing} />
-          </label>
-          <button className="btn btn-sm" onClick={exportCSV}>Export CSV</button>
-          <button className="btn btn-sm btn-ghost" onClick={clearFilters}>Đặt lại lọc</button>
+        <div className="data-explorer-hero-actions">
+          <div className="data-explorer-action-row">
+            <label className="btn btn-sm" style={{ cursor: 'pointer' }}>
+              {importing ? 'Đang nhập...' : 'Import CSV'}
+              <input type="file" accept=".csv" onChange={handleCSVImport} style={{ display: 'none' }} disabled={importing} />
+            </label>
+            <button className="btn btn-sm" onClick={exportCSV}>Export CSV</button>
+            <button className="btn btn-sm btn-ghost" onClick={clearFilters}>Đặt lại lọc</button>
+          </div>
+          <div className="data-explorer-hero-note">
+            {icon('database', 16)}
+            <span>Trace thật, provenance thật, bảng dữ liệu thật.</span>
+          </div>
         </div>
       </div>
 
       {/* Summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
+      <div className="data-explorer-summary-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 16 }}>
         {[
           { icon: '', label: 'Tổng bản ghi', value: records.length.toLocaleString('vi-VN'), color: '#7c3aed' },
           { icon: '', label: 'Đã lọc', value: filtered.length.toLocaleString('vi-VN'), color: '#06b7ce' },
@@ -338,7 +351,7 @@ export default function DataExplorer() {
       </div>
 
       {/* Filters */}
-      <div className="card mb-4" style={{ padding: '14px 16px' }}>
+      <div className="card mb-4 data-explorer-filter-card" style={{ padding: '14px 16px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1fr 1fr', gap: 10, alignItems: 'end' }}>
           <div className="form-group" style={{ margin: 0 }}>
             <label className="form-label" style={{ fontSize: '0.7rem' }}>Tìm kiếm</label>
@@ -407,7 +420,7 @@ export default function DataExplorer() {
       </div>
 
       {/* Table */}
-      <div className="card">
+      <div className="card data-explorer-table-card">
         <div className="table-wrapper">
           <table className="table">
             <thead>
@@ -495,8 +508,9 @@ export default function DataExplorer() {
                       </button>
                     </td>
                     <td>
-                      <button className="btn btn-sm" style={{ fontSize: '0.72rem', color: 'var(--danger)' }}
+                      <button className="btn btn-sm btn-ghost" style={{ fontSize: '0.72rem', color: 'var(--danger)' }}
                         onClick={() => confirmDelete(rec)} title="Xóa bản ghi">
+                        {icon('trash2', 14)}
                       </button>
                     </td>
                   </tr>

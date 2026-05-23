@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { icon } from '../../components/ui/icons'
+import { VISUAL_ASSETS } from '../../constants/visuals'
 
 const API_BASE = '/api'
 
@@ -107,6 +108,14 @@ async function fetchStats() {
 function RequirementsForm({ data, errors, onChange }) {
   return (
     <>
+      <div className="survey-form-section-title">
+        <span>01</span>
+        <div>
+          <strong>Nhu cầu cốt lõi</strong>
+          <p>Chọn loại tài sản, khu vực, ngân sách và quy mô mong muốn.</p>
+        </div>
+      </div>
+
       {/* Property type */}
       <div className="form-group">
         <label className="form-label">Loại bất động sản *</label>
@@ -281,6 +290,14 @@ function RequirementsForm({ data, errors, onChange }) {
 function LegalUrgencyForm({ data, errors, onChange }) {
   return (
     <>
+      <div className="survey-form-section-title">
+        <span>02</span>
+        <div>
+          <strong>Pháp lý và thời hạn</strong>
+          <p>Điều kiện mua và mức độ khẩn cấp của yêu cầu.</p>
+        </div>
+      </div>
+
       <div className="form-group">
         <label className="form-label">Yêu cầu pháp lý</label>
         <div className="flex flex-col gap-2">
@@ -499,9 +516,12 @@ export default function BuyerSurvey() {
   if (submitted) {
     return (
       <div>
-        <div className="page-header">
-          <h1 className="page-title">Khảo sát nhu cầu tìm mua BĐS</h1>
-          <p className="page-subtitle">Cảm ơn bạn đã tham gia nghiên cứu!</p>
+        <div className="survey-hero animate-fadeIn">
+          <div className="survey-hero-copy">
+            <div className="survey-hero-eyebrow">Buyer demand study</div>
+            <h1 className="survey-hero-title">Khảo sát nhu cầu tìm mua BĐS</h1>
+            <p className="survey-hero-description">Cảm ơn bạn đã tham gia nghiên cứu!</p>
+          </div>
         </div>
         <SuccessScreen result={submitResult} onReset={handleReset} />
       </div>
@@ -510,56 +530,54 @@ export default function BuyerSurvey() {
 
   return (
     <div>
-      {/* Page Header */}
-      <div className="page-header">
-        <h1 className="page-title">Khảo sát nhu cầu tìm mua BĐS</h1>
-        <p className="page-subtitle">
-          Giúp nghiên cứu ước lượng vùng giá chấp nhận thị trường bằng tín hiệu cung-cầu
-        </p>
-      </div>
-
-      {/* Research context banner */}
-      <div style={{
-        background: 'linear-gradient(135deg, #7c3aed15, #06b6d415)',
-        border: '1px solid #7c3aed30',
-        borderRadius: 12,
-        padding: '1rem 1.25rem',
-        marginBottom: '1.5rem',
-        fontSize: '0.85rem',
-        lineHeight: 1.6,
-        color: 'var(--text-secondary)',
-      }}>
-        <strong style={{ color: 'var(--primary)' }}>Nghiên cứu SDEV — Pilot 3 quận Hà Nội</strong><br />
-        Dữ liệu của bạn được dùng để xây dựng tín hiệu cầu (demand signal) cho mô hình ước lượng vùng giá chấp nhận.
-        Kết quả chỉ dùng cho mục đích nghiên cứu khoa học, <strong>không phải tư vấn đầu tư</strong>.
-      </div>
-
-      {/* Progress stats */}
-      {stats && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', marginBottom: '1.5rem' }}>
-          <div className="card" style={{ textAlign: 'center', padding: '0.875rem' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--primary)' }}>
-              {stats.buyer_requirements?.total_active || 0}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Yêu cầu đã thu thập</div>
-          </div>
-          <div className="card" style={{ textAlign: 'center', padding: '0.875rem' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--success)' }}>
-              {stats.expert_evaluation?.completed || 0}/{stats.expert_evaluation?.total_properties || 50}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Expert đánh giá xong</div>
-          </div>
-          <div className="card" style={{ textAlign: 'center', padding: '0.875rem' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--warning)' }}>
-              {stats.buyer_requirements?.target || 200}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Mục tiêu thu thập</div>
+      <div className="survey-hero animate-fadeIn">
+        <div className="survey-hero-copy">
+          <div className="survey-hero-eyebrow">Buyer demand study</div>
+          <h1 className="survey-hero-title">Khảo sát nhu cầu tìm mua BĐS</h1>
+          <p className="survey-hero-description">
+            Giúp nghiên cứu ước lượng vùng giá chấp nhận thị trường bằng tín hiệu cung-cầu.
+            Mẫu của bạn trở thành tín hiệu thật cho mô hình, không phải dữ liệu demo.
+          </p>
+          <div className="survey-hero-points">
+            <span className="survey-hero-chip">2 bước</span>
+            <span className="survey-hero-chip">Pilot 3 quận Hà Nội</span>
+            <span className="survey-hero-chip">Ẩn danh / có thể bổ sung</span>
           </div>
         </div>
-      )}
+
+        <div className="survey-hero-media">
+          <div className="survey-hero-shot">
+            <img src={VISUAL_ASSETS.houseExterior} alt="Bất động sản thực dùng cho khảo sát nhu cầu" />
+            <div className="survey-hero-shot-label">
+              <span className="survey-hero-shot-kicker">Demand input</span>
+              <strong>Dữ liệu khảo sát tác động trực tiếp đến mô hình cầu</strong>
+              <span className="survey-hero-mini-caption">Giá, diện tích, khu vực và thời hạn mua được lưu như tín hiệu thật.</span>
+            </div>
+          </div>
+          <div className="survey-hero-mini-stack">
+            <div className="survey-hero-metric">
+              <span>{stats?.buyer_requirements?.total_active || 0}</span>
+              <strong>Yêu cầu đã thu thập</strong>
+            </div>
+            <div className="survey-hero-metric">
+              <span>{stats?.expert_evaluation?.completed || 0}/{stats?.expert_evaluation?.total_properties || 50}</span>
+              <strong>Expert đánh giá xong</strong>
+            </div>
+            <div className="survey-hero-metric">
+              <span>{stats?.buyer_requirements?.target || 200}</span>
+              <strong>Mục tiêu thu thập</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="survey-context-strip">
+        <strong>Nghiên cứu SDEV</strong>
+        <span>Dữ liệu của bạn được dùng để xây dựng tín hiệu cầu cho mô hình ước lượng vùng giá chấp nhận. Kết quả chỉ dùng cho nghiên cứu khoa học, không phải tư vấn đầu tư.</span>
+      </div>
 
       {/* Step indicator */}
-      <div style={{
+      <div className="survey-step-rail" style={{
         display: 'flex',
         gap: '0.5rem',
         marginBottom: '1.5rem',
@@ -596,7 +614,7 @@ export default function BuyerSurvey() {
       </div>
 
       {/* Form card */}
-      <div className="card animate-fadeIn">
+      <div className="card animate-fadeIn survey-form-card">
         <div className="card-header">
           <span className="stat-icon primary">{icon('home', 18)}</span>
           <span className="card-title">

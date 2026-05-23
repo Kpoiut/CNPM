@@ -21,6 +21,7 @@ import ChartWrapper from '../../components/ui/ChartWrapper'
 import { LoadingOverlay } from '../../components/ui/skeleton'
 import { useAuth } from '../../components/auth'
 import { icon } from '../../components/ui/icons'
+import { VISUAL_ASSETS } from '../../constants/visuals'
 import { addNotification, openNotificationCenter } from '../../lib/notifications'
 import {
   TIER_COLORS, EVIDENCE_LABELS, EVIDENCE_WEIGHTS, PRICE_RANGES,
@@ -274,36 +275,82 @@ function Dashboard() {
 
   return (
     <div>
-      {/* Page Header */}
-      <div className="page-header">
-        <div className="page-header-row">
-          <div>
-            <h1 className="page-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              {icon('barChart3', 22)} Thống kê dữ liệu nghiên cứu
-            </h1>
-            <p className="page-subtitle">
-              Tổng quan về dữ liệu bất động sản và hiệu suất mô hình ML
-            </p>
+      <div className="dashboard-hero animate-fadeIn">
+        <div className="dashboard-hero-copy">
+          <div className="dashboard-hero-eyebrow">Bảng điều hành dữ liệu</div>
+          <h1 className="dashboard-hero-title">Thống kê dữ liệu nghiên cứu</h1>
+          <p className="dashboard-hero-description">
+            Tổng quan đọc trực tiếp từ database: bản ghi, provenance, evidence tier, và trạng thái model hiện tại.
+          </p>
+          <div className="dashboard-hero-points">
+            <span className="dashboard-hero-chip">{fmt(stats.total_records || 0)} bản ghi</span>
+            <span className="dashboard-hero-chip">{Math.round(((stats.by_verification?.verified || 0) / (stats.total_records || 1)) * 100)}% verified</span>
+            <span className="dashboard-hero-chip">Self-collected {scRatio.toFixed(1)}%</span>
+            <span className="dashboard-hero-chip">{String(totalDistrictCount || 0)} quận trong scope</span>
           </div>
-          <button className="btn btn-secondary" onClick={() => { refetchStats(); refetchProperties() }} disabled={isLoading} style={{ padding: '0.5rem 1rem' }}>
-            {icon('refreshCw', 14)} Làm mới
-          </button>
+          <div className="dashboard-hero-meta">
+            <button
+              className="btn btn-secondary btn-sm"
+              onClick={() => { refetchStats(); refetchProperties() }}
+              disabled={isLoading}
+              style={{ padding: '0.55rem 0.85rem' }}
+            >
+              {icon('refreshCw', 14)} Làm mới
+            </button>
+            <div className="dashboard-hero-meta-item">
+              <strong>Source</strong>
+              <span>Đọc từ database thật · cache 5 phút</span>
+            </div>
+            <div className="dashboard-hero-meta-item">
+              <strong>Model</strong>
+              <span>{stats.latest_model?.model_name || 'Chưa có model train'}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="dashboard-hero-media">
+          <div className="dashboard-hero-shot">
+            <img src={VISUAL_ASSETS.citySkyline} alt="Đường chân trời thị trường BĐS" />
+            <div className="dashboard-hero-shot-label">
+              <span className="dashboard-hero-shot-kicker">Market pulse</span>
+              <strong>Đọc bức tranh thị trường theo vùng</strong>
+              <span>Top tỉnh / thành, phân bố loại tài sản và nhịp truy vấn model.</span>
+            </div>
+          </div>
+          <div className="dashboard-hero-mini-stack">
+            <div className="dashboard-hero-mini">
+              <img src={VISUAL_ASSETS.houseExterior} alt="Nguồn cung bản ghi nhà ở" />
+              <div className="dashboard-hero-mini-label">
+                <span className="dashboard-hero-shot-kicker">Supply</span>
+                <strong>Nguồn bản ghi thật</strong>
+                <span className="dashboard-hero-mini-caption">Độ phủ verified / provenance.</span>
+              </div>
+            </div>
+            <div className="dashboard-hero-mini">
+              <img src={VISUAL_ASSETS.officeInterior} alt="Khu vận hành Research Lab" />
+              <div className="dashboard-hero-mini-label">
+                <span className="dashboard-hero-shot-kicker">Ops</span>
+                <strong>Research Lab / Train</strong>
+                <span className="dashboard-hero-mini-caption">Luồng kiểm thử và training admin.</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="card mb-6" style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem',
-        padding: '0.875rem 1rem',
-        border: '1px solid var(--success-border)',
-        background: 'var(--success-bg)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', color: 'var(--success)' }}>
-          {icon('database', 18)}
-          <strong>Dữ liệu thống kê đang đọc trực tiếp từ database</strong>
+      <div className="dashboard-live-strip">
+        <div className="dashboard-live-chip">
+          {icon('database', 16)}
+          <span>Dữ liệu thống kê đang đọc trực tiếp từ database</span>
         </div>
-        <span className="badge badge-success">
-          {(Array.isArray(propertiesData) ? propertiesData.length : 0).toLocaleString('vi-VN')} record dùng cho biểu đồ
-        </span>
+        <div className="dashboard-live-chip">
+          {icon('barChart3', 16)}
+          <span>{(Array.isArray(propertiesData) ? propertiesData.length : 0).toLocaleString('vi-VN')} record dùng cho biểu đồ</span>
+        </div>
+        <div className="dashboard-live-chip">
+          {icon('shieldCheck', 16)}
+          <span>{confidenceCounts.source || 'server'} confidence gate</span>
+        </div>
       </div>
 
       <ResearchLabAccessPanel />
@@ -334,7 +381,7 @@ function Dashboard() {
       )}
 
       {/* Stat Cards Grid */}
-      <div style={{
+      <div className="dashboard-kpi-grid" style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
         gap: '0.75rem',
@@ -390,7 +437,7 @@ function Dashboard() {
       </div>
 
       {/* Charts Row 1 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem', marginBottom: '1.25rem' }}>
+      <div className="dashboard-grid-two" style={{ marginBottom: '1.25rem' }}>
         {/* Property Type Pie */}
         <Card>
           <CardHeader>
@@ -455,7 +502,7 @@ function Dashboard() {
       </div>
 
       {/* Price Distribution */}
-      <Card style={{ marginBottom: '1.25rem' }}>
+      <Card className="dashboard-panel" style={{ marginBottom: '1.25rem' }}>
         <CardHeader>
           <CardTitle style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             {icon('trendingUp', 14)} Phân bố giá bất động sản
@@ -477,7 +524,7 @@ function Dashboard() {
       </Card>
 
       {/* Verification + Origin */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem', marginBottom: '1.25rem' }}>
+      <div className="dashboard-grid-split" style={{ marginBottom: '1.25rem' }}>
         <Card>
           <CardHeader>
             <CardTitle style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -700,7 +747,7 @@ function Dashboard() {
 
       {/* Model Performance */}
       {stats.latest_model && (
-        <Card style={{ borderLeft: '4px solid var(--primary)', marginBottom: '1.5rem' }}>
+        <Card className="dashboard-panel" style={{ borderLeft: '4px solid var(--primary)', marginBottom: '1.5rem' }}>
           <CardHeader>
             <CardTitle style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               {icon('bot', 14)} Hiệu suất mô hình hiện tại
@@ -786,7 +833,7 @@ function Dashboard() {
       )}
 
       {!stats.latest_model && (
-        <Card style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)' }}>
+        <Card className="dashboard-panel" style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
             {icon('flask', 18, '')}
             <div>
