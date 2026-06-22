@@ -1,70 +1,259 @@
-import React, { useMemo } from 'react'
-import { Canvas } from '@react-three/fiber'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { DoubleSide, EdgesGeometry, ExtrudeGeometry, Shape } from 'three'
 import { icon } from '../../components/ui/icons'
+import { buildPropertyMassing } from './propertyModelGeometry'
 
-const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v))
+const VIEW_PRESETS = [
+  { key: 'top', label: 'Mặt bằng', iconKey: 'layers' },
+  { key: 'iso', label: 'Isometric', iconKey: 'cube' },
+  { key: 'front', label: 'Mặt đứng', iconKey: 'building' },
+]
 
-function Massing({ meters, isLand, height }) {
-  const { geo, edges } = useMemo(() => {
+function useExtrusion(points, depth) {
+  const geometries = useMemo(() => {
     const shape = new Shape()
-    meters.forEach(([x, y], i) => (i ? shape.lineTo(x, y) : shape.moveTo(x, y)))
+    points.forEach(([x, y], index) => (
+      index ? shape.lineTo(x, y) : shape.moveTo(x, y)
+    ))
     shape.closePath()
-    const g = new ExtrudeGeometry(shape, { depth: height, bevelEnabled: false })
-    g.rotateX(-Math.PI / 2)
-    g.computeVertexNormals()
-    const e = new EdgesGeometry(g, 30)
-    return { geo: g, edges: e }
-  }, [meters, height])
+    const geometry = new ExtrudeGeometry(shape, { depth, bevelEnabled: false })
+    geometry.rotateX(-Math.PI / 2)
+    geometry.computeVertexNormals()
+    return {
+      geometry,
+      edges: new EdgesGeometry(geometry, 24),
+    }
+  }, [points, depth])
 
-  const capColor = isLand ? '#74c365' : '#c2ccd9'
-  const sideColor = isLand ? '#8a6a45' : '#dde4ee'
+  useEffect(() => () => {
+    geometries.geometry.dispose()
+    geometries.edges.dispose()
+  }, [geometries])
+
+  return geometries
+}
+
+function ExtrudedVolume({ points, height, positionY = 0, capColor, sideColor, edgeColor, opacity = 1 }) {
+  const { geometry, edges } = useExtrusion(points, height)
   return (
-    <group>
-      <mesh geometry={geo} castShadow receiveShadow>
-        <meshStandardMaterial attach="material-0" color={capColor} roughness={0.92} metalness={0.02} side={DoubleSide} />
-        <meshStandardMaterial attach="material-1" color={sideColor} roughness={0.8} metalness={0.04} side={DoubleSide} />
+    <group position-y={positionY}>
+      <mesh geometry={geometry} castShadow receiveShadow>
+        <meshStandardMaterial attach="material-0" color={capColor} roughness={0.82} metalness={0.04} side={DoubleSide} transparent={opacity < 1} opacity={opacity} />
+        <meshStandardMaterial attach="material-1" color={sideColor} roughness={0.7} metalness={0.08} side={DoubleSide} transparent={opacity < 1} opacity={opacity} />
       </mesh>
       <lineSegments geometry={edges}>
-        <lineBasicMaterial color="#0ea5e9" linewidth={2} />
+        <lineBasicMaterial color={edgeColor} transparent opacity={0.82} />
       </lineSegments>
     </group>
   )
 }
 
-export default function PropertyModel3D({ meters = [], realShape = false, spec = {} }) {
-  const safeMeters = meters.length >= 3 ? meters : [[-4, -6], [4, -6], [4, 6], [-4, 6]]
-  const r = useMemo(() => {
-    const xs = safeMeters.map(p => p[0])
-    const ys = safeMeters.map(p => p[1])
-    return Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys), 6) / 2
-  }, [safeMeters])
-  const height = spec.isLand ? Math.max(1.4, r * 0.12) : clamp((spec.floors || 1) * 3.3, 3, 60)
+function ParcelSlab({ model }) {
+  return (
+    <ExtrudedVolume
+      points={model.parcel}
+      height={0.42}
+      positionY={0.04}
+      capColor="#155e75"
+      sideColor="#0f3f4b"
+      edgeColor="#22d3ee"
+      opacity={model.floorCount ? 0.82 : 1}
+    />
+  )
+}
+
+function BuildingMassing({ model, isTower }) {
+  const floorBlockHeight = model.floorHeightM * 0.9
+  const { geometry, edges } = useExtrusion(model.buildingFootprint, floorBlockHeight)
 
   return (
-    <div style={{ width: '100%', height: 480, borderRadius: 14, overflow: 'hidden', border: '1px solid var(--border)', position: 'relative', background: '#0b1a2b' }}>
-      <Canvas shadows dpr={[1, 2]} camera={{ position: [r * 1.9, height + r * 1.5, r * 1.9], fov: 42 }}>
-        <color attach="background" args={['#0b1a2b']} />
-        <hemisphereLight args={['#bcd6ff', '#13202c', 0.75]} />
-        <directionalLight
-          position={[r * 2, r * 3 + height * 2, r * 1.5]} intensity={1.25} castShadow
-          shadow-mapSize-width={1024} shadow-mapSize-height={1024}
-          shadow-camera-left={-r * 3} shadow-camera-right={r * 3} shadow-camera-top={r * 3} shadow-camera-bottom={-r * 3} shadow-camera-far={r * 12 + 60} />
-        <Massing meters={safeMeters} isLand={Boolean(spec.isLand)} height={height} />
-        <gridHelper args={[r * 12, 30, '#274a66', '#163045']} position={[0, 0.01, 0]} />
-        <mesh rotation-x={-Math.PI / 2} receiveShadow position={[0, 0, 0]}>
-          <planeGeometry args={[r * 14, r * 14]} />
-          <shadowMaterial opacity={0.32} />
-        </mesh>
-        <OrbitControls enableDamping dampingFactor={0.1} target={[0, height * 0.4, 0]} maxPolarAngle={Math.PI / 2.04} minDistance={r} maxDistance={r * 8 + 40} />
-      </Canvas>
-      <div style={{ position: 'absolute', top: 10, left: 12, display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.7rem', color: '#cbd5e1', background: 'rgba(2,8,20,0.55)', padding: '3px 9px', borderRadius: 7 }}>
-        {icon('ruler', 12)} {realShape ? 'Hình thửa thật (OSM)' : 'Khối ước lượng (mặt tiền x sâu)'}{spec.isLand ? ` · ${Math.round(spec.landArea || 0)} m²` : ` · ${spec.floors || 1} tầng`}
+    <group position-y={0.5}>
+      {Array.from({ length: model.floorCount }, (_, index) => {
+        const highlighted = index === model.highlightedFloorIndex
+        const capColor = highlighted ? '#fbbf24' : index % 2 ? '#d9e3ec' : '#edf3f7'
+        const sideColor = highlighted ? '#f59e0b' : index % 2 ? '#9fb0bf' : '#b8c6d2'
+        return (
+          <group key={index} position-y={index * model.floorHeightM}>
+            <mesh geometry={geometry} castShadow receiveShadow>
+              <meshStandardMaterial attach="material-0" color={capColor} roughness={0.58} metalness={isTower ? 0.18 : 0.06} side={DoubleSide} emissive={highlighted ? '#7c3d00' : '#000000'} emissiveIntensity={highlighted ? 0.28 : 0} />
+              <meshStandardMaterial attach="material-1" color={sideColor} roughness={0.5} metalness={isTower ? 0.22 : 0.08} side={DoubleSide} emissive={highlighted ? '#78350f' : '#000000'} emissiveIntensity={highlighted ? 0.22 : 0} />
+            </mesh>
+            <lineSegments geometry={edges}>
+              <lineBasicMaterial color={highlighted ? '#fff7cc' : '#456175'} transparent opacity={highlighted ? 1 : 0.7} />
+            </lineSegments>
+          </group>
+        )
+      })}
+      <ExtrudedVolume
+        points={model.buildingFootprint}
+        height={0.3}
+        positionY={model.buildingHeightM + 0.08}
+        capColor={isTower ? '#5f7182' : '#334e5d'}
+        sideColor="#263b47"
+        edgeColor="#8dd8e8"
+      />
+    </group>
+  )
+}
+
+function CameraRig({ model, preset, revision, controlsRef }) {
+  const { camera, invalidate } = useThree()
+
+  useEffect(() => {
+    const targetY = Math.max(0.2, model.buildingHeightM * 0.38)
+    const horizontal = Math.max(model.radius * 2.8, 12)
+    const vertical = Math.max(model.buildingHeightM * 1.15, horizontal)
+    const positions = {
+      top: [0, Math.max(vertical * 1.35, model.radius * 5), 0.01],
+      iso: [horizontal * 1.15, targetY + vertical * 0.72, horizontal * 1.15],
+      front: [0, targetY + model.radius * 0.15, Math.max(horizontal * 1.6, model.buildingHeightM * 1.25)],
+    }
+    camera.up.set(0, preset === 'top' ? 0 : 1, preset === 'top' ? -1 : 0)
+    camera.position.set(...positions[preset])
+    camera.near = 0.1
+    camera.far = Math.max(500, vertical * 14)
+    camera.updateProjectionMatrix()
+    controlsRef.current?.target.set(0, targetY, 0)
+    controlsRef.current?.update()
+    invalidate()
+  }, [camera, controlsRef, invalidate, model.buildingHeightM, model.radius, preset, revision])
+
+  return null
+}
+
+export default function PropertyModel3D({ meters = [], realShape = false, spec = {}, noun = 'Tài sản' }) {
+  const [preset, setPreset] = useState('iso')
+  const [cameraRevision, setCameraRevision] = useState(0)
+  const [autoRotate, setAutoRotate] = useState(false)
+  const controlsRef = useRef(null)
+  const model = useMemo(
+    () => buildPropertyMassing(meters, { ...spec, realShape }),
+    [meters, realShape, spec],
+  )
+  const isTower = Boolean(spec.isTower)
+  const shapeNote = realShape
+    ? 'Polygon OSM được quy đổi sang mét; cần đối chiếu hồ sơ địa chính trước giao dịch.'
+    : 'Footprint dựng từ mặt tiền, chiều sâu và diện tích đã nhập; không phải bản vẽ hoàn công.'
+
+  return (
+    <section className="property-model3d" data-testid="property-model-3d">
+      <div className="property-model3d__toolbar" aria-label="Điều khiển góc nhìn 3D">
+        <div className="property-model3d__view-switch" role="group" aria-label="Góc nhìn">
+          {VIEW_PRESETS.map(view => (
+            <button
+              key={view.key}
+              type="button"
+              className={preset === view.key ? 'is-active' : ''}
+              aria-pressed={preset === view.key}
+              onClick={() => setPreset(view.key)}
+            >
+              {icon(view.iconKey, 13)}
+              <span>{view.label}</span>
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          className={`property-model3d__icon-button${autoRotate ? ' is-active' : ''}`}
+          aria-label={autoRotate ? 'Dừng tự xoay' : 'Bật tự xoay'}
+          aria-pressed={autoRotate}
+          title={autoRotate ? 'Dừng tự xoay' : 'Bật tự xoay'}
+          onClick={() => setAutoRotate(value => !value)}
+        >
+          {icon(autoRotate ? 'pause' : 'rotateCw', 14, '', autoRotate ? '#ffffff' : undefined)}
+        </button>
+        <button
+          type="button"
+          className="property-model3d__icon-button"
+          aria-label="Đặt lại góc nhìn"
+          title="Đặt lại góc nhìn"
+          onClick={() => {
+            setPreset('iso')
+            setCameraRevision(value => value + 1)
+          }}
+        >
+          {icon('refreshCcw', 14)}
+        </button>
       </div>
-      <div style={{ position: 'absolute', bottom: 10, left: 12, display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: '0.66rem', color: '#94a3b8' }}>
-        {icon('mouse', 12)} Kéo xoay · cuộn để phóng to · chuột phải để di chuyển
+
+      <div className="property-model3d__canvas">
+        <Canvas
+          shadows
+          dpr={[1, 1.5]}
+          frameloop={autoRotate ? 'always' : 'demand'}
+          camera={{ position: [18, 18, 18], fov: 42 }}
+          gl={{ antialias: true, alpha: false, powerPreference: 'high-performance', preserveDrawingBuffer: true }}
+        >
+          <color attach="background" args={['#07131d']} />
+          <fog attach="fog" args={['#07131d', model.radius * 8, model.radius * 24 + model.buildingHeightM]} />
+          <ambientLight intensity={0.38} />
+          <hemisphereLight args={['#b9e6f2', '#0b1f22', 0.9]} />
+          <directionalLight
+            position={[model.radius * 2.4, model.buildingHeightM + model.radius * 4, model.radius * 1.8]}
+            intensity={1.4}
+            castShadow
+            shadow-mapSize-width={1024}
+            shadow-mapSize-height={1024}
+            shadow-camera-left={-model.radius * 3}
+            shadow-camera-right={model.radius * 3}
+            shadow-camera-top={model.radius * 3}
+            shadow-camera-bottom={-model.radius * 3}
+            shadow-camera-far={model.radius * 14 + model.buildingHeightM}
+          />
+          <ParcelSlab model={model} />
+          {model.floorCount > 0 && <BuildingMassing model={model} isTower={isTower} />}
+          <gridHelper args={[model.radius * 14, 32, '#315568', '#17303d']} position={[0, 0.015, 0]} />
+          <mesh rotation-x={-Math.PI / 2} receiveShadow position={[0, -0.02, 0]}>
+            <planeGeometry args={[model.radius * 18, model.radius * 18]} />
+            <meshStandardMaterial color="#0a1b25" roughness={1} />
+          </mesh>
+          <CameraRig model={model} preset={preset} revision={cameraRevision} controlsRef={controlsRef} />
+          <OrbitControls
+            ref={controlsRef}
+            enableDamping
+            dampingFactor={0.08}
+            autoRotate={autoRotate}
+            autoRotateSpeed={0.7}
+            maxPolarAngle={Math.PI / 2.02}
+            minDistance={Math.max(4, model.radius * 0.75)}
+            maxDistance={model.radius * 10 + model.buildingHeightM * 1.8 + 40}
+          />
+        </Canvas>
+
+        <div className="property-model3d__source">
+          {icon(realShape ? 'mapPinned' : 'ruler', 13, '', '#67e8f9')}
+          <span>{model.sourceLabel}</span>
+        </div>
+        <div className="property-model3d__compass" aria-label="Hướng Bắc">
+          <span>B</span>
+          {icon('navigation', 14, '', '#fbbf24')}
+        </div>
+        <div className="property-model3d__gesture">
+          {icon('mouse', 12, '', '#a7bdca')} Kéo xoay · cuộn zoom · chuột phải di chuyển
+        </div>
       </div>
-    </div>
+
+      <div className="property-model3d__facts">
+        <div>
+          <span>Footprint</span>
+          <strong>{model.dimensions.widthM} × {model.dimensions.depthM} m</strong>
+        </div>
+        <div>
+          <span>Quy mô</span>
+          <strong>{model.floorCount ? `${model.floorCount} tầng` : `${model.dimensions.areaM2} m² đất`}</strong>
+        </div>
+        <div>
+          <span>Đối tượng</span>
+          <strong>{isTower && model.highlightedFloorIndex != null ? `${noun} · tầng ${model.highlightedFloorIndex + 1}` : noun}</strong>
+        </div>
+        <div className="property-model3d__provenance">
+          <span>Mức chính xác</span>
+          <strong>{realShape ? 'Theo polygon tham chiếu' : 'Massing ước lượng'}</strong>
+        </div>
+      </div>
+      <p className="property-model3d__note">{shapeNote}</p>
+    </section>
   )
 }

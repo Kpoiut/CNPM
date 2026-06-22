@@ -16,6 +16,8 @@ def test_catalog_audit_exposes_database_value_and_count_mode():
     assert '"total_bytes"' in source
     assert '"purpose"' in source
     assert '"data_state"' in source
+    assert '"accounts"' in source
+    assert "management.account_registry" in source
 
 
 def test_ci_requests_exact_catalog_evidence():

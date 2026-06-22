@@ -20,6 +20,16 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    preview: {
+      port: 4173,
+      proxy: {
+        '/api': {
+          target: apiTarget,
+          changeOrigin: true,
+          secure: false,
+        },
+      },
+    },
     build: {
       chunkSizeWarningLimit: 700,
       rolldownOptions: {
@@ -43,7 +53,6 @@ export default defineConfig(({ mode }) => {
                 name: 'charts',
                 test: /node_modules[\\/](recharts|d3-|victory-vendor)[\\/]/,
                 priority: 30,
-                maxSize: 280 * 1024,
               },
               {
                 name: 'maps',

@@ -320,7 +320,7 @@ function SiriSphere({ listening = false, size = 48 }) {
 }
 
 // ─── Chatbox panel ─────────────────────────────────────────────────────────────
-function Chatbox({ messages, onSend, onClose, onRestoreChat, recentChats, orbX, orbY, sending, voiceTranscript, voiceListening, onStartVoice, onStopVoice, onRunAction }) {
+function Chatbox({ messages, onSend, onClose, onRestoreChat, recentChats, orbX, orbY, sending, voiceTranscript, voiceListening, onStartVoice, onStopVoice, onRunAction, novaStatus }) {
   const [input, setInput] = useState('')
   const [attachments, setAttachments] = useState([])
   const [showHistory, setShowHistory] = useState(false)
@@ -334,6 +334,13 @@ function Chatbox({ messages, onSend, onClose, onRestoreChat, recentChats, orbX, 
   const vw = window.innerWidth
   const vh = window.innerHeight
   const pos = useMemo(() => chatPos(orbX, orbY, vw, vh), [orbX, orbY, vw, vh])
+  const statusText = voiceListening
+    ? 'Đang nghe...'
+    : novaStatus?.provider === 'offline'
+    ? 'Ngữ cảnh dự án'
+    : novaStatus?.provider
+    ? 'AI trực tuyến'
+    : 'Đang kiểm tra'
 
   // Auto-focus input
   useEffect(() => {
@@ -448,7 +455,7 @@ function Chatbox({ messages, onSend, onClose, onRestoreChat, recentChats, orbX, 
               boxShadow: `0 0 3px ${voiceListening ? '#f59e0b' : '#06d6a0'}`,
               animation: voiceListening ? 'dotBlink 0.85s ease-in-out infinite' : 'none',
             }} />
-            {voiceListening ? 'Đang nghe...' : 'Trực tuyến'}
+            {statusText}
           </div>
         </div>
         {voiceListening && (
@@ -879,6 +886,7 @@ export default function NovaAssistant() {
   const [voiceListening, setVoiceListening] = useState(false)
   const [voiceTranscript, setVoiceTranscript] = useState('')
   const [sending, setSending] = useState(false)
+  const [novaStatus, setNovaStatus] = useState(null)
   
   // Orb position — canonical: always start at bottom-right
   const [orbPos, setOrbPos] = useState(() => ({
@@ -894,6 +902,15 @@ export default function NovaAssistant() {
   const orbY = orbPos.y
 
   const navigate = useNavigate()
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/nova/status', { cache: 'no-store' })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (!cancelled) setNovaStatus(data) })
+      .catch(() => { if (!cancelled) setNovaStatus({ provider: 'offline' }) })
+    return () => { cancelled = true }
+  }, [])
 
   // ─── Agentic action: thực thi tác vụ hệ thống do người dùng xác nhận ─────────
   const runNovaAction = useCallback(async (action, msgId) => {
@@ -1208,6 +1225,7 @@ export default function NovaAssistant() {
           onStartVoice={startVoice}
           onStopVoice={stopVoice}
           onRunAction={runNovaAction}
+          novaStatus={novaStatus}
         />
       )}
 

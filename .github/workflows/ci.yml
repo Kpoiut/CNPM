@@ -150,6 +150,10 @@ jobs:
           mkdir -p reports/ci
           python scripts/quality/validate_test_catalog.py \
             --report reports/ci/test-catalogue-validation.json
+          python scripts/quality/export_ci_test_matrix.py \
+            --report reports/ci/test-catalogue-ci-matrix.json \
+            --markdown reports/ci/test-catalogue-ci-matrix.md
+          cat reports/ci/test-catalogue-ci-matrix.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload catalogue evidence
         if: always()
@@ -159,6 +163,8 @@ jobs:
           path: |
             docs/testing/AVM_Production_Test_Cases.xlsx
             reports/ci/test-catalogue-validation.json
+            reports/ci/test-catalogue-ci-matrix.json
+            reports/ci/test-catalogue-ci-matrix.md
           if-no-files-found: error
           retention-days: 30
 
@@ -188,7 +194,7 @@ jobs:
           retention-days: 30
 
   docker-smoke:
-    name: Docker build + migration + health smoke
+    name: Docker build + migration + health + authenticated UI audit
     runs-on: ubuntu-latest
     needs: [backend-tests, frontend-tests, test-catalogue, security-audit]
     env:
@@ -200,6 +206,19 @@ jobs:
       CORS_ORIGINS: http://localhost
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Node 20 for authenticated UI audit
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install locked UI audit runtime
+        working-directory: frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
 
       - name: Validate Compose contract
         run: docker compose config --quiet
@@ -224,6 +243,38 @@ jobs:
           docker compose logs --no-color
           exit 1
 
+      - name: Enforce prediction latency SLO inside backend container
+        run: |
+          docker compose exec -T backend python scripts/load_test.py \
+            --url http://127.0.0.1:8000 \
+            --endpoint /api/v2/pipeline \
+            --requests 20 \
+            --concurrency 2 \
+            --threshold-ms 200 \
+            --report /tmp/prediction-latency.json
+          docker compose cp backend:/tmp/prediction-latency.json reports/ci/prediction-latency.json
+
+      - name: Seed isolated admin and user audit accounts
+        shell: bash
+        run: |
+          curl --fail-with-body --silent --show-error \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"codex_ui_audit_admin","password":"CodexAuditAdmin!2026","email":"ci-admin@example.test"}' \
+            http://127.0.0.1/api/auth/seed-admin >/dev/null
+          curl --fail-with-body --silent --show-error \
+            -H 'Content-Type: application/json' \
+            -d '{"username":"codex_ui_audit_user","password":"CodexAuditUser!2026","email":"ci-user@example.test"}' \
+            http://127.0.0.1/api/auth/register >/dev/null
+
+      - name: Audit authenticated admin and user production UI
+        working-directory: frontend
+        env:
+          UI_BASE_URL: http://127.0.0.1
+          API_BASE_URL: http://127.0.0.1
+        run: |
+          UI_AUDIT_ROLE=admin npm run audit:ui
+          UI_AUDIT_ROLE=user npm run audit:ui
+
       - name: Record container state and logs
         if: always()
         shell: bash
@@ -239,8 +290,10 @@ jobs:
           name: docker-smoke-evidence-${{ github.sha }}
           path: |
             reports/ci/docker-health.json
+            reports/ci/prediction-latency.json
             reports/ci/docker-compose-ps.json
             reports/ci/docker-compose.log
+            reports/ui-audit/baseline
           if-no-files-found: warn
           retention-days: 30
 

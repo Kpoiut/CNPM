@@ -17,6 +17,7 @@ from uuid import uuid4
 import os
 import time
 from datetime import datetime
+from threading import RLock
 from fastapi import APIRouter, HTTPException, Depends, Request, Body, Query
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
@@ -44,6 +45,10 @@ from src.backend.model_metrics import build_metric_provenance
 # ENGINE VERSION (configurable via env var)
 # =============================================================================
 ENGINE_VERSION: str = os.environ.get("VALUATION_ENGINE_VERSION", "v2.0.0")
+_COMPARABLE_CACHE_TTL_SECONDS = float(os.environ.get("COMPARABLE_CACHE_TTL_SECONDS", "60"))
+_COMPARABLE_CACHE_MAX_KEYS = int(os.environ.get("COMPARABLE_CACHE_MAX_KEYS", "128"))
+_comparable_cache: dict[tuple, tuple[float, list[ComparableRecord]]] = {}
+_comparable_cache_lock = RLock()
 
 
 # =============================================================================
@@ -446,8 +451,11 @@ def _persist_valuation_run(
     request_latency_ms: float,
     engine_version: str,
     comparable_records: list[dict] | None = None,
-) -> ValuationRun:
+) -> None:
     """Persist one canonical prediction event; caller transaction must succeed."""
+    if not current_user or current_user.id <= 0:
+        return
+
     input_payload = req.model_dump(mode="json")
     canonical_input = json.dumps(
         input_payload,
@@ -455,11 +463,11 @@ def _persist_valuation_run(
         sort_keys=True,
         separators=(",", ":"),
     )
-    account_id = current_user.id if current_user and current_user.id > 0 else None
     record = ValuationRun(
         request_id=request_id,
         source_endpoint=source_endpoint,
-        account_id=account_id,
+        account_id=current_user.id,
+        run_at=datetime.utcnow(),
         model_version_snapshot=engine_version,
         model_name="ValuationEngine",
         engine_version=engine_version,
@@ -492,8 +500,6 @@ def _persist_valuation_run(
     )
     db.add(record)
     db.commit()
-    db.refresh(record)
-    return record
 
 
 def _comparable_finder(asset_input: AssetInput, db: Session) -> list[ComparableRecord]:
@@ -518,6 +524,23 @@ def _comparable_finder(asset_input: AssetInput, db: Session) -> list[ComparableR
     db_type = type_map.get(asset_input.asset_type, asset_input.asset_type.lower())
 
     norm_province = normalize_province(asset_input.province_city) or asset_input.province_city
+    cache_key = (
+        db_type,
+        norm_province,
+        asset_input.district,
+        asset_input.ward,
+        round(float(asset_input.area_m2 or 0), 2),
+        round(float(asset_input.latitude or 0), 6),
+        round(float(asset_input.longitude or 0), 6),
+        getattr(asset_input, "apt_floor", None) or getattr(asset_input, "floor_count", None),
+        getattr(asset_input, "bedrooms", None),
+        getattr(asset_input, "ownership_type", None),
+    )
+    now = time.monotonic()
+    with _comparable_cache_lock:
+        cached = _comparable_cache.get(cache_key)
+        if cached and now - cached[0] <= _COMPARABLE_CACHE_TTL_SECONDS:
+            return cached[1]
 
     base_query = db.query(Property).filter(
         Property.record_status != "archived",
@@ -631,6 +654,11 @@ def _comparable_finder(asset_input: AssetInput, db: Session) -> list[ComparableR
             )
         )
 
+    with _comparable_cache_lock:
+        if len(_comparable_cache) >= _COMPARABLE_CACHE_MAX_KEYS:
+            oldest_key = min(_comparable_cache, key=lambda key: _comparable_cache[key][0])
+            _comparable_cache.pop(oldest_key, None)
+        _comparable_cache[cache_key] = (time.monotonic(), records)
     return records
 
 

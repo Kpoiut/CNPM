@@ -37,6 +37,14 @@ test('public cannot access an admin route', () => {
   assert.equal(hasRouteAccess(route, 'admin'), true)
 })
 
+test('google oauth callback route is public and hidden from navigation', () => {
+  const route = getRouteByPath('/signin-google')
+  assert.equal(route.component, 'GoogleOAuthCallback')
+  assert.equal(route.minRole, 'public')
+  assert.equal(route.hidden, true)
+  assert.equal(hasRouteAccess(route, null), true)
+})
+
 test('unknown roles receive public navigation only', () => {
   assert.deepEqual(getNavigationForRole('unexpected'), getNavigationForRole('public'))
 })

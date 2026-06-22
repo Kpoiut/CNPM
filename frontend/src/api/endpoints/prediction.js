@@ -1,7 +1,7 @@
 /**
  * Prediction API endpoints — dùng fetchWithRetry có timeout + retry
  */
-import { BASE, V2_BASE, postJson, getJson, postForm } from '../client'
+import { BASE, V2_BASE, postJson, getJson } from '../client'
 
 /** POST /api/v2/pipeline — Production 9-gate locked pipeline */
 export const predictPipeline = (payload) => postJson(`${V2_BASE}/pipeline`, payload)
@@ -54,12 +54,8 @@ export const predictSDEV = (payload) => postJson(`${V2_BASE}/sdev`, {
 export const novaChat = (message, context = {}) =>
   postJson(`${BASE}/nova/chat`, { message, context })
 
-/** POST /api/nova/voice */
-export const novaVoice = (audioBlob) => {
-  const formData = new FormData()
-  formData.append('audio', audioBlob)
-  return postForm(`${BASE}/nova/voice`, formData)
-}
+/** POST /api/nova/voice — Web Speech transcript, backend expects JSON text */
+export const novaVoice = (text) => postJson(`${BASE}/nova/voice`, { text })
 
 /** GET /api/nova/status */
 export const getNovaStatus = () => getJson(`${BASE}/nova/status`)

@@ -1,4 +1,3 @@
 @echo off
-cd /d "%~dp0frontend"
-npm run dev
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0RUN_FRONTEND.ps1"
 pause

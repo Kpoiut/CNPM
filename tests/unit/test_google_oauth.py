@@ -39,6 +39,25 @@ def test_google_oauth_start_uses_state_cookie_and_pkce(monkeypatch):
     assert "httponly" in response.headers.get("set-cookie", "").lower()
 
 
+def test_google_oauth_start_uses_frontend_relay_for_local_preview(monkeypatch):
+    _set_google_env(monkeypatch)
+    monkeypatch.setenv(
+        "GOOGLE_OAUTH_REDIRECT_URI",
+        "http://127.0.0.1:8000/api/auth/google/callback",
+    )
+
+    from src.backend.main import app
+
+    response = TestClient(app).get(
+        "/api/auth/google/start",
+        headers={"referer": "http://127.0.0.1:4173/login"},
+        follow_redirects=False,
+    )
+
+    query = parse_qs(urlparse(response.headers["location"]).query)
+    assert query["redirect_uri"] == ["http://127.0.0.1:4173/signin-google"]
+
+
 def test_google_oauth_callback_rejects_invalid_state_before_google_exchange(monkeypatch):
     _set_google_env(monkeypatch)
 

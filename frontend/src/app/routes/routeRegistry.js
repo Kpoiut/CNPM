@@ -20,6 +20,7 @@ export const APP_ROUTES = Object.freeze([
   route('/methodology', 'Methodology', 'public', SHELL.PUBLIC, { title: 'Phương pháp' }),
   route('/about', 'About', 'public', SHELL.PUBLIC, { title: 'Giới thiệu' }),
   route('/login', 'Login', 'public', SHELL.PUBLIC, { title: 'Đăng nhập', hidden: true }),
+  route('/signin-google', 'GoogleOAuthCallback', 'public', SHELL.PUBLIC, { title: 'Google OAuth', hidden: true }),
 
   route('/app/valuations/new', 'Prediction', 'user', SHELL.USER, { title: 'Định giá mới' }),
   route('/app/valuations/history', 'ValuationHistory', 'user', SHELL.USER, { title: 'Lịch sử định giá' }),

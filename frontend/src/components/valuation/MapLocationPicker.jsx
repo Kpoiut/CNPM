@@ -385,6 +385,7 @@ export default function MapLocationPicker({ propertyType, onPropertyTypeChange, 
             <MapContainer
               center={CITY.hanoi.center} zoom={12} style={{ width: '100%', height: '100%' }}
               maxBounds={CITY.hanoi.bounds} maxBoundsViscosity={1.0} minZoom={11}
+              zoomAnimation={false} fadeAnimation={false} markerZoomAnimation={false}
             >
               <TileLayer
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

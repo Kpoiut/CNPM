@@ -4,16 +4,22 @@ Load test script for Real Estate AVM API.
 Checks server responsiveness under concurrent load.
 
 Usage:
-    python scripts/load_test.py [--url http://localhost:8000] [--requests 100] [--concurrency 10]
+    python scripts/load_test.py --endpoint /api/v2/pipeline --report reports/ci/prediction-latency.json
 """
 
 import argparse
 import concurrent.futures
 import json
+import math
 import sys
 import time
+from collections import Counter
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 try:
     import requests
@@ -30,12 +36,12 @@ class LatencyResult:
     error: Optional[str] = None
 
 
-def send_request(url: str, payload: dict) -> LatencyResult:
+def send_request(url: str, endpoint: str, payload: dict) -> LatencyResult:
     """Send a single valuation request and measure latency."""
     start = time.perf_counter()
     try:
         resp = requests.post(
-            f"{url}/api/v2/valuation",
+            f"{url.rstrip('/')}/{endpoint.lstrip('/')}",
             json=payload,
             timeout=30,
             headers={"Content-Type": "application/json"},
@@ -58,35 +64,75 @@ def send_request(url: str, payload: dict) -> LatencyResult:
 
 
 def percentile(data: list[float], p: float) -> float:
-    """Calculate percentile of a sorted list."""
+    """Tính percentile theo nearest-rank, ổn định cả với tập mẫu nhỏ."""
     if not data:
         return 0.0
     sorted_data = sorted(data)
-    idx = int(len(sorted_data) * p / 100)
-    idx = min(idx, len(sorted_data) - 1)
+    idx = max(0, math.ceil(len(sorted_data) * p / 100) - 1)
     return round(sorted_data[idx], 1)
 
 
 def check_server_health(url: str) -> bool:
     """Check if the server is running and healthy."""
     try:
-        resp = requests.get(f"{url}/docs", timeout=5)
+        resp = requests.get(f"{url.rstrip('/')}/api/health", timeout=5)
         return resp.status_code == 200
     except Exception:
         return False
 
 
+def summarize_results(
+    results: list[LatencyResult],
+    total_time: float,
+    threshold_ms: float,
+) -> dict:
+    """Tạo report machine-readable và tuyệt đối không PASS khi request lỗi."""
+    successful = [result.latency_ms for result in results if result.success]
+    total = len(results)
+    success_count = len(successful)
+    errors = Counter(
+        result.error or f"HTTP {result.status_code}"
+        for result in results
+        if not result.success
+    )
+    p95 = percentile(successful, 95) if successful else None
+    all_successful = total > 0 and success_count == total
+    latency_pass = p95 is not None and p95 < threshold_ms
+    return {
+        "status": "PASS" if all_successful and latency_pass else "FAIL",
+        "total_requests": total,
+        "successful_requests": success_count,
+        "failed_requests": total - success_count,
+        "success_rate_pct": round(100 * success_count / total, 1) if total else 0.0,
+        "total_time_s": round(total_time, 3),
+        "throughput_rps": round(total / total_time, 1) if total_time > 0 else 0.0,
+        "threshold_ms": threshold_ms,
+        "min_ms": round(min(successful), 1) if successful else None,
+        "avg_ms": round(sum(successful) / len(successful), 1) if successful else None,
+        "p50_ms": percentile(successful, 50) if successful else None,
+        "p75_ms": percentile(successful, 75) if successful else None,
+        "p90_ms": percentile(successful, 90) if successful else None,
+        "p95_ms": p95,
+        "p99_ms": percentile(successful, 99) if successful else None,
+        "max_ms": round(max(successful), 1) if successful else None,
+        "errors": dict(errors),
+    }
+
+
 def run_load_test(
     url: str,
+    endpoint: str,
     total_requests: int,
     concurrency: int,
     payload: dict,
+    threshold_ms: float,
 ) -> dict:
     """Run load test with given parameters."""
     print(f"\n{'='*60}")
     print(f"  LOAD TEST — Real Estate AVM API")
     print(f"{'='*60}")
     print(f"  Target URL:      {url}")
+    print(f"  Endpoint:        {endpoint}")
     print(f"  Total requests:  {total_requests}")
     print(f"  Concurrency:     {concurrency}")
     print(f"  Payload:         {payload['asset_type']} | {payload['province_city']}/{payload['district']} | {payload['area_m2']}m2")
@@ -95,93 +141,78 @@ def run_load_test(
     # Check health
     print("[1/3] Checking server health...")
     if not check_server_health(url):
-        print(f"ERROR: Server not reachable at {url}/docs")
+        print(f"ERROR: Server not reachable at {url}/api/health")
         print("Make sure the server is running:")
         print(f"  uvicorn src.backend.main:app --reload")
-        sys.exit(1)
+        return {
+            "status": "FAIL",
+            "total_requests": 0,
+            "successful_requests": 0,
+            "failed_requests": total_requests,
+            "success_rate_pct": 0.0,
+            "threshold_ms": threshold_ms,
+            "p95_ms": None,
+            "errors": {"health_check_failed": 1},
+        }
     print("      Server is healthy.\n")
 
     # Warmup
     print("[2/3] Warmup (5 requests)...")
     for _ in range(5):
-        send_request(url, payload)
+        send_request(url, endpoint, payload)
     print("      Warmup done.\n")
 
     # Load test
     print(f"[3/3] Running {total_requests} requests with concurrency={concurrency}...")
     results: list[LatencyResult] = []
-    latencies: list[float] = []
 
     start_time = time.perf_counter()
     with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as executor:
-        futures = [executor.submit(send_request, url, payload) for _ in range(total_requests)]
+        futures = [
+            executor.submit(send_request, url, endpoint, payload)
+            for _ in range(total_requests)
+        ]
         for i, future in enumerate(concurrent.futures.as_completed(futures)):
             result = future.result()
             results.append(result)
-            if result.success:
-                latencies.append(result.latency_ms)
             if (i + 1) % 20 == 0:
                 print(f"      Progress: {i+1}/{total_requests}")
 
     total_time = time.perf_counter() - start_time
-
-    # Analyze results
-    success_count = sum(1 for r in results if r.success)
-    fail_count = len(results) - success_count
-    errors = [r.error for r in results if not r.success and r.error]
-
-    if latencies:
-        latencies.sort()
-        p50 = percentile(latencies, 50)
-        p75 = percentile(latencies, 75)
-        p90 = percentile(latencies, 90)
-        p95 = percentile(latencies, 95)
-        p99 = percentile(latencies, 99)
-        min_lat = round(min(latencies), 1)
-        max_lat = round(max(latencies), 1)
-        avg_lat = round(sum(latencies) / len(latencies), 1)
-        rps = round(total_requests / total_time, 1)
-    else:
-        p50 = p75 = p90 = p95 = p99 = min_lat = max_lat = avg_lat = rps = 0
+    summary = summarize_results(results, total_time, threshold_ms)
 
     # Print results
     print(f"\n{'='*60}")
     print(f"  RESULTS")
     print(f"{'='*60}")
-    print(f"  Status:          {'PASS' if success_count == total_requests else 'DEGRADED'}")
-    print(f"  Success rate:    {success_count}/{total_requests} ({100*success_count/total_requests:.1f}%)")
-    print(f"  Total time:      {total_time:.1f}s")
-    print(f"  Throughput:      {rps} req/s")
+    print(f"  Status:          {summary['status']}")
+    print(f"  Success rate:    {summary['successful_requests']}/{summary['total_requests']} ({summary['success_rate_pct']:.1f}%)")
+    print(f"  Total time:      {summary['total_time_s']:.3f}s")
+    print(f"  Throughput:      {summary['throughput_rps']} req/s")
     print()
     print(f"  Latency (successful requests only):")
-    print(f"    min:   {min_lat}ms")
-    print(f"    avg:   {avg_lat}ms")
-    print(f"    p50:   {p50}ms")
-    print(f"    p75:   {p75}ms")
-    print(f"    p90:   {p90}ms")
-    print(f"    p95:   {p95}ms  {'✓' if p95 < 200 else '✗ ABOVE THRESHOLD (200ms)'}")
-    print(f"    p99:   {p99}ms")
-    print(f"    max:   {max_lat}ms")
+    print(f"    min:   {summary['min_ms']}ms")
+    print(f"    avg:   {summary['avg_ms']}ms")
+    print(f"    p50:   {summary['p50_ms']}ms")
+    print(f"    p75:   {summary['p75_ms']}ms")
+    print(f"    p90:   {summary['p90_ms']}ms")
+    print(f"    p95:   {summary['p95_ms']}ms")
+    print(f"    p99:   {summary['p99_ms']}ms")
+    print(f"    max:   {summary['max_ms']}ms")
     print()
 
-    if errors:
-        print(f"  Errors ({len(errors)}):")
-        error_counts: dict[str, int] = {}
-        for e in errors:
-            error_counts[e] = error_counts.get(e, 0) + 1
-        for err, count in sorted(error_counts.items(), key=lambda x: -x[1]):
+    if summary["errors"]:
+        print(f"  Errors ({summary['failed_requests']}):")
+        for err, count in sorted(summary["errors"].items(), key=lambda x: -x[1]):
             print(f"    {count}x  {err}")
 
     print(f"{'='*60}\n")
 
-    # Exit code: 0 if p95 < 200ms, 1 otherwise
-    threshold = 200.0
-    if p95 > threshold:
-        print(f"FAIL: p95 latency ({p95}ms) exceeds threshold ({threshold}ms)")
-        return {"status": "FAIL", "p95": p95, "threshold": threshold}
+    if summary["status"] == "PASS":
+        print(f"PASS: 100% request thành công, p95 {summary['p95_ms']}ms < {threshold_ms}ms")
     else:
-        print(f"PASS: p95 latency ({p95}ms) within threshold ({threshold}ms)")
-        return {"status": "PASS", "p95": p95, "threshold": threshold}
+        print(f"FAIL: yêu cầu 100% thành công và p95 < {threshold_ms}ms")
+    return summary
 
 
 def main():
@@ -198,6 +229,18 @@ def main():
         "--concurrency", "-c", type=int, default=10,
         help="Number of concurrent workers (default: 10)"
     )
+    parser.add_argument(
+        "--endpoint", default="/api/v2/pipeline",
+        help="POST endpoint (default: /api/v2/pipeline)"
+    )
+    parser.add_argument(
+        "--threshold-ms", type=float, default=200.0,
+        help="Strict p95 latency threshold in milliseconds (default: 200)"
+    )
+    parser.add_argument(
+        "--report", type=Path,
+        help="Write machine-readable JSON evidence to this path"
+    )
     args = parser.parse_args()
 
     payload = {
@@ -207,7 +250,18 @@ def main():
         "area_m2": 80.0,
     }
 
-    result = run_load_test(args.url, args.requests, args.concurrency, payload)
+    result = run_load_test(
+        args.url,
+        args.endpoint,
+        args.requests,
+        args.concurrency,
+        payload,
+        args.threshold_ms,
+    )
+    result.update({"url": args.url, "endpoint": args.endpoint})
+    if args.report:
+        args.report.parent.mkdir(parents=True, exist_ok=True)
+        args.report.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     sys.exit(0 if result["status"] == "PASS" else 1)
 
 

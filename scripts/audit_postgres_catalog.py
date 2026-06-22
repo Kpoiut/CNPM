@@ -152,6 +152,20 @@ def audit_catalog(*, exact_counts: bool = False) -> dict:
                     ORDER BY source_endpoint
                     """,
                 ),
+                "accounts": _rows(
+                    connection,
+                    """
+                    SELECT
+                        COUNT(*) AS total_accounts,
+                        COUNT(*) FILTER (WHERE role = 'admin') AS admin_accounts,
+                        COUNT(*) FILTER (WHERE role = 'user') AS user_accounts,
+                        COUNT(*) FILTER (WHERE is_active) AS active_accounts,
+                        COALESCE(SUM(prediction_count), 0) AS total_account_predictions,
+                        COALESCE(SUM(training_eligible_feedback_count), 0)
+                            AS training_eligible_feedbacks
+                    FROM management.account_registry
+                    """,
+                )[0],
                 "active_model": _rows(
                     connection,
                     """
@@ -186,6 +200,8 @@ def audit_catalog(*, exact_counts: bool = False) -> dict:
 
 
 if __name__ == "__main__":
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--exact-counts",

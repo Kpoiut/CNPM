@@ -67,8 +67,9 @@ def test_domain_schema_revision_organizes_pgadmin_objects():
 
 
 def test_latest_revision_hardens_catalog_and_prediction_history():
-    versions = sorted((PROJECT_ROOT / "alembic" / "versions").glob("*.py"))
-    latest = versions[-1].read_text(encoding="utf-8")
+    versions = sorted((PROJECT_ROOT / "alembic" / "versions").glob("*0010*.py"))
+    assert len(versions) == 1
+    latest = versions[0].read_text(encoding="utf-8")
 
     assert "n_live_tup" in latest
     assert "primary_key_columns" in latest
@@ -78,3 +79,29 @@ def test_latest_revision_hardens_catalog_and_prediction_history():
     assert "ix_valuation_runs_training_feedback_queue" in latest
     assert "ck_valuation_runs_non_negative_latency" in latest
     assert "ck_valuation_runs_confidence_range" in latest
+
+
+def test_account_registry_revision_exposes_account_prediction_value():
+    versions = sorted((PROJECT_ROOT / "alembic" / "versions").glob("*0011*.py"))
+    assert len(versions) == 1
+    latest = versions[0].read_text(encoding="utf-8")
+
+    assert "account_registry" in latest
+    assert "auth.auth_accounts" in latest
+    assert "auth.auth_account_sessions" in latest
+    assert "public.valuation_runs" in latest
+    assert "prediction_count" in latest
+    assert "verified_feedback_count" in latest
+    assert "training_eligible_feedback_count" in latest
+
+
+def test_pgadmin_visibility_revision_exposes_public_readable_views():
+    versions = sorted((PROJECT_ROOT / "alembic" / "versions").glob("*0012*.py"))
+    assert len(versions) == 1
+    latest = versions[0].read_text(encoding="utf-8")
+
+    assert "public.account_registry" in latest
+    assert "public.accounts" in latest
+    assert "public.valuation_runs_readable" in latest
+    assert "management.account_registry" in latest
+    assert "run_at = COALESCE" in latest

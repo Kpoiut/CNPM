@@ -468,9 +468,6 @@ class SanitizeRequestMiddleware(BaseHTTPMiddleware):
         # at the route level (in dependency), not middleware.
         #
         # Middleware approach: create a new request with the sanitized body.
-        from starlette.requests import HTTPConnection
-        from starlette.responses import JSONResponse
-
         # Build a new Request with sanitized body in scope
         scope = dict(request.scope)
         sanitized_bytes = json.dumps(sanitized, ensure_ascii=False).encode("utf-8")

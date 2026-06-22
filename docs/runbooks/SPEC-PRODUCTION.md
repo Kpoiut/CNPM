@@ -306,7 +306,7 @@ Frontend budget hiện tại:
 - Three core lazy vendor: <= 700 KB.
 
 ```bash
-python scripts/load_test.py --url http://127.0.0.1:8000 --requests 100 --concurrency 10
+python scripts/load_test.py --url http://127.0.0.1:8000 --endpoint /api/v2/pipeline --requests 100 --concurrency 10 --threshold-ms 200 --report reports/ci/prediction-latency.json
 pytest tests/production/test_api_release_gate.py -vv
 ```
 

@@ -1282,6 +1282,44 @@ def _identity_response() -> str:
     )
 
 
+def _project_overview_response(context: dict | None = None) -> str:
+    snapshot = (context or {}).get("project_snapshot", {}) if isinstance(context, dict) else {}
+    stats = _market_stats()
+    count = snapshot.get("property_count") or stats.get("total") or "nhiều"
+    scope = snapshot.get("scope") or sorted(stats.get("districts", {}).keys())
+    scope_text = ", ".join(scope[:6]) if scope else "các quận trọng điểm ở Hà Nội và TP.HCM"
+    latest_model = snapshot.get("latest_model") or "model active được pin trong model registry"
+    return (
+        "Dự án này là một hệ thống AVM production cho định giá bất động sản, không chỉ là form dự đoán đơn lẻ.\n\n"
+        f"Nó dùng FastAPI, React/Vite, PostgreSQL/PostGIS và ML pipeline để xử lý khoảng {count} bản ghi trong scope {scope_text}. "
+        f"Luồng chính là: người dùng nhập tài sản -> backend chuẩn hóa input -> engine so comparable, adjustment ledger, SDEV/market signal và confidence -> lưu lại `valuation_runs` để audit, feedback giá thật và retraining. "
+        f"Model đang tham chiếu qua registry là {latest_model}.\n\n"
+        "Nói ngắn gọn: bản chất dự án là một nền tảng định giá có lineage, account history, model registry và dữ liệu phản hồi quay lại training, chứ không phải demo UI tĩnh."
+    )
+
+
+def _natural_general_response(message: str, attachment_note: str = "") -> str:
+    text = _compact_text(message)
+    if any(k in text for k in ["cảm ơn", "cam on", "thanks", "thank you"]):
+        return "Không có gì. Bạn cứ đưa tiếp dữ liệu hoặc câu hỏi, mình sẽ bám sát ngữ cảnh đang mở." + attachment_note
+    if any(k in text for k in ["giúp gì", "giup gi", "làm được gì", "lam duoc gi", "help"]):
+        return (
+            "Mình giúp tốt nhất ở ba việc: giải thích kết quả định giá, soi dữ liệu/model của dự án, và hướng dẫn thao tác trong app. "
+            "Bạn cũng có thể hỏi tự nhiên hơn, ví dụ: 'vì sao kết quả này thấp?', 'khu nào hợp 2 tỷ?', hoặc 'kiểm tra model active cho tôi'."
+            + attachment_note
+        )
+    if len(text.split()) <= 4:
+        return (
+            "Mình đang nghe đây. Bạn nói thêm một chút mục tiêu nhé: muốn phân tích bất động sản, kiểm tra hệ thống, hay nhờ mình giải thích một phần cụ thể?"
+            + attachment_note
+        )
+    return (
+        "Mình hiểu hướng bạn đang hỏi, nhưng để trả lời sắc hơn mình cần thêm mục tiêu hoặc dữ liệu kèm theo. "
+        "Nếu liên quan AVM, mình có thể bám ngay vào PostgreSQL, model registry, lịch sử dự đoán và kết quả định giá hiện tại."
+        + attachment_note
+    )
+
+
 def _legal_response(district: str | None = None) -> str:
     target = _district_stats(district) if district else None
     area_note = f"\n\n📍 Nếu căn nằm ở {target['name']}, mình sẽ ưu tiên so với nhóm tài sản cùng khu vực." if target else ""
@@ -1568,6 +1606,24 @@ def project_fast_response(
     if system_intel:
         return system_intel
 
+    asks_project_overview = any(k in text for k in ["dự án", "du an", "project", "avm", "real estate"]) and any(
+        k in text
+        for k in [
+            "là gì",
+            "la gi",
+            "đang làm gì",
+            "dang lam gi",
+            "bản chất",
+            "ban chat",
+            "mục tiêu",
+            "muc tieu",
+            "giải thích",
+            "giai thich",
+        ]
+    )
+    if asks_project_overview:
+        return _project_overview_response(context)
+
     arithmetic = _simple_arithmetic_response(message)
     if arithmetic and not any(k in text for k in ["giá", "định giá", "nhà", "đất", "bđs", "quận"]):
         return arithmetic
@@ -1750,6 +1806,24 @@ def fallback_response(
                 district_row = item
                 break
 
+    asks_project_overview = any(k in msg_lower for k in ["dự án", "du an", "project", "avm", "real estate"]) and any(
+        k in msg_lower
+        for k in [
+            "là gì",
+            "la gi",
+            "đang làm gì",
+            "dang lam gi",
+            "bản chất",
+            "ban chat",
+            "mục tiêu",
+            "muc tieu",
+            "giải thích",
+            "giai thich",
+        ]
+    )
+    if asks_project_overview:
+        return _project_overview_response(context) + attachment_note
+
     if any(kw in msg_lower for kw in ["env", "môi trường", "jwt", "api key", "key", "chạy", "run", "cài"]):
         return (
             project_prefix
@@ -1827,11 +1901,7 @@ def fallback_response(
         )
 
     if not is_project_question:
-        return (
-            "Tôi nghe bạn. Bạn có thể trò chuyện bình thường với tôi; còn khi câu hỏi chạm tới định giá, dữ liệu, thuật toán hoặc cách chạy hệ thống, "
-            "tôi sẽ trả lời theo ngữ cảnh dự án Real Estate AVM thay vì bịa ngoài dữ liệu."
-            + attachment_note
-        )
+        return _natural_general_response(message, attachment_note)
 
     return (
         project_prefix

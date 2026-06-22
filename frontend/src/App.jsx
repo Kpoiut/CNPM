@@ -34,6 +34,7 @@ const DataExplorer = lazy(() => import('./pages/public/DataExplorer'))
 const DataQuality = lazy(() => import('./pages/public/DataQuality'))
 const DataSources = lazy(() => import('./pages/admin/DataSources'))
 const ExplainabilityDashboard = lazy(() => import('./pages/ExplainabilityDashboard'))
+const GoogleOAuthCallback = lazy(() => import('./pages/public/GoogleOAuthCallback'))
 const Login = lazy(() => import('./pages/public/Login'))
 const MapExplorer = lazy(() => import('./pages/public/MapExplorer'))
 const Methodology = lazy(() => import('./pages/public/Methodology'))
@@ -65,6 +66,7 @@ const ROUTE_COMPONENTS = Object.freeze({
   DataQuality,
   DataSources,
   ExplainabilityDashboard,
+  GoogleOAuthCallback,
   Login,
   MapExplorer,
   Methodology,

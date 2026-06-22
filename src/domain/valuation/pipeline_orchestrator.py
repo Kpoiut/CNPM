@@ -108,12 +108,17 @@ class GateResult:
     block_reason: str = ""
 
     def to_dict(self) -> Dict:
+        public_details = {
+            key: value
+            for key, value in self.details.items()
+            if not key.startswith("_")
+        }
         return {
             "gate_id": self.gate_id,
             "gate_name": self.gate_name,
             "status": self.status,
             "duration_ms": round(self.duration_ms, 1),
-            "details": self.details,
+            "details": public_details,
             "warnings": self.warnings,
             "block_reason": self.block_reason,
         }

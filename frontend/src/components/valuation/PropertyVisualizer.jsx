@@ -13,6 +13,7 @@ import { MapContainer, TileLayer, Polygon, Polyline, CircleMarker, Tooltip, useM
 import 'leaflet/dist/leaflet.css'
 import { icon } from '../../components/ui/icons'
 import { mapParcel, mapListings, mapZoning } from '../../api'
+import './property-visualizer.css'
 
 const PropertyModel3D = lazy(() => import('./PropertyModel3D'))
 
@@ -31,6 +32,10 @@ function deriveSpec(payload = {}, propertyType = 'house') {
   const landArea = num(payload.land_area_m2) || num(payload.area_m2) || area
   const floors = clamp(num(payload.floor_count) || (propertyType === 'villa' ? 2 : propertyType === 'townhouse' ? 3 : 1), 1, 14)
   const aptFloor = num(payload.apt_floor)
+  const towerFloors = num(payload.total_floor_count)
+    || num(payload.total_floors)
+    || num(payload.tower_floors)
+    || (aptFloor ? Math.max(aptFloor + 5, 18) : 20)
   const bedrooms = num(payload.bedrooms)
   const bathrooms = num(payload.bathrooms)
   const facing = payload.main_facing || payload.door_orientation || payload.balcony_orientation || ''
@@ -46,7 +51,7 @@ function deriveSpec(payload = {}, propertyType = 'house') {
     if (frontage) { fwM = frontage; fdM = Math.max(4, area / frontage) }
   }
   return {
-    propertyType, area, landArea, floors, aptFloor, bedrooms, bathrooms, facing,
+    propertyType, area, landArea, floors, aptFloor, towerFloors, bedrooms, bathrooms, facing,
     frontageM: Math.round(fwM * 10) / 10, depthM: Math.round(fdM * 10) / 10,
     isLand: propertyType === 'land', isTower: propertyType === 'apartment',
   }
@@ -68,7 +73,7 @@ const PLANNING_TILE_URL = import.meta.env.VITE_PLANNING_TILE_URL || ''
 
 function VisualizerLazyFallback({ label }) {
   return (
-    <div style={{ height: 480, display: 'grid', placeItems: 'center', border: '1px solid var(--border)', borderRadius: 14, background: 'var(--surface)' }}>
+    <div style={{ height: 480, display: 'grid', placeItems: 'center', border: '1px solid var(--border)', borderRadius: 6, background: 'var(--surface)' }}>
       <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: '0.82rem' }}>
         {icon('loader', 14)} {label}
       </div>
@@ -175,7 +180,16 @@ function ParcelMap({ lat, lng, data, loading, error, noun }) {
         ) : error ? (
           <div style={{ display: 'grid', placeItems: 'center', height: '100%', color: '#94a3b8', fontSize: '0.82rem' }}>Chưa lấy được hình học khu đất (OSM).</div>
         ) : (
-          <MapContainer center={[lat, lng]} zoom={18} style={{ height: '100%', width: '100%', background: mode === 'zoning' ? '#eef2f6' : '#0b1a2b' }} attributionControl={false} maxZoom={22}>
+          <MapContainer
+            center={[lat, lng]}
+            zoom={18}
+            style={{ height: '100%', width: '100%', background: mode === 'zoning' ? '#eef2f6' : '#0b1a2b' }}
+            attributionControl={false}
+            maxZoom={22}
+            zoomAnimation={false}
+            fadeAnimation={false}
+            markerZoomAnimation={false}
+          >
             {mode === 'satellite' ? (
               <TileLayer key="sat" url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" maxZoom={21} maxNativeZoom={19} />
             ) : (
@@ -230,7 +244,7 @@ function ParcelMap({ lat, lng, data, loading, error, noun }) {
 }
 
 // ─────────── Mô hình 3D đùn từ hình thửa THẬT (SVG) ───────────
-function buildShapeMeters(data, spec) {
+function buildShapeMeters(data) {
   // Trả về danh sách điểm (mét) tâm tại (0,0). Ưu tiên polygon thật từ OSM.
   if (data?.subject && data.subject.length >= 3) {
     const pts = data.subject
@@ -239,13 +253,13 @@ function buildShapeMeters(data, spec) {
     const mLat = 111320, mLng = 111320 * Math.cos(lat0 * Math.PI / 180)
     return pts.map(([la, ln]) => [(ln - lng0) * mLng, (la - lat0) * mLat])
   }
-  const w = spec.frontageM || 8, d = spec.depthM || 12
-  return [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]]
+  return []
 }
 
 // ─────────── Ảnh THỰC TẾ tại đúng vị trí (Google, keyless iframe) ───────────
 function PropertyImagery({ lat, lng, noun }) {
   const [view, setView] = useState('street')
+  const [isLoaded, setIsLoaded] = useState(false)
   const sv = `https://www.google.com/maps?layer=c&cbll=${lat},${lng}&cbp=11,0,0,0,0&output=svembed`
   const sat = `https://maps.google.com/maps?q=${lat},${lng}&t=k&z=20&output=embed`
   const openUrl = view === 'street'
@@ -264,9 +278,24 @@ function PropertyImagery({ lat, lng, noun }) {
         </div>
         <a href={openUrl} target="_blank" rel="noreferrer" style={{ marginLeft: 'auto', fontSize: '0.72rem', color: 'var(--primary)', fontWeight: 700, textDecoration: 'none' }}>Mở Google Maps →</a>
       </div>
-      <div style={{ width: '100%', height: 460, borderRadius: 12, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--surface-2)' }}>
-        <iframe key={view} title="property-imagery" src={view === 'street' ? sv : sat}
-          width="100%" height="100%" style={{ border: 0, display: 'block' }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" allowFullScreen />
+      <div style={{ width: '100%', height: 360, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--surface-2)' }}>
+        {isLoaded ? (
+          <iframe key={view} title="property-imagery" src={view === 'street' ? sv : sat}
+            width="100%" height="100%" style={{ border: 0, display: 'block' }} loading="lazy" referrerPolicy="no-referrer-when-downgrade" allow="fullscreen" allowFullScreen />
+        ) : (
+          <div style={{ height: '100%', display: 'grid', placeItems: 'center', padding: '1rem', textAlign: 'center' }}>
+            <div>
+              <div style={{ marginBottom: 8 }}>{icon('camera', 28)}</div>
+              <div style={{ color: 'var(--text-primary)', fontSize: '0.82rem', fontWeight: 700 }}>Ảnh vị trí từ Google Maps</div>
+              <p style={{ margin: '0.35rem auto 0.75rem', maxWidth: 460, color: 'var(--text-muted)', fontSize: '0.72rem', lineHeight: 1.5 }}>
+                Chỉ kết nối Google Maps khi bạn chủ động mở để giảm request bên thứ ba và giữ trang phản hồi nhanh.
+              </p>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setIsLoaded(true)}>
+                {icon('eye', 13)} Cho phép tải Google Maps
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', marginTop: 5 }}>
         Ảnh thực tế tại đúng tọa độ {noun.toLowerCase()} bạn định giá (Google Street View / vệ tinh). Nếu khu vực chưa có Street View, hãy chuyển sang "Từ trên cao".
@@ -377,7 +406,7 @@ export default function PropertyVisualizer({ payload, propertyType, userPhotos =
 
   const modelMeters = useMemo(() => {
     if (tab !== '3d') return []
-    const pts = buildShapeMeters(parcel, spec)
+    const pts = buildShapeMeters(parcel)
     const mx = pts.reduce((s, p) => s + p[0], 0) / pts.length
     const my = pts.reduce((s, p) => s + p[1], 0) / pts.length
     return pts.map(([x, y]) => [x - mx, y - my])
@@ -385,11 +414,13 @@ export default function PropertyVisualizer({ payload, propertyType, userPhotos =
   const modelRealShape = !!(parcel?.subject && parcel.subject.length >= 3)
 
   return (
-    <div className="card" style={{ overflow: 'visible' }}>
-      <div className="card-header" style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-        {icon('map', 16)}
-        <span className="card-title">Trực quan hóa — {TYPE_VI[propertyType] || 'bất động sản'}</span>
-      </div>
+    <section className="property-visualizer">
+      <header className="property-visualizer__header">
+        <h3 className="property-visualizer__title">
+          {icon('map', 16)}
+          Trực quan hóa — {TYPE_VI[propertyType] || 'bất động sản'}
+        </h3>
+      </header>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, margin: '0.4rem 0 0.7rem' }}>
         {chips.map(c => (
@@ -441,6 +472,6 @@ export default function PropertyVisualizer({ payload, propertyType, userPhotos =
         </div>
         <SimilarListings payload={payload} propertyType={propertyType} />
       </div>
-    </div>
+    </section>
   )
 }

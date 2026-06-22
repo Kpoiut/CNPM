@@ -6,6 +6,7 @@ Happy path
 Failure path
     API-PROD-F01: endpoint lịch sử không có account phải fail closed.
     API-PROD-F02: Google OAuth thiếu secret phải trả 503, không lộ secret mẫu.
+    API-PROD-F03: JSON body hỏng phải trả 400, không được văng 500 từ middleware.
 
 Hướng xử lý
     Nếu latency vượt SLO: kiểm tra DB pool/cache/middleware rồi chạy lại cùng
@@ -61,3 +62,17 @@ def test_api_prod_f02_oauth_missing_secret_is_safe(monkeypatch):
     response = TestClient(app).get("/api/auth/google/start")
     assert response.status_code == 503
     assert "GOCSPX" not in response.text
+
+
+def test_api_prod_f03_invalid_json_body_fails_as_client_error(monkeypatch):
+    monkeypatch.setenv("JWT_SECRET_KEY", "test-jwt-secret-for-production-gate")
+    from src.backend.main import app
+
+    response = TestClient(app).post(
+        "/api/auth/login",
+        content="{bad json",
+        headers={"Content-Type": "application/json"},
+    )
+
+    assert response.status_code == 400
+    assert "Invalid JSON body" in response.text

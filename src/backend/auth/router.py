@@ -118,12 +118,41 @@ def _safe_frontend_redirect(value: str, request: Request) -> str:
     return "/"
 
 
+def _frontend_origin_from_request(request: Request) -> str | None:
+    for header_name in ("origin", "referer"):
+        raw = request.headers.get(header_name, "").strip()
+        if not raw:
+            continue
+        parsed = urlparse(raw)
+        if parsed.scheme in {"http", "https"} and parsed.netloc:
+            return f"{parsed.scheme}://{parsed.netloc}"
+    return None
+
+
+def _local_frontend_callback(request: Request, redirect_uri: str) -> str:
+    """Prefer the frontend OAuth relay when local preview started the flow."""
+    parsed = urlparse(redirect_uri)
+    if not (
+        parsed.scheme in {"http", "https"}
+        and parsed.netloc.endswith(":8000")
+        and parsed.path.endswith("/api/auth/google/callback")
+    ):
+        return redirect_uri
+
+    frontend_origin = _frontend_origin_from_request(request)
+    if frontend_origin and frontend_origin.endswith((":4173", ":5173")):
+        return f"{frontend_origin}/signin-google"
+
+    return redirect_uri
+
+
 def _google_oauth_config(request: Request) -> dict:
     client_id = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "").strip()
     client_secret = os.getenv("GOOGLE_OAUTH_CLIENT_SECRET", "").strip()
     redirect_uri = os.getenv("GOOGLE_OAUTH_REDIRECT_URI", "").strip()
     if not redirect_uri:
         redirect_uri = str(request.url_for("google_oauth_callback"))
+    redirect_uri = _local_frontend_callback(request, redirect_uri)
     frontend_redirect = _safe_frontend_redirect(os.getenv("GOOGLE_OAUTH_FRONTEND_REDIRECT", "/"), request)
     return {
         "client_id": client_id,

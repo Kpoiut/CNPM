@@ -70,6 +70,38 @@ def test_authenticated_valuation_is_saved_to_account_history(authenticated_clien
     assert private_run.request_id not in visible_ids
 
 
+def test_authenticated_pipeline_serializes_and_persists_runtime_details(authenticated_client, db_session):
+    """Pipeline phải trả JSON hợp lệ và không ghi object runtime vào JSONB."""
+    client, user = authenticated_client
+
+    response = client.post("/api/v2/pipeline", json=VALUATION_PAYLOAD)
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["pipeline_id"]
+    for gate in payload["gates"]:
+        assert all(not key.startswith("_") for key in gate["details"])
+
+    run = db_session.query(ValuationRun).filter(
+        ValuationRun.request_id == payload["pipeline_id"]
+    ).one()
+    assert run.account_id == user.id
+    assert run.source_endpoint == "api_v2_pipeline"
+    assert run.result_json["completeness"]["completeness_pct"] >= 0
+
+
+def test_public_pipeline_does_not_create_anonymous_history(client, db_session):
+    """Public prediction không tạo valuation_runs vô danh; lịch sử chỉ thuộc account."""
+    response = client.post("/api/v2/pipeline", json=VALUATION_PAYLOAD)
+
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert payload["pipeline_id"]
+    assert db_session.query(ValuationRun).filter(
+        ValuationRun.request_id == payload["pipeline_id"]
+    ).first() is None
+
+
 def test_history_pagination_rejects_unbounded_limits(authenticated_client):
     """Failure path: limit âm, bằng 0 hoặc quá lớn không được chạm truy vấn DB."""
     client, _user = authenticated_client

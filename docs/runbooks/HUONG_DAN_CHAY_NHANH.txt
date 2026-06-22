@@ -8,15 +8,17 @@ HUONG DAN CHAY NHANH DU AN REAL ESTATE AVM
        npm install
 
 2. Backend
-   - Chay RUN_BACKEND.bat
+   - Chay scripts\local\RUN_BACKEND.bat
    - Backend: http://127.0.0.1:8000
+   - Script luon chay tu root du an, uu tien .venv\Scripts\python.exe,
+     doc .env o F:\real_estate_avm\.env va nap cau hinh Nova/Google OAuth.
    - RUN_BACKEND.bat se tao .env tu .env.example neu thieu.
    - JWT_SECRET_KEY la bat buoc; neu con placeholder, script tao secret tam cho phien chay.
 
 3. Frontend
-   - Chay RUN_FRONTEND.bat
+   - Chay scripts\local\RUN_FRONTEND.bat
    - Frontend: http://127.0.0.1:5173
-   - frontend/.env can co:
+   - Neu chua co bien moi truong, script set:
        VITE_API_PROXY_TARGET=http://127.0.0.1:8000
 
 4. Nova chatbox
@@ -43,3 +45,8 @@ HUONG DAN CHAY NHANH DU AN REAL ESTATE AVM
    - DATABASE_URL bat buoc dung dang postgresql+psycopg://...
    - Chay migration bang: python -m alembic upgrade head.
    - Model active hien tai duoc pin trong models/ACTIVE_MODEL.json va bang model_versions.
+   - Account production nam o auth.auth_accounts; view quan tri de xem nhanh la
+     management.account_registry, gom role, session, prediction_count,
+     verified_feedback_count va training_eligible_feedback_count.
+   - Lich su moi lan du doan nam o public.valuation_runs va view
+     management.prediction_history; day la nguon feedback quay lai retraining.
