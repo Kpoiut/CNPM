@@ -30,3 +30,8 @@ def test_ci_matrix_export_is_workbook_driven_and_workflow_backed():
     assert "Test Case ID" in markdown
     assert "backend-tests" in markdown
     assert "test-catalogue" in markdown
+
+    docker_markdown = render_markdown(result, job_filter="docker-smoke")
+    assert "docker-smoke" in docker_markdown
+    assert "DOCKER-STACK-001" in docker_markdown
+    assert "PERF-API-003" in docker_markdown

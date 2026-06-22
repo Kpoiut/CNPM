@@ -113,6 +113,65 @@ AUTOMATED_REFERENCES = {
     "CLEAN-004": "tests/unit/test_postgresql_only_contract.py",
 }
 
+CI_AUTOMATION_OVERRIDES = {
+    "PERF-API-003": {
+        "command": "docker compose exec -T backend python scripts/load_test.py",
+        "reference": "scripts/load_test.py; reports/ci/prediction-latency.json",
+        "job": "docker-smoke",
+        "environment": "Docker CI + PostgreSQL",
+        "evidence": "prediction-latency.json + docker-compose.log + GitHub Step Summary",
+    },
+    "PERF-001": {
+        "command": "docker compose exec -T backend python scripts/load_test.py",
+        "reference": "scripts/load_test.py; reports/ci/prediction-latency.json",
+        "job": "docker-smoke",
+        "environment": "Docker CI + PostgreSQL",
+        "evidence": "prediction-latency.json + docker-compose.log + GitHub Step Summary",
+    },
+    "DOCKER-STACK-001": {
+        "command": "docker compose build backend frontend migrate",
+        "reference": "docker-compose.yml; Dockerfile; frontend/Dockerfile",
+        "job": "docker-smoke",
+        "environment": "Docker CI + PostgreSQL",
+        "evidence": "docker-compose-ps.json + docker-compose.log + GitHub Step Summary",
+    },
+    "CI-DOCKER-001": {
+        "command": "docker compose build backend frontend migrate",
+        "reference": ".github/workflows/ci.yml; docker-compose.yml",
+        "job": "docker-smoke",
+        "environment": "Docker CI + PostgreSQL",
+        "evidence": "docker-compose-ps.json + docker-compose.log + GitHub Step Summary",
+    },
+    "DOCKER-MIG-001": {
+        "command": "python -m alembic upgrade head",
+        "reference": "docker-compose.yml migrate service; alembic/versions",
+        "job": "backend-tests",
+        "environment": "CI + PostgreSQL",
+        "evidence": "alembic current log + JUnit XML + artifact",
+    },
+    "DOCKER-SEC-001": {
+        "command": "docker compose config --quiet",
+        "reference": "docker-compose.yml; Dockerfile; .dockerignore",
+        "job": "docker-smoke",
+        "environment": "Docker CI + PostgreSQL",
+        "evidence": "compose config log + docker-compose.log + artifact",
+    },
+    "DOCKER-003": {
+        "command": "curl --fail --silent http://127.0.0.1/api/health",
+        "reference": "docker-compose.yml healthcheck; /api/health",
+        "job": "docker-smoke",
+        "environment": "Docker CI + PostgreSQL",
+        "evidence": "docker-health.json + docker-compose.log + artifact",
+    },
+    "DOCKER-BE-001": {
+        "command": "curl --fail --silent http://127.0.0.1/api/health",
+        "reference": "tests/production/test_api_release_gate.py; docker health smoke",
+        "job": "docker-smoke",
+        "environment": "Docker CI + PostgreSQL",
+        "evidence": "docker-health.json + docker-compose.log + artifact",
+    },
+}
+
 THIN = Side(style="thin", color="D9E2EA")
 HEADER_FILL = PatternFill("solid", fgColor="123047")
 SUBHEADER_FILL = PatternFill("solid", fgColor="DCEBF2")
@@ -189,6 +248,8 @@ def _normalize_priority(case: dict[str, str]) -> str:
 
 def _automation_status(case: dict[str, str]) -> tuple[str, str]:
     test_id = case["Mã test"]
+    if test_id in CI_AUTOMATION_OVERRIDES:
+        return "Automated", CI_AUTOMATION_OVERRIDES[test_id]["reference"]
     reference = AUTOMATED_REFERENCES.get(test_id, case["Liên kết kiểm chứng"])
     status = case["Trạng thái"].lower()
     reference_lower = reference.lower()
@@ -474,15 +535,23 @@ def build_workbook(source: Path, target: Path) -> dict[str, int]:
 
         command = ""
         ci_job = "manual-staging"
+        evidence_output = "JUnit XML + console log + artifact"
+        if test_id in CI_AUTOMATION_OVERRIDES:
+            override = CI_AUTOMATION_OVERRIDES[test_id]
+            command = override["command"]
+            ci_job = override["job"]
+            environment = override["environment"]
+            evidence_output = override["evidence"]
         if automation_status == "Automated":
-            command = "python -m pytest tests -q" if "tests/" in reference else "python scripts/quality/validate_test_catalog.py"
-            ci_job = "backend-tests" if "tests/" in reference else "test-catalogue"
+            if test_id not in CI_AUTOMATION_OVERRIDES:
+                command = "python -m pytest tests -q" if "tests/" in reference else "python scripts/quality/validate_test_catalog.py"
+                ci_job = "backend-tests" if "tests/" in reference else "test-catalogue"
         elif automation_status == "Partial":
             command = "Theo automation/reference; cần bổ sung assertion/evidence còn thiếu"
             ci_job = "mapped-partial"
         automation_rows.append([
             index, test_id, automation_status, command, reference, ci_job, environment,
-            "JUnit XML + console log + artifact", "0 lần retry cho assertion; tối đa 1 lần cho lỗi hạ tầng đã xác nhận",
+            evidence_output, "0 lần retry cho assertion; tối đa 1 lần cho lỗi hạ tầng đã xác nhận",
             owner,
         ])
 

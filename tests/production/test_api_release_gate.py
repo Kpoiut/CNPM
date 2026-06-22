@@ -17,6 +17,7 @@ Evidence
     ``pytest tests/production/test_api_release_gate.py -vv`` và JUnit XML từ CI.
 """
 
+from pathlib import Path
 from statistics import quantiles
 from time import perf_counter
 
@@ -76,3 +77,11 @@ def test_api_prod_f03_invalid_json_body_fails_as_client_error(monkeypatch):
 
     assert response.status_code == 400
     assert "Invalid JSON body" in response.text
+
+
+def test_api_prod_h04_pipeline_endpoint_does_not_mutate_global_orchestrator():
+    source = Path("src/backend/api_v2/valuation.py").read_text(encoding="utf-8")
+    pipeline_region = source.split('@api_router.post("/pipeline")', 1)[1].split('@api_router.get("/engine/version")', 1)[0]
+
+    assert "pipeline.valuation_engine.comparable_finder = finder" not in pipeline_region
+    assert "request_pipeline = PipelineOrchestrator(comparable_finder=finder)" in pipeline_region

@@ -17,6 +17,7 @@ from sqlalchemy import inspect, text
 
 
 CORE_PUBLIC_TABLES = {
+    "accounts",
     "alembic_version",
     "buyer_requirements",
     "collection_sources",
@@ -29,7 +30,6 @@ CORE_PUBLIC_TABLES = {
 }
 DOMAIN_SCHEMAS = {"auth", "community", "management", "ml", "operations", "public"}
 TABLES_NOT_ALLOWED_IN_PUBLIC = {
-    "auth_accounts",
     "auth_account_sessions",
     "auth_refresh_tokens",
     "dataset_versions",
@@ -52,7 +52,6 @@ REQUIRED_MANAGEMENT_VIEWS = {
 }
 REQUIRED_PUBLIC_READABLE_VIEWS = {
     "account_registry",
-    "accounts",
     "valuation_runs_readable",
 }
 
@@ -105,8 +104,8 @@ def test_db_prod_h03_pgadmin_public_views_are_readable_without_duplicate_tables(
 
     inspector = inspect(engine)
     public_tables = set(inspector.get_table_names(schema="public"))
-    assert "accounts" not in public_tables
     assert "account_registry" not in public_tables
+    assert "accounts" in public_tables
 
     account_columns = {
         column["name"]
@@ -117,7 +116,7 @@ def test_db_prod_h03_pgadmin_public_views_are_readable_without_duplicate_tables(
         for column in inspector.get_columns("valuation_runs_readable", schema="public")
     }
 
-    assert {"account_id", "username", "prediction_count", "account_state"} <= account_columns
+    assert {"account_id", "username", "prediction_count", "account_state", "refreshed_at"} <= account_columns
     assert {
         "request_id",
         "predicted_at",
@@ -125,6 +124,29 @@ def test_db_prod_h03_pgadmin_public_views_are_readable_without_duplicate_tables(
         "fair_market_value_vnd",
         "training_eligible",
     } <= history_columns
+
+
+def test_db_prod_h04_pgadmin_public_tables_have_reference_rows():
+    from src.backend.database import engine
+
+    with engine.connect() as connection:
+        counts = dict(
+            connection.execute(
+                text(
+                    """
+                    SELECT 'accounts' AS object_name, COUNT(*)::int AS row_count FROM public.accounts
+                    UNION ALL
+                    SELECT 'buyer_requirements', COUNT(*)::int FROM public.buyer_requirements
+                    UNION ALL
+                    SELECT 'matched_pairs', COUNT(*)::int FROM public.matched_pairs
+                    """
+                )
+            ).all()
+        )
+
+    assert counts["accounts"] > 0
+    assert counts["buyer_requirements"] > 0
+    assert counts["matched_pairs"] > 0
 
 
 def test_db_prod_f01_runtime_has_no_sqlite_extension_or_database_object():

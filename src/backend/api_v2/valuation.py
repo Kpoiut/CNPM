@@ -929,8 +929,8 @@ def run_pipeline(
             ]
         return _comparable_finder(q, db)
 
-    pipeline.valuation_engine.comparable_finder = finder
-    result = pipeline.run(input_data)
+    request_pipeline = PipelineOrchestrator(comparable_finder=finder)
+    result = request_pipeline.run(input_data)
     payload = result.to_dict()
     _persist_valuation_run(
         db=db,

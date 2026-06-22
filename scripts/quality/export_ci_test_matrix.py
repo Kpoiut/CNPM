@@ -133,11 +133,12 @@ def _short(value: str, limit: int = 96) -> str:
     return value if len(value) <= limit else f"{value[:limit - 3]}..."
 
 
-def render_markdown(result: dict[str, Any]) -> str:
+def render_markdown(result: dict[str, Any], job_filter: str | None = None) -> str:
     """Render a GitHub Actions summary that exposes workbook test IDs directly."""
     metrics = result["metrics"]
+    title_suffix = f" — `{job_filter}`" if job_filter else ""
     lines = [
-        "## Production Test Catalogue Evidence",
+        f"## Production Test Catalogue Evidence{title_suffix}",
         "",
         "| Metric | Value |",
         "| --- | ---: |",
@@ -154,6 +155,8 @@ def render_markdown(result: dict[str, Any]) -> str:
 
     automated_rows: list[tuple[str, dict[str, str]]] = []
     for job, rows in result["jobs"].items():
+        if job_filter and job != job_filter:
+            continue
         for row in rows:
             if row["automation_status"] == "Automated":
                 automated_rows.append((job, row))
@@ -195,6 +198,7 @@ def main() -> None:
     parser.add_argument("--workflow", type=Path, default=DEFAULT_WORKFLOW)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--markdown", type=Path, default=None)
+    parser.add_argument("--job", type=str, default=None, help="Only render Markdown rows for one GitHub job")
     args = parser.parse_args()
 
     result = export_matrix(args.workbook.resolve(), args.workflow.resolve())
@@ -204,7 +208,7 @@ def main() -> None:
     args.report.write_text(output + "\n", encoding="utf-8")
     if args.markdown:
         args.markdown.parent.mkdir(parents=True, exist_ok=True)
-        args.markdown.write_text(render_markdown(result), encoding="utf-8")
+        args.markdown.write_text(render_markdown(result, job_filter=args.job), encoding="utf-8")
     raise SystemExit(0 if result["valid"] else 1)
 
 

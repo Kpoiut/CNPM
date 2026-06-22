@@ -34,6 +34,7 @@ class LatencyResult:
     latency_ms: float
     success: bool
     error: Optional[str] = None
+    response_body: Optional[str] = None
 
 
 def send_request(url: str, endpoint: str, payload: dict) -> LatencyResult:
@@ -52,6 +53,7 @@ def send_request(url: str, endpoint: str, payload: dict) -> LatencyResult:
             latency_ms=latency_ms,
             success=resp.status_code == 200,
             error=None if resp.status_code == 200 else f"HTTP {resp.status_code}",
+            response_body=None if resp.status_code == 200 else resp.text[:500],
         )
     except Exception as e:
         latency_ms = round((time.perf_counter() - start) * 1000, 1)
@@ -60,6 +62,7 @@ def send_request(url: str, endpoint: str, payload: dict) -> LatencyResult:
             latency_ms=latency_ms,
             success=False,
             error=str(e),
+            response_body=None,
         )
 
 
@@ -95,6 +98,13 @@ def summarize_results(
         for result in results
         if not result.success
     )
+    error_samples: dict[str, str] = {}
+    for result in results:
+        if result.success:
+            continue
+        key = result.error or f"HTTP {result.status_code}"
+        if key not in error_samples and result.response_body:
+            error_samples[key] = result.response_body
     p95 = percentile(successful, 95) if successful else None
     all_successful = total > 0 and success_count == total
     latency_pass = p95 is not None and p95 < threshold_ms
@@ -116,6 +126,7 @@ def summarize_results(
         "p99_ms": percentile(successful, 99) if successful else None,
         "max_ms": round(max(successful), 1) if successful else None,
         "errors": dict(errors),
+        "error_samples": error_samples,
     }
 
 
@@ -205,6 +216,9 @@ def run_load_test(
         print(f"  Errors ({summary['failed_requests']}):")
         for err, count in sorted(summary["errors"].items(), key=lambda x: -x[1]):
             print(f"    {count}x  {err}")
+            sample = summary.get("error_samples", {}).get(err)
+            if sample:
+                print(f"       sample: {sample[:240]}")
 
     print(f"{'='*60}\n")
 

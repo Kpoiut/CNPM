@@ -105,3 +105,15 @@ def test_pgadmin_visibility_revision_exposes_public_readable_views():
     assert "public.valuation_runs_readable" in latest
     assert "management.account_registry" in latest
     assert "run_at = COALESCE" in latest
+
+
+def test_public_read_model_revision_exposes_accounts_table_and_match_seed():
+    versions = sorted((PROJECT_ROOT / "alembic" / "versions").glob("*0013*.py"))
+    assert len(versions) == 1
+    latest = versions[0].read_text(encoding="utf-8")
+
+    assert "CREATE TABLE IF NOT EXISTS public.accounts" in latest
+    assert "management.refresh_public_accounts_snapshot" in latest
+    assert "production_reference_profile" in latest
+    assert "public.matched_pairs" in latest
+    assert "public.buyer_requirements" in latest

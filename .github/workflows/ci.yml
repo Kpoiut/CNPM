@@ -214,6 +214,21 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
+      - name: Set up Python 3.12 for Docker testcase evidence
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Publish Docker mapped testcase summary
+        run: |
+          mkdir -p reports/ci
+          python -m pip install openpyxl==3.1.5
+          python scripts/quality/export_ci_test_matrix.py \
+            --report reports/ci/docker-testcase-matrix.json \
+            --markdown reports/ci/docker-testcase-matrix.md \
+            --job docker-smoke
+          cat reports/ci/docker-testcase-matrix.md >> "$GITHUB_STEP_SUMMARY"
+
       - name: Install locked UI audit runtime
         working-directory: frontend
         run: |
@@ -244,7 +259,9 @@ jobs:
           exit 1
 
       - name: Enforce prediction latency SLO inside backend container
+        shell: bash
         run: |
+          set +e
           docker compose exec -T backend python scripts/load_test.py \
             --url http://127.0.0.1:8000 \
             --endpoint /api/v2/pipeline \
@@ -252,7 +269,30 @@ jobs:
             --concurrency 2 \
             --threshold-ms 200 \
             --report /tmp/prediction-latency.json
-          docker compose cp backend:/tmp/prediction-latency.json reports/ci/prediction-latency.json
+          status=$?
+          mkdir -p reports/ci
+          docker compose cp backend:/tmp/prediction-latency.json reports/ci/prediction-latency.json || true
+          docker compose logs --no-color backend > reports/ci/docker-backend-after-latency.log || true
+          if [ -f reports/ci/prediction-latency.json ]; then
+            {
+              echo "### Prediction latency SLO evidence"
+              echo
+              python - <<'PY'
+import json
+from pathlib import Path
+report = json.loads(Path("reports/ci/prediction-latency.json").read_text(encoding="utf-8"))
+print(f"- Status: `{report.get('status')}`")
+print(f"- Success: `{report.get('successful_requests')}/{report.get('total_requests')}`")
+print(f"- p95: `{report.get('p95_ms')} ms` / threshold `{report.get('threshold_ms')} ms`")
+if report.get("errors"):
+    print(f"- Errors: `{report['errors']}`")
+    samples = report.get("error_samples") or {}
+    for key, sample in samples.items():
+        print(f"- Sample `{key}`: `{sample[:180]}`")
+PY
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$status"
 
       - name: Seed isolated admin and user audit accounts
         shell: bash
@@ -291,6 +331,9 @@ jobs:
           path: |
             reports/ci/docker-health.json
             reports/ci/prediction-latency.json
+            reports/ci/docker-backend-after-latency.log
+            reports/ci/docker-testcase-matrix.json
+            reports/ci/docker-testcase-matrix.md
             reports/ci/docker-compose-ps.json
             reports/ci/docker-compose.log
             reports/ui-audit/baseline
