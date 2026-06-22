@@ -13,17 +13,19 @@ export function ShellNavigation({ role, ariaLabel, variant = 'horizontal' }) {
     <nav className={`shell-navigation shell-navigation--${variant}`} aria-label={ariaLabel}>
       {items.map(item => {
         const active = isNavigationItemActive(location.pathname, item)
+        const showChildren = item.children?.length > 0 && (variant === 'vertical' || active)
         return (
-          <div key={item.path} className={`shell-navigation__group ${active ? 'is-expanded' : ''}`}>
+          <div key={item.path} className={`shell-navigation__group ${showChildren ? 'is-expanded' : ''}`}>
             <Link
               to={item.path}
               className={`shell-navigation__item ${active ? 'is-active' : ''}`}
               aria-current={active ? 'page' : undefined}
+              aria-expanded={item.children?.length > 0 ? showChildren : undefined}
             >
               <span className="shell-navigation__icon">{icon(item.iconKey, 18)}</span>
               <span>{item.label}</span>
             </Link>
-            {active && item.children?.length > 0 && (
+            {showChildren && (
               <div className="shell-navigation__children" aria-label={`${item.label} tác vụ con`}>
                 {item.children.map(child => {
                   const childActive = location.pathname === child.path

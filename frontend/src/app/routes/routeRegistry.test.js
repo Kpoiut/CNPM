@@ -17,17 +17,26 @@ test('every canonical path is unique', () => {
   assert.equal(new Set(paths).size, paths.length)
 })
 
-test('admin navigation has five top-level areas', () => {
+test('admin navigation exposes operations areas and visible Research Lab entry', () => {
   assert.deepEqual(
     getNavigationForRole('admin').map(item => item.label),
-    ['Tổng quan', 'Định giá', 'Dữ liệu', 'Mô hình', 'Quản trị'],
+    ['Tổng quan', 'Định giá', 'Dữ liệu', 'Mô hình', 'Quản trị', 'Tài liệu'],
+  )
+  const modelGroup = getNavigationForRole('admin').find(item => item.label === 'Mô hình')
+  assert.ok(modelGroup.children.some(child => child.path === '/admin/models/experiments' && child.label === 'Research Lab'))
+})
+
+test('user navigation keeps legacy user pages visible without admin operations', () => {
+  assert.deepEqual(
+    getNavigationForRole('user').map(item => item.path),
+    ['/app/valuations/new', '/app/valuations/history', '/app/map', '/app/community', '/app/preferences', '/trust', '/methodology'],
   )
 })
 
-test('user navigation does not expose admin operations', () => {
+test('public navigation keeps legacy map and community pages visible', () => {
   assert.deepEqual(
-    getNavigationForRole('user').map(item => item.path),
-    ['/app/valuations/new', '/app/valuations/history', '/app/map', '/app/community'],
+    getNavigationForRole('public').map(item => item.path),
+    ['/', '/trust', '/methodology', '/map', '/community', '/about'],
   )
 })
 
@@ -63,9 +72,10 @@ test('compatibility permissions use canonical user and admin routes', () => {
 test('navigation filtering uses the canonical registry', () => {
   const items = [
     { to: '/app/map', label: 'Bản đồ' },
+    { to: '/trust', label: 'Độ tin cậy' },
     { to: '/admin/data/records', label: 'Dữ liệu' },
   ]
-  assert.deepEqual(filterNavItems(items, 'user'), [items[0]])
+  assert.deepEqual(filterNavItems(items, 'user'), [items[0], items[1]])
 })
 
 test('shell selection follows the authenticated role', () => {

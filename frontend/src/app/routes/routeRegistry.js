@@ -18,6 +18,8 @@ export const APP_ROUTES = Object.freeze([
   route('/', 'Prediction', 'public', SHELL.PUBLIC, { title: 'Định giá' }),
   route('/trust', 'TrustCenter', 'public', SHELL.PUBLIC, { title: 'Độ tin cậy' }),
   route('/methodology', 'Methodology', 'public', SHELL.PUBLIC, { title: 'Phương pháp' }),
+  route('/map', 'MapExplorer', 'public', SHELL.PUBLIC, { title: 'Bản đồ' }),
+  route('/community', 'Community', 'public', SHELL.PUBLIC, { title: 'Cộng đồng' }),
   route('/about', 'About', 'public', SHELL.PUBLIC, { title: 'Giới thiệu' }),
   route('/login', 'Login', 'public', SHELL.PUBLIC, { title: 'Đăng nhập', hidden: true }),
   route('/signin-google', 'GoogleOAuthCallback', 'public', SHELL.PUBLIC, { title: 'Google OAuth', hidden: true }),
@@ -33,10 +35,11 @@ export const APP_ROUTES = Object.freeze([
   route('/admin/data/overview', 'CollectionDashboard', 'admin', SHELL.ADMIN, { title: 'Tổng quan dữ liệu' }),
   route('/admin/data/ingestion', 'DataCollector', 'admin', SHELL.ADMIN, { title: 'Tiếp nhận dữ liệu' }),
   route('/admin/data/records', 'DataExplorer', 'admin', SHELL.ADMIN, { title: 'Bản ghi dữ liệu' }),
+  route('/admin/data/map', 'MapExplorer', 'admin', SHELL.ADMIN, { title: 'Bản đồ thị trường' }),
   route('/admin/data/sources', 'DataSources', 'admin', SHELL.ADMIN, { title: 'Nguồn dữ liệu' }),
   route('/admin/data/quality', 'DataQuality', 'admin', SHELL.ADMIN, { title: 'Chất lượng dữ liệu' }),
   route('/admin/data/provenance', 'ProvenanceTracker', 'admin', SHELL.ADMIN, { title: 'Nguồn gốc dữ liệu' }),
-  route('/admin/models/experiments', 'ResearchLab', 'admin', SHELL.ADMIN, { title: 'Thử nghiệm mô hình' }),
+  route('/admin/models/experiments', 'ResearchLab', 'admin', SHELL.ADMIN, { title: 'Research Lab' }),
   route('/admin/models/explainability', 'ExplainabilityDashboard', 'admin', SHELL.ADMIN, { title: 'Giải thích mô hình' }),
   route('/admin/governance/community', 'CommunityAdmin', 'admin', SHELL.ADMIN, { title: 'Kiểm duyệt cộng đồng' }),
   route('/admin/governance/accounts', 'UserManagement', 'admin', SHELL.ADMIN, { title: 'Tài khoản và quyền' }),
@@ -47,6 +50,8 @@ export const NAVIGATION = Object.freeze({
     { path: '/', label: 'Định giá', iconKey: 'zap' },
     { path: '/trust', label: 'Độ tin cậy', iconKey: 'shieldCheck' },
     { path: '/methodology', label: 'Phương pháp', iconKey: 'experiment' },
+    { path: '/map', label: 'Bản đồ', iconKey: 'map' },
+    { path: '/community', label: 'Cộng đồng', iconKey: 'globe' },
     { path: '/about', label: 'Giới thiệu', iconKey: 'info' },
   ]),
   user: Object.freeze([
@@ -54,6 +59,9 @@ export const NAVIGATION = Object.freeze({
     { path: '/app/valuations/history', label: 'Lịch sử', iconKey: 'activity' },
     { path: '/app/map', label: 'Bản đồ', iconKey: 'map' },
     { path: '/app/community', label: 'Cộng đồng', iconKey: 'globe' },
+    { path: '/app/preferences', label: 'Nhu cầu mua', iconKey: 'user' },
+    { path: '/trust', label: 'Độ tin cậy', iconKey: 'shieldCheck' },
+    { path: '/methodology', label: 'Phương pháp', iconKey: 'experiment' },
   ]),
   admin: Object.freeze([
     { path: '/admin/overview', label: 'Tổng quan', iconKey: 'dashboard' },
@@ -67,6 +75,7 @@ export const NAVIGATION = Object.freeze({
         { path: '/admin/data/overview', label: 'Tổng quan' },
         { path: '/admin/data/ingestion', label: 'Tiếp nhận' },
         { path: '/admin/data/records', label: 'Bản ghi' },
+        { path: '/admin/data/map', label: 'Bản đồ' },
         { path: '/admin/data/sources', label: 'Nguồn' },
         { path: '/admin/data/quality', label: 'Chất lượng' },
         { path: '/admin/data/provenance', label: 'Nguồn gốc' },
@@ -78,7 +87,7 @@ export const NAVIGATION = Object.freeze({
       iconKey: 'experiment',
       matchPrefix: '/admin/models',
       children: Object.freeze([
-        { path: '/admin/models/experiments', label: 'Thử nghiệm' },
+        { path: '/admin/models/experiments', label: 'Research Lab' },
         { path: '/admin/models/explainability', label: 'Giải thích' },
       ]),
     },
@@ -92,14 +101,21 @@ export const NAVIGATION = Object.freeze({
         { path: '/admin/governance/accounts', label: 'Tài khoản' },
       ]),
     },
+    {
+      path: '/trust',
+      label: 'Tài liệu',
+      iconKey: 'info',
+      children: Object.freeze([
+        { path: '/trust', label: 'Độ tin cậy' },
+        { path: '/methodology', label: 'Phương pháp' },
+      ]),
+    },
   ]),
 })
 
 export const LEGACY_ROUTES = Object.freeze([
   { path: '/buyer-survey', to: '/app/preferences', minRole: 'user' },
   { path: '/dashboard', to: '/admin/overview', minRole: 'admin' },
-  { path: '/map', to: '/app/map', minRole: 'user' },
-  { path: '/community', to: '/app/community', minRole: 'user' },
   {
     path: '/data-quality',
     toByRole: { public: '/trust', user: '/trust', admin: '/admin/data/quality' },
