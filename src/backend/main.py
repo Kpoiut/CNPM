@@ -2115,8 +2115,11 @@ def list_properties(
 # --- Dataset Statistics Endpoints (Research Standard) ---
 
 @app.get("/api/dashboard/stats")
-def get_dashboard_stats(db: Session = Depends(get_db)):
-    """Get dynamic dashboard statistics (Quy tắc 20)"""
+def get_dashboard_stats(
+    db: Session = Depends(get_db),
+    _admin: User = Depends(require_admin),
+):
+    """Get live operational statistics for authenticated administrators."""
     from sqlalchemy import func
     from datetime import datetime, timedelta
 

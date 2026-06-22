@@ -8,8 +8,8 @@
     "build": "vite build",
     "build:check": "vite build && node scripts/check-bundle-budget.mjs",
     "preview": "vite preview",
-    "test:unit": "node --test scripts/ui-audit-console-policy.test.mjs src/app/routes/routeRegistry.test.js src/components/valuation/propertyModelGeometry.test.js src/pages/public/Prediction.ui.test.js",
-    "test:ci": "node -e \"require('fs').mkdirSync('../reports/ci',{recursive:true})\" && node --test --test-reporter=junit --test-reporter-destination=../reports/ci/frontend-junit.xml scripts/ui-audit-console-policy.test.mjs src/app/routes/routeRegistry.test.js src/components/valuation/propertyModelGeometry.test.js src/pages/public/Prediction.ui.test.js",
+    "test:unit": "node --test scripts/ui-audit-console-policy.test.mjs src/app/routes/routeRegistry.test.js src/components/auth/authSession.test.js src/components/valuation/propertyModelGeometry.test.js src/pages/public/Prediction.ui.test.js src/pages/public/PublicPages.ui.test.js",
+    "test:ci": "node -e \"require('fs').mkdirSync('../reports/ci',{recursive:true})\" && node --test --test-reporter=junit --test-reporter-destination=../reports/ci/frontend-junit.xml scripts/ui-audit-console-policy.test.mjs src/app/routes/routeRegistry.test.js src/components/auth/authSession.test.js src/components/valuation/propertyModelGeometry.test.js src/pages/public/Prediction.ui.test.js src/pages/public/PublicPages.ui.test.js",
     "audit:ui": "node scripts/capture-ui-baseline.mjs"
   },
   "dependencies": {

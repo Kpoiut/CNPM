@@ -155,6 +155,45 @@ def test_db_prod_h04_pgadmin_public_tables_have_reference_rows():
     assert counts["matched_pairs"] > 0
 
 
+def test_db_prod_h05_pgadmin_role_edit_updates_auth_source_of_truth():
+    """Sửa role ở public.accounts phải có hiệu lực RBAC ngay trong auth schema."""
+    from src.backend.database import engine
+
+    connection = engine.connect()
+    transaction = connection.begin()
+    try:
+        account = connection.execute(
+            text(
+                """
+                SELECT account_id, role
+                FROM public.accounts
+                WHERE role = 'user'
+                ORDER BY account_id
+                LIMIT 1
+                """
+            )
+        ).mappings().one()
+        connection.execute(
+            text(
+                """
+                UPDATE public.accounts
+                SET role = 'admin'
+                WHERE account_id = :account_id
+                """
+            ),
+            {"account_id": account["account_id"]},
+        )
+        auth_role = connection.execute(
+            text("SELECT role FROM auth.auth_accounts WHERE id = :account_id"),
+            {"account_id": account["account_id"]},
+        ).scalar_one()
+
+        assert auth_role == "admin"
+    finally:
+        transaction.rollback()
+        connection.close()
+
+
 def test_db_prod_f01_runtime_has_no_sqlite_extension_or_database_object():
     from src.backend.database import engine
 

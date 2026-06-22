@@ -117,3 +117,17 @@ def test_public_read_model_revision_exposes_accounts_table_and_match_seed():
     assert "production_reference_profile" in latest
     assert "public.matched_pairs" in latest
     assert "public.buyer_requirements" in latest
+
+
+def test_pgadmin_account_edit_revision_makes_public_accounts_writable():
+    versions = sorted((PROJECT_ROOT / "alembic" / "versions").glob("*0014*.py"))
+    assert len(versions) == 1
+    latest = versions[0].read_text(encoding="utf-8")
+
+    assert "management.apply_public_account_edit" in latest
+    assert "trg_apply_public_account_edit" in latest
+    assert "UPDATE auth.auth_accounts" in latest
+    assert "avm.skip_account_snapshot_refresh" in latest
+    assert "set_config" in latest
+    assert "pg_trigger_depth()" in latest
+    assert "PGADMIN_ACCOUNT_UPDATE" in latest

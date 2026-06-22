@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
 
 const predictionSource = await readFile(new URL('./Prediction.jsx', import.meta.url), 'utf8')
+const dashboardSource = await readFile(new URL('./Dashboard.jsx', import.meta.url), 'utf8')
 const visualizerSource = await readFile(new URL('../../components/valuation/PropertyVisualizer.jsx', import.meta.url), 'utf8')
 const propertyModel3dSource = await readFile(new URL('../../components/valuation/PropertyModel3D.jsx', import.meta.url), 'utf8')
 const uiAuditSource = await readFile(new URL('../../../scripts/capture-ui-baseline.mjs', import.meta.url), 'utf8')
@@ -14,11 +15,14 @@ test('trang dự đoán chỉ dùng một bộ điều hướng quy trình có t
   assert.match(predictionSource, /\['pipeline', '04', 'Audit'\]/)
 })
 
-test('metric ML trên trang dự đoán luôn đến từ API và có model version', () => {
-  assert.doesNotMatch(predictionSource, /Official MAPE 16\.09%/)
-  assert.match(predictionSource, /\/api\/v2\/explain\/model-compare/)
-  assert.match(predictionSource, /Model đang phục vụ/)
-  assert.match(predictionSource, /Chu kỳ train mới nhất/)
+test('metric vận hành chỉ nằm ở dashboard admin và được làm mới từ API', () => {
+  assert.doesNotMatch(predictionSource, /User workspace/)
+  assert.doesNotMatch(predictionSource, /Cached target <200ms/)
+  assert.doesNotMatch(predictionSource, /PostgreSQL\/PostGIS source/)
+  assert.doesNotMatch(predictionSource, /Model đang phục vụ/)
+  assert.match(dashboardSource, /dashboard\/stats/)
+  assert.match(dashboardSource, /refetchInterval: 30_000/)
+  assert.match(dashboardSource, /serving_model/)
 })
 
 test('mô hình 3D không nằm trong chunk chính của trang dự đoán', () => {

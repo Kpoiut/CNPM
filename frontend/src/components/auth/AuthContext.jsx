@@ -10,6 +10,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { fetchCurrentAccount } from './authSession.js'
 
 const TOKEN_KEY = 'avm-token'
 const USER_KEY = 'avm-user'
@@ -29,18 +30,72 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // Restore session from localStorage on mount
+  const clearSession = useCallback(() => {
+    setToken(null)
+    setUser(null)
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem('avm-refresh')
+    localStorage.removeItem(USER_KEY)
+    sessionStorage.removeItem(RESEARCH_LAB_TOKEN_KEY)
+    sessionStorage.removeItem(RESEARCH_LAB_EXPIRES_KEY)
+  }, [])
+
+  const storeCurrentUser = useCallback(account => {
+    setUser(account)
+    localStorage.setItem(USER_KEY, JSON.stringify(account))
+  }, [])
+
+  const revalidateAccount = useCallback(async activeToken => {
+    if (!activeToken) return null
+    try {
+      const account = await fetchCurrentAccount(activeToken)
+      storeCurrentUser(account)
+      return account
+    } catch (error) {
+      if (error.status === 401 || error.status === 403) clearSession()
+      throw error
+    }
+  }, [clearSession, storeCurrentUser])
+
+  // Restore the token, then ask PostgreSQL-backed /me for the current role/state.
   useEffect(() => {
+    let active = true
+    const restore = async () => {
     try {
       const savedToken = localStorage.getItem(TOKEN_KEY)
       const savedUser = localStorage.getItem(USER_KEY)
       if (savedToken && savedUser) {
         setToken(savedToken)
         setUser(JSON.parse(savedUser))
+          try {
+            const account = await fetchCurrentAccount(savedToken)
+            if (active) storeCurrentUser(account)
+          } catch (error) {
+            if (active && (error.status === 401 || error.status === 403)) clearSession()
+          }
       }
     } catch { /* ignore */ }
-    setIsLoading(false)
-  }, [])
+      if (active) setIsLoading(false)
+    }
+    restore()
+    return () => { active = false }
+  }, [clearSession, storeCurrentUser])
+
+  useEffect(() => {
+    if (!token) return undefined
+    const refresh = () => revalidateAccount(token).catch(() => {})
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refresh()
+    }
+    const interval = window.setInterval(refresh, 30_000)
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => {
+      window.clearInterval(interval)
+      window.removeEventListener('focus', refresh)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
+  }, [revalidateAccount, token])
 
   const login = useCallback(async (username, password) => {
     sessionStorage.removeItem(RESEARCH_LAB_TOKEN_KEY)
@@ -84,15 +139,7 @@ export function AuthProvider({ children }) {
     return data.user
   }, [])
 
-  const logout = useCallback(() => {
-    setToken(null)
-    setUser(null)
-    localStorage.removeItem(TOKEN_KEY)
-    localStorage.removeItem('avm-refresh')
-    localStorage.removeItem(USER_KEY)
-    sessionStorage.removeItem(RESEARCH_LAB_TOKEN_KEY)
-    sessionStorage.removeItem(RESEARCH_LAB_EXPIRES_KEY)
-  }, [])
+  const logout = clearSession
 
   const value = {
     user,
@@ -103,6 +150,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    refreshAccount: () => revalidateAccount(token),
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

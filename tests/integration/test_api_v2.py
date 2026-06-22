@@ -40,6 +40,26 @@ EXPECTED_NEGATIVE_FACTORS = {
 }
 
 
+class TestAdminDashboardAuthorization:
+
+    def test_user_cannot_read_system_dashboard_metrics(self, authenticated_client):
+        client, _user = authenticated_client
+
+        response = client.get("/api/dashboard/stats")
+
+        assert response.status_code == 403
+
+    def test_admin_reads_live_system_dashboard_metrics(self, admin_client):
+        client, _admin = admin_client
+
+        response = client.get("/api/dashboard/stats")
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert "total_records" in payload
+        assert "serving_model" in payload
+
+
 # =============================================================================
 # POST /api/v2/pipeline TESTS
 # =============================================================================

@@ -77,9 +77,10 @@ real-estate-avm/
 ## Chạy nhanh
 
 ```bash
-# 1. Cài dependency dev, cấu hình PostgreSQL, migrate, rồi kiểm tra dữ liệu
+# 1. Cài dependency dev, cấu hình PostgreSQL 18 local, migrate, rồi kiểm tra dữ liệu
 python -m pip install -r requirements-dev.txt
 python -m alembic upgrade head
+pwsh -ExecutionPolicy Bypass -File scripts/local/VERIFY_POSTGRES18_REALTIME.ps1
 python scripts/retrain_v2.py --dry-run
 
 # 2. Backend
@@ -118,7 +119,8 @@ cd frontend && npm run build:check
 
 - `models/ACTIVE_MODEL.json` là con trỏ model đang phục vụ. Metric serving phải lấy theo active model, không lấy candidate mới nhất nếu chưa activate.
 - Git chỉ mở cho artifact model đã audit: `model_20260504_144753.pkl` và `model_20260621_162930.pkl`; mọi `.pkl` khác vẫn bị ignore để tránh rác/candidate chưa kiểm chứng.
-- PostgreSQL head `20260621_0009` chia schema theo domain: `public` (9 bảng lõi), `auth`, `ml`, `community`, `operations`, `management`.
+- PostgreSQL local cho pgAdmin 4 bản 18 chạy ở `127.0.0.1:5433/real_estate_avm`; app dùng role `real_estate_avm_app` từ `.env`, không dùng SQLite.
+- PostgreSQL head `20260622_0014` chia schema theo domain: `public` (10 bảng lõi có `accounts` projection), `auth`, `ml`, `community`, `operations`, `management`.
 - `public.valuation_runs` là bảng duy nhất lưu dự đoán; `management.prediction_history` là view đọc lịch sử, không còn bảng `predictions`/`prediction_history` trùng lặp.
 - Google OAuth 2.0 dùng env `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_OAUTH_REDIRECT_URI`; không commit secret thật.
 - CI/CD nằm trong `.github/workflows/ci.yml`; frontend build có bundle budget gate, backend chạy PostgreSQL/PostGIS thật, Docker smoke upload log/evidence. Quality gate bên thứ ba dùng SonarCloud trong `.github/workflows/third-party-quality.yml`.

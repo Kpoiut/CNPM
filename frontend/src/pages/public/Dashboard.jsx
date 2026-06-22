@@ -23,6 +23,7 @@ import { useAuth } from '../../components/auth'
 import { icon } from '../../components/ui/icons'
 import { VISUAL_ASSETS } from '../../constants/visuals'
 import { addNotification, openNotificationCenter } from '../../lib/notifications'
+import { authFetch } from '../../api/client'
 import {
   TIER_COLORS, EVIDENCE_LABELS, EVIDENCE_WEIGHTS, PRICE_RANGES,
   PROPERTY_TYPE_COLORS, PIE_CHART_COLORS, API_BASE,
@@ -137,25 +138,33 @@ function ResearchLabAccessPanel() {
 }
 
 function Dashboard() {
-  const { data: stats, isLoading: statsLoading, error: statsError, refetch: refetchStats } = useQuery({
+  const {
+    data: stats,
+    dataUpdatedAt: statsUpdatedAt,
+    isLoading: statsLoading,
+    error: statsError,
+    refetch: refetchStats,
+  } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/dashboard/stats`)
+      const res = await authFetch(`${API_BASE}/dashboard/stats`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       return res.json()
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 20_000,
+    refetchInterval: 30_000,
     retry: 2,
   })
 
   const { data: propertiesData, isLoading: chartsLoading, error: chartsError, refetch: refetchProperties } = useQuery({
     queryKey: ['dashboard-properties'],
     queryFn: async () => {
-      const res = await fetch(`${API_BASE}/properties?limit=5000`)
+      const res = await authFetch(`${API_BASE}/properties?limit=5000`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       return res.json()
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 45_000,
+    refetchInterval: 60_000,
     retry: 2,
   })
 
@@ -352,6 +361,14 @@ function Dashboard() {
         <div className="dashboard-live-chip">
           {icon('shieldCheck', 16)}
           <span>{confidenceCounts.source || 'server'} confidence gate</span>
+        </div>
+        <div className="dashboard-live-chip">
+          {icon('clock', 16)}
+          <span>
+            Cập nhật {statsUpdatedAt
+              ? new Date(statsUpdatedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+              : 'đang đồng bộ'}
+          </span>
         </div>
       </div>
 

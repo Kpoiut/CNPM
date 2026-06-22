@@ -13,7 +13,6 @@ import PipelineGateTrail from '../../components/valuation/PipelineGateTrail'
 import SubEnginePanel from '../../components/valuation/SubEnginePanel'
 import { useAuth } from '../../components/auth'
 import { predictPipeline, predictSDEV, iotAreaSignal } from '../../api'
-import { PredictionHeroBand } from '../../components/prediction/PredictionHeroBand'
 import { setNovaContext, clearNovaContext } from '../../components/nova/novaBus'
 import './prediction-pro.css'
 
@@ -386,65 +385,6 @@ function MarketStatsBar({ comparables }) {
   )
 }
 
-function modelMetricText(model) {
-  return model?.test_mape != null
-    ? `${model.stamp} · MAPE ${Number(model.test_mape).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%`
-    : 'Đang tải metric có version'
-}
-
-function PredictionReadinessStrip({
-  isAdmin,
-  scopeText,
-  engineLabel,
-  modelProvenance,
-  pipelineResult,
-  loading,
-}) {
-  const servingModel = modelProvenance?.serving
-  const hasResult = Boolean(pipelineResult)
-  const items = [
-    {
-      iconKey: isAdmin ? 'shieldCheck' : 'user',
-      label: 'Vai trò',
-      value: isAdmin ? 'Admin operations' : 'User workspace',
-      note: isAdmin ? 'Mở audit, model và tác động' : 'Dự đoán, giải thích, lịch sử',
-    },
-    {
-      iconKey: 'database',
-      label: 'Nguồn dữ liệu',
-      value: 'PostgreSQL/PostGIS',
-      note: scopeText || 'Đang tải scope từ backend',
-    },
-    {
-      iconKey: 'activity',
-      label: 'Model đang phục vụ',
-      value: servingModel?.stamp || 'Đang tải',
-      note: modelMetricText(servingModel),
-    },
-    {
-      iconKey: loading ? 'loader' : 'clock',
-      label: 'Phản hồi',
-      value: loading ? 'Pipeline đang chạy' : 'Cached target <200ms',
-      note: hasResult ? 'Kết quả đã có thể đối chiếu' : engineLabel || 'Valuation Engine v2',
-    },
-  ]
-
-  return (
-    <section className="pp-readiness-strip" aria-label="Prediction production readiness">
-      {items.map(item => (
-        <div className="pp-readiness-item" key={item.label}>
-          <span className="pp-readiness-icon">{icon(item.iconKey, 17)}</span>
-          <span className="pp-readiness-copy">
-            <span>{item.label}</span>
-            <strong>{item.value}</strong>
-            <small>{item.note}</small>
-          </span>
-        </div>
-      ))}
-    </section>
-  )
-}
-
 function PredictionCommandRail({
   isAdmin,
   activeTab,
@@ -454,17 +394,11 @@ function PredictionCommandRail({
   comparables,
   loading,
   staleLocation,
-  repredicting,
-  scopeText,
-  engineLabel,
-  modelProvenance,
 }) {
   const hasResult = Boolean(pipelineResult)
   const value = v2Result?.market_valuation?.fair_market_value
   const grade = v2Result?.confidence_evidence?.confidence_grade || pipelineResult?.valuation?.confidence_evidence?.confidence_grade
   const confidence = v2Result?.confidence_evidence?.overall_confidence
-  const servingModel = modelProvenance?.serving
-  const latestModel = modelProvenance?.latest
   const nextAction = loading
     ? 'Đợi pipeline hoàn tất'
     : !hasResult
@@ -534,32 +468,6 @@ function PredictionCommandRail({
         </dl>
       </div>
 
-      <div className="pp-rail-card pp-rail-card--system">
-        <div className="pp-rail-kicker">Thông tin hệ thống</div>
-        <div className="pp-system-line">
-          <span>{icon('flask', 16)}</span>
-          <span>{engineLabel || 'Valuation Engine v2'}</span>
-        </div>
-        <div className="pp-system-line">
-          <span>{icon('database', 16)}</span>
-          <span>PostgreSQL/PostGIS source</span>
-        </div>
-        <div className="pp-system-line">
-          <span>{icon('shieldCheck', 16)}</span>
-          <span>Model đang phục vụ: {modelMetricText(servingModel)}</span>
-        </div>
-        <div className="pp-system-line">
-          <span>{icon('activity', 16)}</span>
-          <span>Chu kỳ train mới nhất: {modelMetricText(latestModel)}</span>
-        </div>
-        {servingModel?.stamp && latestModel?.stamp && servingModel.stamp !== latestModel.stamp && (
-          <small>
-            Candidate mới chưa được activate vì metric test chưa tốt hơn model đang phục vụ.
-          </small>
-        )}
-        <small>{scopeText}</small>
-        {repredicting && <span className="pp-rail-sync">{icon('loader', 14)} Đang cập nhật live estimate</span>}
-      </div>
     </aside>
   )
 }
@@ -586,52 +494,6 @@ function Prediction() {
       return res.json()
     },
     staleTime: 10 * 60 * 1000,
-  })
-
-  const { data: modelComparison } = useQuery({
-    queryKey: ['model-metric-provenance'],
-    queryFn: async () => {
-      const res = await fetch('/api/v2/explain/model-compare')
-      if (!res.ok) throw new Error('Không lấy được metric theo model version')
-      return res.json()
-    },
-    staleTime: 5 * 60 * 1000,
-  })
-
-  // Dynamic scope from API
-  const { data: scopesData } = useQuery({
-    queryKey: ['provinces'],
-    queryFn: async () => {
-      const res = await fetch('/api/provinces')
-      if (!res.ok) throw new Error('Không lấy được danh sách tỉnh/thành')
-      return res.json()
-    },
-    staleTime: 10 * 60 * 1000,
-  })
-
-  const scopeText = React.useMemo(() => {
-    const provinces = scopesData?.provinces || []
-    if (!provinces.length) return 'Đang tải scope từ backend'
-    const labels = provinces
-      .map(scope => {
-        const count = scope.actual_record_count ?? scope.districts?.reduce((sum, d) => sum + (d.record_count || d.actual_record_count || 0), 0) ?? 0
-        return `${scope.name} (${count} records)`
-      })
-    return labels.length > 3
-      ? `${labels.slice(0, 3).join(' · ')} · +${labels.length - 3} scope khác`
-      : labels.join(' · ')
-  }, [scopesData])
-
-  // Districts for selected province
-  const [selectedProvince, setSelectedProvince] = useState(null)
-  const { data: districtsData } = useQuery({
-    queryKey: ['districts', selectedProvince],
-    queryFn: async () => {
-      const res = await fetch(`/api/provinces/${selectedProvince}/districts`)
-      if (!res.ok) throw new Error('Không lấy được danh sách quận/huyện')
-      return res.json()
-    },
-    enabled: !!selectedProvince,
   })
 
   const handlePropertyTypeChange = (type) => {
@@ -821,21 +683,6 @@ function Prediction() {
         </div>
       </div>
 
-      <PredictionHeroBand
-        scopeText={scopeText}
-        engineLabel={engineInfo?.button_label}
-        isAdmin={isAdmin}
-      />
-
-      <PredictionReadinessStrip
-        isAdmin={isAdmin}
-        scopeText={scopeText}
-        engineLabel={engineInfo?.button_label}
-        modelProvenance={modelComparison?.metric_provenance}
-        pipelineResult={pipelineResult}
-        loading={loading || repredicting}
-      />
-
       {/* Hero giá trị — cập nhật trực tiếp khi đổi thông số (ẩn ở tab Kết quả) */}
       {v2Result?.market_valuation && activeTab !== 'result' && (
         <div className="pp-hero" style={{ margin: '1rem 0 1.25rem' }}>
@@ -927,10 +774,6 @@ function Prediction() {
           comparables={comparables}
           loading={loading}
           staleLocation={staleLocation}
-          repredicting={repredicting}
-          scopeText={scopeText}
-          engineLabel={engineInfo?.button_label}
-          modelProvenance={modelComparison?.metric_provenance}
         />
 
         <main className="pp-workspace-main">

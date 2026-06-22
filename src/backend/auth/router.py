@@ -346,7 +346,9 @@ const payload = {json.dumps(payload)};
 localStorage.setItem('avm-token', payload.access_token);
 if (payload.refresh_token) localStorage.setItem('avm-refresh', payload.refresh_token);
 localStorage.setItem('avm-user', JSON.stringify(payload.user));
-window.location.replace({json.dumps(redirect_to)});
+const configuredRedirect = {json.dumps(redirect_to)};
+const roleHome = payload.user.role === 'admin' ? '/admin/overview' : '/app/valuations/new';
+window.location.replace(configuredRedirect === '/' ? roleHome : configuredRedirect);
 </script>
 <p>Đăng nhập Google thành công. Đang chuyển hướng...</p>
 </body>

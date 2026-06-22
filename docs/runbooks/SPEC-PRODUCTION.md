@@ -1,6 +1,6 @@
 # Real Estate AVM - Production Operations Manual
 
-> Phiên bản: 2.0 | Cập nhật: 2026-06-21 | PostgreSQL head: `20260621_0009`
+> Phiên bản: 2.1 | Cập nhật: 2026-06-22 | PostgreSQL head: `20260622_0014`
 >
 > Đây là tài liệu vận hành chuẩn duy nhất. Số liệu runtime phải lấy lại bằng command trong tài liệu, không sao chép số cũ từ báo cáo lịch sử.
 
@@ -57,6 +57,8 @@ Không đặt script dùng một lần ở root. One-time migration phải đi q
 
 Tạo local env từ `.env.example`. Không commit secret thật.
 
+Local pgAdmin 4 bản PostgreSQL 18 của dự án đang dùng `127.0.0.1:5433/real_estate_avm`. Superuser `postgres` với password local `1234` chỉ dùng để quản trị trên máy dev; runtime backend dùng role `real_estate_avm_app` và password riêng trong `.env`.
+
 Biến bắt buộc:
 
 | Biến | Ý nghĩa |
@@ -81,16 +83,16 @@ OAuth dùng authorization code, PKCE S256, state một lần, redirect allowlist
 
 ## 5. PostgreSQL domain layout
 
-Migration `20260621_0009` giữ `public` gọn và tách domain:
+Migration `20260622_0014` giữ `public` gọn, tách domain và bổ sung projection account dễ đọc trong pgAdmin:
 
 | Schema | Bảng/view | Mục đích |
 |---|---:|---|
-| `public` | 9 tables | Property, valuation, provenance, sources, expert và demand core |
+| `public` | 10 tables | Property, valuation, provenance, sources, expert, demand core và `accounts` projection |
 | `auth` | 3 tables | Account, session và refresh token đã hash |
 | `ml` | 4 tables | Dataset version, training run/metric và model registry |
 | `community` | 11 tables | Claim/evidence/challenge/reputation; tách khỏi AVM core |
 | `operations` | 2 tables | Audit log và migration quarantine |
-| `management` | 6 views | PgAdmin/operator views dễ đọc |
+| `management` | 8 views | PgAdmin/operator views dễ đọc |
 
 Không gộp các bảng Community vào JSON chỉ để giảm table count. Chúng đang được API/UI tham chiếu và có FK riêng. Tách schema giảm nhiễu cho vận hành nhưng vẫn giữ integrity.
 
@@ -98,6 +100,7 @@ Các bảng core trong `public`:
 
 | Bảng | Giá trị vận hành |
 |---|---|
+| `accounts` | Projection đọc/sửa có kiểm soát cho account trong pgAdmin; source of truth vẫn là `auth.auth_accounts` |
 | `properties` | Dataset bất động sản và evidence tier |
 | `valuation_runs` | Nguồn duy nhất lưu mọi dự đoán, latency, account, model, input/output, feedback và training usage |
 | `provenance_chains` | Chuỗi bằng chứng cho từng property |
@@ -112,6 +115,8 @@ Management views nên dùng trong pgAdmin:
 
 | View | Nội dung |
 |---|---|
+| `management.account_registry` | Account, role, session, prediction_count và feedback signal |
+| `management.collection_source_health` | Tình trạng nguồn thu thập và số record thực tế |
 | `management.database_catalog` | Schema, object, row estimate, size và purpose |
 | `management.property_dataset_full` | Dataset property đầy đủ |
 | `management.prediction_history` | Prediction/account/model/feedback lineage |
@@ -124,14 +129,18 @@ Audit exact row count:
 ```bash
 python scripts/audit_postgres_catalog.py --exact-counts
 python -m alembic current
+powershell -ExecutionPolicy Bypass -File scripts/local/VERIFY_POSTGRES18_REALTIME.ps1
 ```
 
-Snapshot đã xác minh ngày 2026-06-21:
+Snapshot đã xác minh ngày 2026-06-22 trên PostgreSQL 18.4 local:
 
 - `properties`: 3,560.
 - Training eligible: 3,269.
 - Verified: 2,844.
-- `valuation_runs`: 349.
+- `valuation_runs`: 752.
+- `public.accounts`: 14.
+- `buyer_requirements`: 28.
+- `matched_pairs`: 387.
 - `provenance_chains`: 9,889.
 - Active model: `20260504_144753`.
 - Active MAPE: 16.086434 percent.
@@ -217,6 +226,7 @@ Chỉ dùng `down --volumes` cho disposable local/CI database đã được xác
 python -m venv .venv
 .venv/Scripts/python -m pip install -r requirements-dev.txt
 .venv/Scripts/python -m alembic upgrade head
+powershell -ExecutionPolicy Bypass -File scripts/local/VERIFY_POSTGRES18_REALTIME.ps1
 .venv/Scripts/python -m uvicorn src.backend.main:app --reload --port 8000
 ```
 
@@ -352,7 +362,7 @@ Khi nghi lộ secret: revoke/rotate trước, sau đó mới sửa history/confi
 ## 16. Release checklist
 
 1. Git working tree phản ánh đúng commit cần release.
-2. Alembic fresh DB lên head `20260621_0009` hoặc revision mới hơn đã review.
+2. Alembic fresh DB lên head `20260622_0014` hoặc revision mới hơn đã review.
 3. Backend, frontend, catalogue, security và Docker jobs pass.
 4. SonarCloud quality gate pass.
 5. P0 execution evidence có commit SHA; không Failed/Blocked/Not Run nếu release production.

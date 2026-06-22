@@ -42,8 +42,13 @@ HUONG DAN CHAY NHANH DU AN REAL ESTATE AVM
 
 7. Dataset / model / database
    - PostgreSQL 18 database: real_estate_avm.
+   - PgAdmin 4 server PostgreSQL 18 local cua may nay dang o 127.0.0.1:5433.
+   - Superuser postgres/password 1234 chi dung de quan tri local; backend dung role
+     real_estate_avm_app va password trong .env.
    - DATABASE_URL bat buoc dung dang postgresql+psycopg://...
-   - Chay migration bang: python -m alembic upgrade head.
+   - Chay migration bang: .venv\Scripts\python.exe -m alembic upgrade head.
+   - Kiem tra app dang doc PostgreSQL that:
+       powershell -ExecutionPolicy Bypass -File scripts\local\VERIFY_POSTGRES18_REALTIME.ps1
    - Model active hien tai duoc pin trong models/ACTIVE_MODEL.json va bang model_versions.
    - Account production nam o auth.auth_accounts; view quan tri de xem nhanh la
      management.account_registry, gom role, session, prediction_count,

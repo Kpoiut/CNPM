@@ -8,7 +8,7 @@ import { useAuth } from '../../components/auth'
 import { icon } from '../../components/ui/icons'
 
 function Login() {
-  const { login, register, isAuthenticated } = useAuth()
+  const { login, register, isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
 
   const [mode, setMode] = useState('login') // 'login' | 'register'
@@ -20,10 +20,10 @@ function Login() {
 
   // Redirect if already authenticated — useEffect to avoid setState during render
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/', { replace: true })
+    if (isAuthenticated && user) {
+      navigate(user.role === 'admin' ? '/admin/overview' : '/app/valuations/new', { replace: true })
     }
-  }, [isAuthenticated, navigate])
+  }, [isAuthenticated, navigate, user])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -31,12 +31,10 @@ function Login() {
     setLoading(true)
 
     try {
-      if (mode === 'login') {
-        await login(username, password)
-      } else {
-        await register(username, password, email)
-      }
-      navigate('/', { replace: true })
+      const account = mode === 'login'
+        ? await login(username, password)
+        : await register(username, password, email)
+      navigate(account.role === 'admin' ? '/admin/overview' : '/app/valuations/new', { replace: true })
     } catch (err) {
       setError(err.message)
     } finally {
