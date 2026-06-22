@@ -277,19 +277,19 @@ jobs:
             {
               echo "### Prediction latency SLO evidence"
               echo
-              python - <<'PY'
-import json
-from pathlib import Path
-report = json.loads(Path("reports/ci/prediction-latency.json").read_text(encoding="utf-8"))
-print(f"- Status: `{report.get('status')}`")
-print(f"- Success: `{report.get('successful_requests')}/{report.get('total_requests')}`")
-print(f"- p95: `{report.get('p95_ms')} ms` / threshold `{report.get('threshold_ms')} ms`")
-if report.get("errors"):
-    print(f"- Errors: `{report['errors']}`")
-    samples = report.get("error_samples") or {}
-    for key, sample in samples.items():
-        print(f"- Sample `{key}`: `{sample[:180]}`")
-PY
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("reports/ci/prediction-latency.json").read_text(encoding="utf-8"))
+          print(f"- Status: `{report.get('status')}`")
+          print(f"- Success: `{report.get('successful_requests')}/{report.get('total_requests')}`")
+          print(f"- p95: `{report.get('p95_ms')} ms` / threshold `{report.get('threshold_ms')} ms`")
+          if report.get("errors"):
+              print(f"- Errors: `{report['errors']}`")
+              samples = report.get("error_samples") or {}
+              for key, sample in samples.items():
+                  print(f"- Sample `{key}`: `{sample[:180]}`")
+          PY
             } >> "$GITHUB_STEP_SUMMARY"
           fi
           exit "$status"
