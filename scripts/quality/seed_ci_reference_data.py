@@ -29,24 +29,15 @@ CI_PASSWORD = "CodexCiReference!2026"
 
 def _reference_accounts() -> list[dict[str, object]]:
     hashed = hash_password(CI_PASSWORD)
-    rows = [
-        {
-            "username": "ci_admin",
-            "email": "ci-admin@example.test",
-            "role": "admin",
-            "hashed_password": hashed,
-        }
-    ]
-    rows.extend(
+    return [
         {
             "username": f"ci_user_{idx:02d}",
             "email": f"ci-user-{idx:02d}@example.test",
             "role": "user",
             "hashed_password": hashed,
         }
-        for idx in range(1, 13)
-    )
-    return rows
+        for idx in range(13)
+    ]
 
 
 def _reference_properties(now: datetime) -> list[dict[str, object]]:
@@ -114,6 +105,23 @@ def seed() -> dict[str, int]:
         connection.execute(text("DELETE FROM public.matched_pairs WHERE match_group LIKE 'ci_reference_%'"))
         connection.execute(text("DELETE FROM public.buyer_requirements WHERE source_type = 'ci_reference_profile'"))
         connection.execute(text("DELETE FROM public.properties WHERE source_name = 'ci_reference_dataset'"))
+        connection.execute(
+            text(
+                """
+                DELETE FROM auth.auth_accounts
+                WHERE username = 'ci_admin'
+                  AND email = 'ci-admin@example.test'
+                  AND NOT EXISTS (
+                      SELECT 1 FROM auth.auth_account_sessions
+                      WHERE user_id = auth.auth_accounts.id
+                  )
+                  AND NOT EXISTS (
+                      SELECT 1 FROM auth.auth_refresh_tokens
+                      WHERE user_id = auth.auth_accounts.id
+                  )
+                """
+            )
+        )
 
         for account in _reference_accounts():
             account_id = connection.execute(
