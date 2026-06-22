@@ -305,7 +305,7 @@ async def nova_chat(request: Request, req: ChatRequest = Body(...)):
             timestamp=datetime.now().isoformat(),
         )
     except HTTPException as exc:
-        rescue = project_fast_response(message, context, attachments) or fallback_response(message, context, attachments, provider_failed=True)
+        rescue = project_fast_response(message, context, attachments)
         if rescue:
             return NovaChatResponse(
                 text=rescue,
@@ -1031,6 +1031,16 @@ def _district_price_response(district: str, from_image: bool = False, context: d
 
 
 def _parse_budget_vnd(text: str) -> int | None:
+    matches = _parse_budget_matches_vnd(text)
+    return matches[0] if matches else None
+
+
+def _parse_latest_budget_vnd(text: str) -> int | None:
+    matches = _parse_budget_matches_vnd(text)
+    return matches[-1] if matches else None
+
+
+def _parse_budget_matches_vnd(text: str) -> list[int]:
     normalized = (
         text.lower()
         .replace(",", ".")
@@ -1038,18 +1048,27 @@ def _parse_budget_vnd(text: str) -> int | None:
         .replace("ty", "tỷ")
         .replace("ti", "tỷ")
     )
-    match = re.search(r"(\d+(?:\.\d+)?)\s*tỷ(?:\s*(\d{1,3}))?", normalized)
-    if not match:
-        return None
-    billions = float(match.group(1))
-    tail = match.group(2)
-    if tail and "." not in match.group(1):
-        # "2 tỷ 2" is common shorthand for 2.2 billion, "2 tỷ 250" for 2.25 billion.
-        if len(tail) == 1:
-            billions += int(tail) / 10
-        else:
-            billions += int(tail) / 1000
-    return int(billions * 1_000_000_000)
+    values: list[int] = []
+    for match in re.finditer(r"(\d+(?:\.\d+)?)\s*tỷ(?:\s*(\d{1,3}))?", normalized):
+        billions = float(match.group(1))
+        tail = match.group(2)
+        if tail and "." not in match.group(1):
+            # "2 tỷ 2" is common shorthand for 2.2 billion, "2 tỷ 250" for 2.25 billion.
+            if len(tail) == 1:
+                billions += int(tail) / 10
+            else:
+                billions += int(tail) / 1000
+        values.append(int(billions * 1_000_000_000))
+    return values
+
+
+def _asks_budget_detail_followup(text: str) -> bool:
+    text = (text or "").lower()
+    detail_terms = [
+        "chi tiết", "chi tiet", "đầy đủ", "day du", "toàn bộ thông tin", "toan bo thong tin",
+        "nói rõ", "noi ro", "phân tích kỹ", "phan tich ky", "thông tin chi tiết", "thong tin chi tiet",
+    ]
+    return any(term in text for term in detail_terms)
 
 
 def _property_type_vi(value: str | None) -> str:
@@ -1175,8 +1194,8 @@ def _budget_candidate_rows(district: str, budget: int) -> list[dict[str, Any]]:
     return [dict(row) for row in rows]
 
 
-def _budget_response(text: str, district: str | None = None) -> str:
-    budget = _parse_budget_vnd(text)
+def _budget_response(text: str, district: str | None = None, detailed: bool = False) -> str:
+    budget = _parse_latest_budget_vnd(text)
     target = district or "Quận 7"
     data = _district_stats(target)
     if not budget or not data or not data.get("median_ppm"):
@@ -1191,6 +1210,22 @@ def _budget_response(text: str, district: str | None = None) -> str:
     area_at_median = budget / median_ppm
     area_at_p25 = budget / max(float(data.get("p25_ppm") or median_ppm), 1)
     budget_text = _fmt_billion(budget)
+    if budget < 3_000_000_000:
+        strategy_intro = (
+            "mức này nên ưu tiên căn hộ nhỏ, nhà hẻm sâu hoặc tài sản diện tích gọn có pháp lý sạch; "
+            "đừng kỳ vọng nhà phố rộng ở vị trí đẹp."
+        )
+        closing_base = "nếu muốn ở thật, mình nghiêng về căn hộ/nhà nhỏ pháp lý sạch; nếu muốn đầu tư, nên lọc tiếp theo khả năng cho thuê và thanh khoản."
+    elif budget < 6_000_000_000:
+        strategy_intro = (
+            "mức này bắt đầu có cửa với nhà phố nhỏ hoặc căn hộ tốt hơn, nhưng vẫn phải soi kỹ vị trí, hẻm, pháp lý và giá/m²."
+        )
+        closing_base = "mình sẽ so sánh kỹ giá/m², pháp lý, độ rộng hẻm và khả năng bán lại trước khi chọn tài sản."
+    else:
+        strategy_intro = (
+            "mức này có thể xem nhà phố tốt, đất vị trí rõ hoặc tài sản diện tích lớn hơn; trọng tâm là tránh mua cao hơn mặt bằng và kiểm tra thanh khoản."
+        )
+        closing_base = "mình sẽ ưu tiên tài sản có pháp lý sạch, vị trí dễ thanh khoản và giá/m² không lệch quá mạnh so với nhóm comparable."
     candidates = _budget_candidate_rows(data["name"], budget)
     if candidates:
         rows = []
@@ -1206,6 +1241,13 @@ def _budget_response(text: str, district: str | None = None) -> str:
                 specs.append(f"{float(item.get('floor_count')):g} tầng")
             if item.get("frontage_m"):
                 specs.append(f"mặt tiền {float(item.get('frontage_m')):g}m")
+            detail_line = ""
+            if detailed:
+                ppm = float(item.get("price_per_m2") or 0)
+                market_note = "rẻ hơn mặt bằng trung vị" if ppm and ppm < median_ppm else "cao hơn trung vị, cần kiểm tra vị trí/pháp lý"
+                detail_line = (
+                    f"\n   Phân tích: {market_note}; ưu tiên kiểm tra sổ, hiện trạng lối vào, chất lượng hẻm/đường và khả năng cho thuê."
+                )
             rows.append(
                 f"{idx}. {_property_type_vi(item.get('property_type')).capitalize()}\n"
                 f"   Vị trí/khu vực: {location}\n"
@@ -1213,23 +1255,31 @@ def _budget_response(text: str, district: str | None = None) -> str:
                 f"   Nhận xét: {fit_note}"
                 + (f" • Pháp lý: {legal}" if legal else "")
                 + (f" • {' • '.join(specs)}" if specs else "")
+                + detail_line
                 + (f"\n   Ảnh mẫu: {image_url}" if image_url else "\n   Ảnh mẫu: bản ghi này chưa có ảnh công khai")
             )
+        heading = "🏡 Gợi ý chi tiết đáng kiểm tra" if detailed else "🏡 Gợi ý đáng xem"
+        closing = (
+            "🎯 Chốt tư vấn chi tiết: với ngân sách này mình sẽ ưu tiên phương án có pháp lý sạch, diện tích/giá trên m² không lệch quá mạnh so với trung vị, và thanh khoản cho thuê/ở thật rõ. "
+            "Trước khi xuống tiền nên đối chiếu sổ, quy hoạch, lối vào, hiện trạng xây dựng và giá giao dịch gần nhất."
+            if detailed
+            else f"🎯 Chốt tư vấn: {closing_base}"
+        )
         return (
-            f"Được, với khoảng {budget_text} ở {data['name']}, mình sẽ tư vấn thực tế một chút: đừng nhắm nhà phố rộng, hãy ưu tiên căn nhỏ, căn hộ hoặc nhà hẻm sâu có pháp lý rõ. 👍\n\n"
-            "🏡 Gợi ý đáng xem\n"
+            f"Được, với khoảng {budget_text} ở {data['name']}, mình sẽ tư vấn thực tế một chút: {strategy_intro} 👍\n\n"
+            f"{heading}\n"
             + "\n\n".join(rows)
             + "\n\n📌 Mặt bằng khu vực\n"
             f"- Trung vị đang khoảng {_fmt_million(median_ppm)}.\n"
             f"- Ngân sách này tương đương khoảng {area_at_median:.1f}m² nếu mua theo mặt bằng trung vị, hoặc {area_at_p25:.1f}m² nếu săn nhóm giá thấp.\n\n"
-            "🎯 Chốt tư vấn: nếu muốn ở thật, mình nghiêng về căn hộ/nhà nhỏ pháp lý sạch; nếu muốn đầu tư, nên lọc tiếp theo khả năng cho thuê và thanh khoản."
+            f"{closing}"
         )
     return (
         f"Với khoảng {budget_text} tại {data['name']}, mình sẽ đặt kỳ vọng như sau:\n\n"
         f"📌 Trung vị khu vực: {_fmt_million(median_ppm)}.\n"
         f"📐 Diện tích hợp lý theo trung vị: khoảng {area_at_median:.1f}m².\n"
         f"🔎 Nếu săn nhóm giá thấp: có thể lên khoảng {area_at_p25:.1f}m².\n\n"
-        "Tư vấn nhanh: nhà phố hoàn chỉnh sẽ khá căng; hướng sáng hơn là căn hộ nhỏ, nhà hẻm sâu hoặc tài sản diện tích nhỏ nhưng pháp lý rõ."
+        f"Tư vấn nhanh: {strategy_intro}"
     )
 
 
@@ -1644,6 +1694,9 @@ def project_fast_response(
         if any(k in thread_text for k in ["tỷ", "ngân sách", "ngan sach", "mua được", "mua duoc", "khả năng mua", "kha nang mua"]):
             return _budget_response(thread_text, district)
 
+    if _asks_budget_detail_followup(text) and _parse_latest_budget_vnd(thread_text):
+        return _budget_response(thread_text, district, detailed=True)
+
     if any(k in text for k in ["ví dụ", "vi du"]) or text in {"mẫu", "mau", "cho tôi mẫu", "cho toi mau"}:
         return _example_response(district)
 
@@ -1850,6 +1903,8 @@ def fallback_response(
 
     wants_search = any(kw in intent_text for kw in ["giá", "valuation", "định giá", "price", "nhà", "đất", "tìm", "tra", "tỷ", "ngân sách"])
     if wants_search:
+        if _asks_budget_detail_followup(msg_lower) and _parse_latest_budget_vnd(intent_text):
+            return _budget_response(intent_text, target_district.title() if target_district else None, detailed=True)
         if any(kw in msg_lower for kw in ["2 tỷ", "2 ti", "2ty", "2 tỉ"]):
             return (
                 "Với ngân sách khoảng 2 tỷ, mình cần biết thành phố/quận trước vì scope dự án khác nhau rất mạnh. "

@@ -111,12 +111,18 @@ def test_db_prod_h03_pgadmin_public_views_are_readable_without_duplicate_tables(
         column["name"]
         for column in inspector.get_columns("accounts", schema="public")
     }
+    auth_columns = {
+        column["name"]
+        for column in inspector.get_columns("auth_accounts", schema="auth")
+    }
     history_columns = {
         column["name"]
         for column in inspector.get_columns("valuation_runs_readable", schema="public")
     }
 
     assert {"account_id", "username", "prediction_count", "account_state", "refreshed_at"} <= account_columns
+    assert "hashed_password" not in account_columns
+    assert "hashed_password" in auth_columns
     assert {
         "request_id",
         "predicted_at",

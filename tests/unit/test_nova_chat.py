@@ -38,3 +38,23 @@ def test_nova_general_fallback_is_natural_not_canned():
 
     assert "Tôi nghe bạn" not in response
     assert "mục tiêu" in response
+
+
+def test_nova_budget_detail_followup_uses_latest_budget_context():
+    context = {
+        **PROJECT_CONTEXT,
+        "recent_messages": [
+            {"role": "user", "text": "tôi cần nhà giá 2 tỷ tốt nhất"},
+            {"role": "assistant", "text": "Gợi ý với khoảng 2 tỷ ở Quận 7..."},
+            {"role": "user", "text": "còn 8 tỷ thì sao"},
+        ],
+    }
+
+    response = project_fast_response("cho tôi toàn bộ thông tin chi tiết", context, [])
+
+    assert response is not None
+    assert "8.00 tỷ" in response
+    assert "nhà phố tốt" in response
+    assert "đừng kỳ vọng nhà phố rộng" not in response
+    assert "Gợi ý chi tiết" in response
+    assert "Xin chào" not in response
