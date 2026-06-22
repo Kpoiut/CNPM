@@ -60,6 +60,9 @@ jobs:
       - name: Verify Alembic head
         run: python -m alembic current
 
+      - name: Seed CI production-like reference data
+        run: python scripts/quality/seed_ci_reference_data.py
+
       - name: Run pytest with JUnit and coverage evidence
         run: |
           mkdir -p reports/ci
