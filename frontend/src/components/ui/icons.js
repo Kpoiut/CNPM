@@ -178,7 +178,7 @@ function brandPathFor(key) {
 function CodexBrandIcon({ iconKey, size, className, color }) {
   const paths = brandPathFor(iconKey)
   if (!paths) return null
-  const accent = ICON_COLORS[iconKey] || color || 'currentColor'
+  const accent = color && color !== 'currentColor' ? color : (ICON_COLORS[iconKey] || 'currentColor')
   const gradientId = `avmIconGradient-${iconKey}`
   return React.createElement(
     'svg',

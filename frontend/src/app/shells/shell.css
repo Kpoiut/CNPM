@@ -1,9 +1,8 @@
 .role-shell {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--primary) 10%, transparent), transparent 30%),
-    radial-gradient(circle at 100% 12%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 28%),
-    var(--bg-primary);
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-base) 94%, var(--accent) 6%), var(--bg-base)),
+    var(--bg-base);
   color: var(--text-primary);
 }
 
@@ -25,7 +24,7 @@
   padding: 0 24px;
   gap: 24px;
   border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
+  background: color-mix(in srgb, var(--bg-base) 92%, transparent);
   backdrop-filter: blur(18px);
 }
 
@@ -51,7 +50,7 @@
   line-height: 1.05;
 }
 
-.shell-brand__copy strong { font-size: .92rem; letter-spacing: -.01em; }
+.shell-brand__copy strong { font-size: .92rem; letter-spacing: 0; }
 .shell-brand__copy small { color: var(--text-muted); font-size: .68rem; font-weight: 500; }
 .shell-brand__locale {
   padding: 3px 6px;
@@ -81,7 +80,7 @@
   min-height: 44px;
   padding: 0 13px;
   gap: 8px;
-  border-radius: 10px;
+  border-radius: 9px;
   color: var(--text-secondary);
   text-decoration: none;
   font-size: .82rem;
@@ -92,7 +91,6 @@
 .shell-navigation__item:hover {
   color: var(--text-primary);
   background: var(--bg-elevated);
-  transform: translateY(-1px);
 }
 
 .shell-navigation__item.is-active {
@@ -133,7 +131,10 @@
 .shell-utilities { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 
 .public-shell__topbar .shell-navigation { margin: 0 auto; }
-.role-shell__content--public { min-height: calc(100vh - 132px); }
+.role-shell__content--public {
+  min-height: calc(100vh - 132px);
+  padding: 0 24px 24px;
+}
 .public-shell__footer {
   display: flex;
   align-items: center;
@@ -164,8 +165,8 @@
   padding: 20px 14px;
   border-right: 1px solid var(--border);
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 92%, transparent), color-mix(in srgb, var(--bg-primary) 94%, transparent)),
-    var(--bg-secondary);
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-surface) 96%, transparent), color-mix(in srgb, var(--bg-base) 96%, transparent)),
+    var(--bg-surface);
 }
 
 .role-shell__sidebar--admin {
@@ -196,7 +197,7 @@
   padding: 7px 10px;
   border-radius: 9px;
   border: 1px solid var(--border);
-  background: var(--bg-secondary);
+  background: var(--bg-surface);
 }
 
 .operations-status small { color: var(--text-muted); font-size: .58rem; text-transform: uppercase; letter-spacing: .06em; }
@@ -242,6 +243,7 @@
   .public-shell__topbar .shell-navigation { order: 3; width: 100%; overflow-x: auto; }
   .shell-brand__copy small { display: none; }
   .shell-navigation__item { padding-inline: 10px; }
+  .role-shell__content--public { padding: 0 14px 18px; }
   .role-shell__content--workspace,
   .role-shell__content--operations { padding: 14px; }
   .public-shell__footer { align-items: flex-start; flex-direction: column; }

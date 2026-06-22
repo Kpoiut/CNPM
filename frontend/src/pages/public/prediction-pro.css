@@ -4,8 +4,10 @@
    ============================================================ */
 
 .pred-pro {
-  --pp-radius: 14px;
-  --pp-ring: 0 0 0 3px color-mix(in srgb, var(--primary) 22%, transparent);
+  --pp-radius: 12px;
+  --pp-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  --pp-control-gradient: linear-gradient(135deg, #0f766e 0%, #0891b2 54%, #10b981 100%);
+  --pp-amber-soft: color-mix(in srgb, var(--warning) 16%, transparent);
 }
 
 /* ---- Animations ---- */
@@ -19,8 +21,8 @@
   transition: box-shadow .25s ease, border-color .25s ease;
 }
 .pred-pro .card:hover {
-  box-shadow: 0 10px 30px rgba(0, 0, 0, .10);
-  border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .08);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
 }
 
 /* ---- Inputs & selects ---- */
@@ -30,28 +32,94 @@
   transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
 }
 .pred-pro .form-input:hover,
-.pred-pro .form-select:hover { border-color: color-mix(in srgb, var(--primary) 45%, var(--border)); }
+.pred-pro .form-select:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
 .pred-pro .form-input:focus,
 .pred-pro .form-select:focus {
-  border-color: var(--primary);
+  border-color: var(--accent);
   box-shadow: var(--pp-ring);
   outline: none;
 }
 
 /* ---- Buttons ---- */
 .pred-pro .btn-primary {
-  background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 65%, #4f46e5));
+  background: var(--pp-control-gradient);
   border: none;
-  box-shadow: 0 6px 18px color-mix(in srgb, var(--primary) 28%, transparent);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 24%, transparent);
   transition: transform .15s ease, box-shadow .2s ease, filter .15s ease;
 }
-.pred-pro .btn-primary:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.05); box-shadow: 0 10px 26px color-mix(in srgb, var(--primary) 38%, transparent); }
+.pred-pro .btn-primary:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.05); box-shadow: 0 10px 26px color-mix(in srgb, var(--accent) 34%, transparent); }
 .pred-pro .btn-primary:active:not(:disabled) { transform: translateY(0); }
 .pred-pro .btn { transition: transform .15s ease, background .18s ease, color .18s ease, border-color .18s ease; border-radius: 11px; }
 .pred-pro .btn-ghost:hover { transform: translateY(-1px); }
 
 /* ---- Tab pills row ---- */
-.pred-pro .pp-tabs { background: var(--surface-2); padding: 6px; border-radius: 16px; border: 1px solid var(--border); }
+.pred-pro .pp-tabs {
+  background: color-mix(in srgb, var(--surface-2) 86%, transparent);
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.pred-pro .pp-readiness-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .7rem;
+  margin: .9rem 0 1rem;
+}
+
+.pred-pro .pp-readiness-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: .65rem;
+  align-items: start;
+  min-height: 92px;
+  padding: .78rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-card) 92%, transparent), color-mix(in srgb, var(--surface-1) 90%, transparent));
+  box-shadow: var(--shadow-sm);
+}
+
+.pred-pro .pp-readiness-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+}
+
+.pred-pro .pp-readiness-copy {
+  min-width: 0;
+  display: grid;
+  gap: .12rem;
+}
+
+.pred-pro .pp-readiness-copy span {
+  color: var(--text-muted);
+  font-size: .64rem;
+  font-weight: 850;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.pred-pro .pp-readiness-copy strong {
+  color: var(--text-primary);
+  font-size: .86rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.pred-pro .pp-readiness-copy small {
+  color: var(--text-secondary);
+  font-size: .69rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
 
 /* ---- Workspace architecture: main canvas + sticky command rail ---- */
 .pred-pro .pp-workspace {
@@ -80,7 +148,7 @@
   overflow: hidden;
   padding: .95rem;
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: 12px;
   background:
     linear-gradient(145deg, color-mix(in srgb, var(--bg-card) 88%, transparent), color-mix(in srgb, var(--surface) 82%, transparent));
   box-shadow: var(--shadow-sm);
@@ -91,13 +159,13 @@
   position: absolute;
   inset: 0 0 auto 0;
   height: 2px;
-  background: var(--gradient-primary);
+  background: linear-gradient(90deg, var(--accent), var(--warning));
   opacity: .75;
 }
 
 .pred-pro .pp-rail-card--role {
   background:
-    radial-gradient(circle at 92% 0%, color-mix(in srgb, var(--primary) 24%, transparent), transparent 42%),
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent 54%),
     linear-gradient(145deg, color-mix(in srgb, var(--bg-card) 90%, transparent), color-mix(in srgb, var(--surface) 86%, transparent));
 }
 
@@ -109,7 +177,7 @@
   color: var(--text-muted);
   font-size: .64rem;
   font-weight: 900;
-  letter-spacing: .11em;
+  letter-spacing: .08em;
   text-transform: uppercase;
 }
 
@@ -147,7 +215,7 @@
   min-height: 34px;
   padding: .35rem .5rem;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   color: var(--text-secondary);
   background: var(--surface-2);
   font-size: .72rem;
@@ -155,14 +223,14 @@
 }
 
 .pred-pro .pp-step-pill b {
-  color: var(--primary-light);
+  color: var(--accent-light);
   font-family: 'Space Grotesk', sans-serif;
 }
 
 .pred-pro .pp-step-pill.is-active {
   color: var(--text-primary);
-  border-color: color-mix(in srgb, var(--primary) 48%, var(--border));
-  background: var(--primary-50);
+  border-color: color-mix(in srgb, var(--accent) 48%, var(--border));
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .pred-pro .pp-step-pill.is-locked {
@@ -214,44 +282,44 @@
 .pred-pro .btn-lg.btn-full {
   border-radius: 12px;
   font-size: 1rem;
-  letter-spacing: .2px;
+  letter-spacing: 0;
   padding-block: 0.9rem;
 }
 
 /* ---- Combobox / segmented option hover (SmartFields dùng class .pp-opt / .pp-seg) ---- */
-.pred-pro .pp-opt:hover { background: var(--primary-50) !important; color: var(--primary) !important; }
+.pred-pro .pp-opt:hover { background: color-mix(in srgb, var(--accent) 12%, transparent) !important; color: var(--accent) !important; }
 .pred-pro .pp-seg { transition: transform .12s ease, background .15s ease, border-color .15s ease, color .15s ease; }
-.pred-pro .pp-seg:hover { transform: translateY(-1px); border-color: var(--primary) !important; }
+.pred-pro .pp-seg:hover { transform: translateY(-1px); border-color: var(--accent) !important; }
 
 /* ---- Dropdown panel ---- */
 .pred-pro .pp-dropdown { animation: ppPop .14s ease both; }
 
 /* ---- Range slider ---- */
-.pred-pro input[type="range"] { accent-color: var(--primary); height: 6px; cursor: pointer; }
+.pred-pro input[type="range"] { accent-color: var(--accent); height: 6px; cursor: pointer; }
 
 /* ---- Section header icon chip ---- */
 .pred-pro .pp-sec-ico {
   width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
-  background: var(--primary-50); color: var(--primary); flex-shrink: 0;
+  background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); flex-shrink: 0;
 }
 
 /* ---- Live price hero ---- */
 .pred-pro .pp-hero {
   position: relative;
   overflow: hidden;
-  border-radius: 18px;
+  border-radius: 12px;
   padding: 1.1rem 1.3rem;
   color: #fff;
-  background: linear-gradient(135deg, #6d28d9, #4f46e5 55%, #0ea5e9);
-  box-shadow: 0 18px 44px rgba(79, 70, 229, .35);
+  background: linear-gradient(135deg, #0f172a 0%, #0f766e 48%, #059669 100%);
+  box-shadow: 0 16px 36px rgba(15, 118, 110, .26);
   animation: ppPop .3s ease both;
 }
 .pred-pro .pp-hero::after {
   content: ""; position: absolute; inset: 0;
-  background: radial-gradient(900px circle at 100% 0%, rgba(255,255,255,.18), transparent 40%);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent);
   pointer-events: none;
 }
-.pred-pro .pp-hero-label { font-size: .76rem; opacity: .9; text-transform: uppercase; letter-spacing: .6px; font-weight: 700; }
+.pred-pro .pp-hero-label { font-size: .76rem; opacity: .9; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
 .pred-pro .pp-hero-price { font-size: 2rem; font-weight: 800; line-height: 1.1; margin-top: 2px; }
 .pred-pro .pp-hero-sub { font-size: .82rem; opacity: .92; margin-top: 4px; }
 .pred-pro .pp-hero-chip {
@@ -275,8 +343,8 @@
 /* ---- Result page (tab Kết quả) ---- */
 .pred-pro .pp-result-bar {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
-  padding: 0.9rem 1.15rem; border-radius: 16px;
-  background: linear-gradient(135deg, var(--primary-50), transparent 70%);
+  padding: 0.9rem 1.15rem; border-radius: 12px;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%);
   border: 1px solid var(--border);
 }
 .pred-pro .pp-result-title { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 1.08rem; color: var(--text-primary); }
@@ -284,8 +352,26 @@
 .pred-pro .pp-result-chip { font-size: .72rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--surface-2); color: var(--text-secondary); border: 1px solid var(--border); }
 .pred-pro .pp-result-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
 .pred-pro .pp-grade-pill { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; font-size: .78rem; padding: .35rem .75rem; border-radius: 999px; }
+.pred-pro .pp-tab-admin-badge {
+  padding: 1px 6px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  border-radius: 999px;
+  font-size: .62rem;
+  font-weight: 800;
+}
+.pred-pro .pp-tab-lock {
+  display: inline-grid;
+  place-items: center;
+  opacity: .7;
+}
 .pred-pro .pp-result-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 1rem; align-items: start; }
 @media (max-width: 980px) { .pred-pro .pp-result-grid { grid-template-columns: 1fr; } }
+
+@media (max-width: 1080px) {
+  .pred-pro .pp-readiness-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 
 @media (max-width: 1180px) {
   .pred-pro .pp-workspace { grid-template-columns: 1fr; }
@@ -300,6 +386,7 @@
 }
 
 @media (max-width: 760px) {
+  .pred-pro .pp-readiness-strip { grid-template-columns: 1fr; }
   .pred-pro .pp-command-rail { grid-template-columns: 1fr; }
   .pred-pro .pp-rail-metrics div { grid-template-columns: 1fr; gap: .1rem; }
 }

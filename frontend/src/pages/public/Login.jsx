@@ -1,5 +1,5 @@
 /**
- * Login / Register page — Premium glassmorphism design.
+ * Login / Register page — production access console.
  */
 
 import React, { useState, useEffect } from 'react'
@@ -54,21 +54,21 @@ function Login() {
       <div className="login-backdrop" />
 
       <div className="login-experience animate-scaleIn">
-        <section className="login-hero-panel" aria-label="Real Estate AVM trust summary">
-          <div className="login-hero-orb">{icon('house', 42)}</div>
-          <div className="login-hero-eyebrow">Production AVM Workspace</div>
-          <h1 className="login-hero-title">Định giá bất động sản có bằng chứng, audit trail và phân quyền rõ ràng.</h1>
+        <section className="login-hero-panel" aria-label="Real Estate AVM access summary">
+          <div className="login-hero-mark">{icon('house', 42, '', '#f8fafc')}</div>
+          <div className="login-hero-eyebrow">Production access</div>
+          <h1 className="login-hero-title">Real Estate AVM</h1>
           <p className="login-hero-copy">
-            Một cổng đăng nhập cho user tra cứu định giá, admin vận hành dữ liệu, và reviewer kiểm chứng mô hình.
-            Tập trung vào tốc độ phản hồi, bảo mật OAuth/JWT và minh bạch nguồn dữ liệu.
+            Cổng truy cập cho định giá, lịch sử dự đoán, vận hành dữ liệu và audit model. User và admin dùng chung
+            hệ giao diện, nhưng quyền thao tác và mức chi tiết được tách rõ.
           </p>
 
           <div className="login-hero-grid">
             {[
-              ['Theo version', 'MAPE official test', 'metric luôn gắn model và tập test cụ thể'],
-              ['<200ms', 'cached API target', 'health/explainability dùng cache có TTL'],
-              ['PostGIS', 'production DB', 'bảng quan hệ + dữ liệu bản đồ trực quan'],
-              ['OAuth 2.0', 'third-party auth', 'Google sign-in qua backend callback'],
+              ['OAuth 2.0', 'Google callback', 'đăng nhập bên thứ ba qua backend'],
+              ['JWT', 'session guard', 'token và phân quyền theo role'],
+              ['PostgreSQL', 'production DB', 'lưu dự đoán, model và lineage'],
+              ['CI/CD', 'release evidence', 'test, security và Docker smoke'],
             ].map(([value, label, note]) => (
               <div className="login-hero-metric" key={label}>
                 <strong>{value}</strong>
@@ -79,15 +79,16 @@ function Login() {
           </div>
 
           <div className="login-role-strip">
-            <span>{icon('user', 16)} User: dự đoán, lịch sử, giải thích</span>
-            <span>{icon('shieldCheck', 16)} Admin: dữ liệu, model, pipeline, audit</span>
+            <span>{icon('user', 16)} User workspace</span>
+            <span>{icon('shieldCheck', 16)} Admin operations</span>
+            <span>{icon('fileText', 16)} Reviewer evidence</span>
           </div>
         </section>
 
         <div className="login-container">
           {/* Logo */}
           <div className="login-logo">
-            <div className="login-logo-icon">{icon('house', 32)}</div>
+            <div className="login-logo-icon">{icon('house', 32, '', '#f8fafc')}</div>
             <h2 className="login-logo-text">Real Estate AVM</h2>
             <p className="login-logo-sub">Đăng nhập vào workspace định giá</p>
           </div>

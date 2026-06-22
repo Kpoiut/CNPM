@@ -386,6 +386,65 @@ function MarketStatsBar({ comparables }) {
   )
 }
 
+function modelMetricText(model) {
+  return model?.test_mape != null
+    ? `${model.stamp} · MAPE ${Number(model.test_mape).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%`
+    : 'Đang tải metric có version'
+}
+
+function PredictionReadinessStrip({
+  isAdmin,
+  scopeText,
+  engineLabel,
+  modelProvenance,
+  pipelineResult,
+  loading,
+}) {
+  const servingModel = modelProvenance?.serving
+  const hasResult = Boolean(pipelineResult)
+  const items = [
+    {
+      iconKey: isAdmin ? 'shieldCheck' : 'user',
+      label: 'Vai trò',
+      value: isAdmin ? 'Admin operations' : 'User workspace',
+      note: isAdmin ? 'Mở audit, model và tác động' : 'Dự đoán, giải thích, lịch sử',
+    },
+    {
+      iconKey: 'database',
+      label: 'Nguồn dữ liệu',
+      value: 'PostgreSQL/PostGIS',
+      note: scopeText || 'Đang tải scope từ backend',
+    },
+    {
+      iconKey: 'activity',
+      label: 'Model đang phục vụ',
+      value: servingModel?.stamp || 'Đang tải',
+      note: modelMetricText(servingModel),
+    },
+    {
+      iconKey: loading ? 'loader' : 'clock',
+      label: 'Phản hồi',
+      value: loading ? 'Pipeline đang chạy' : 'Cached target <200ms',
+      note: hasResult ? 'Kết quả đã có thể đối chiếu' : engineLabel || 'Valuation Engine v2',
+    },
+  ]
+
+  return (
+    <section className="pp-readiness-strip" aria-label="Prediction production readiness">
+      {items.map(item => (
+        <div className="pp-readiness-item" key={item.label}>
+          <span className="pp-readiness-icon">{icon(item.iconKey, 17)}</span>
+          <span className="pp-readiness-copy">
+            <span>{item.label}</span>
+            <strong>{item.value}</strong>
+            <small>{item.note}</small>
+          </span>
+        </div>
+      ))}
+    </section>
+  )
+}
+
 function PredictionCommandRail({
   isAdmin,
   activeTab,
@@ -406,9 +465,6 @@ function PredictionCommandRail({
   const confidence = v2Result?.confidence_evidence?.overall_confidence
   const servingModel = modelProvenance?.serving
   const latestModel = modelProvenance?.latest
-  const modelMetricText = model => model?.test_mape != null
-    ? `${model.stamp} · MAPE ${Number(model.test_mape).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%`
-    : 'Đang tải metric có version'
   const nextAction = loading
     ? 'Đợi pipeline hoàn tất'
     : !hasResult
@@ -771,6 +827,15 @@ function Prediction() {
         isAdmin={isAdmin}
       />
 
+      <PredictionReadinessStrip
+        isAdmin={isAdmin}
+        scopeText={scopeText}
+        engineLabel={engineInfo?.button_label}
+        modelProvenance={modelComparison?.metric_provenance}
+        pipelineResult={pipelineResult}
+        loading={loading || repredicting}
+      />
+
       {/* Hero giá trị — cập nhật trực tiếp khi đổi thông số (ẩn ở tab Kết quả) */}
       {v2Result?.market_valuation && activeTab !== 'result' && (
         <div className="pp-hero" style={{ margin: '1rem 0 1.25rem' }}>
@@ -842,11 +907,11 @@ function Prediction() {
               {icon(t.iconKey, Math.round(16 * resultScale / 1.5))}
               {t.label}
               {t.key === 'impact' && (
-                <span style={{ padding: '1px 6px', background: '#06d6a020', color: '#06d6a0', borderRadius: '10px', fontSize: '0.62rem', fontWeight: 700 }}>
+                <span className="pp-tab-admin-badge">
                   Admin
                 </span>
               )}
-              {locked && <span style={{ fontSize: '0.8em' }}>🔒</span>}
+              {locked && <span className="pp-tab-lock">{icon('lock', 12)}</span>}
             </button>
           )
         })}

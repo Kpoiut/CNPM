@@ -7,19 +7,19 @@ function PredictionHeroBand({ scopeText, engineLabel, isAdmin = false }) {
       src: VISUAL_ASSETS.houseExterior,
       alt: 'Modern house exterior used as the property input context',
       title: 'Tài sản đầu vào',
-      caption: 'Ảnh thật, tách khỏi mô tả để đọc ngay luồng hồ sơ.',
+      caption: 'Ngữ cảnh hồ sơ và ảnh tham chiếu.',
     },
     {
       src: VISUAL_ASSETS.citySkyline,
       alt: 'City skyline representing the market scope',
       title: 'Phạm vi thị trường',
-      caption: 'Bối cảnh khu vực và mặt bằng so sánh.',
+      caption: 'Khu vực, comparable và mặt bằng giá.',
     },
     {
       src: VISUAL_ASSETS.officeInterior,
       alt: 'Office control room representing the audit pipeline',
       title: 'Bàn điều khiển',
-      caption: 'Trace, audit và pipeline cùng chạy trong một rail ngang.',
+      caption: 'Trace, model version và audit gate.',
     },
   ]
 
@@ -33,13 +33,13 @@ function PredictionHeroBand({ scopeText, engineLabel, isAdmin = false }) {
   return (
     <section className="prediction-hero-band">
       <div className="prediction-hero-copy">
-        <span className="prediction-hero-eyebrow">Không gian định giá</span>
+        <span className="prediction-hero-eyebrow">Prediction cockpit</span>
         <h2 className="prediction-hero-title">
-          Định giá bất động sản bằng pipeline thật, không phải demo dựng sẵn
+          Một workspace cho nhập hồ sơ, đối chiếu comparable và kiểm tra model
         </h2>
         <p className="prediction-hero-description">
-          Đây là vùng nhập liệu, so sánh và audit cho cùng một luồng. Người dùng đi từ form đến comparable
-          rồi tới pipeline, nên mọi thứ phải đọc như một quy trình đang chạy chứ không phải ảnh chụp tĩnh.
+          Luồng dự đoán giữ form, bản đồ, kết quả, comparable và audit trong cùng một mạch để user thao tác nhanh,
+          còn admin vẫn thấy đủ version, scope dữ liệu và tín hiệu vận hành.
         </p>
 
         <div className="prediction-hero-points" aria-label="Tín hiệu tin cậy của hệ thống">
@@ -62,10 +62,10 @@ function PredictionHeroBand({ scopeText, engineLabel, isAdmin = false }) {
 
       <div className="prediction-hero-media" aria-label="Prediction visual context">
         <div className="prediction-hero-rail-head">
-          <span className="prediction-hero-rail-eyebrow">Dải hình ảnh</span>
+          <span className="prediction-hero-rail-eyebrow">Visual context</span>
           <strong className="prediction-hero-rail-title">Tài sản, thị trường và vận hành trong cùng một ngữ cảnh.</strong>
           <p className="prediction-hero-rail-text">
-            Hình ảnh được tách khỏi biểu mẫu để hỗ trợ nhận diện nhanh mà không lặp lại luồng thao tác bên dưới.
+            Dải ảnh đóng vai trò nhận diện nhanh, phần quyết định vẫn nằm ở dữ liệu và audit bên dưới.
           </p>
         </div>
 

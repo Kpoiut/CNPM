@@ -1,6 +1,6 @@
 # UI/UX Redesign Direction — AVM Production Runtime
 
-Updated: 2026-06-21
+Updated: 2026-06-22
 
 ## Visual direction from Image Codex drafts
 
@@ -23,6 +23,13 @@ Image Codex concept pass on 2026-06-21 added a three-screen product board:
 - Admin operations: related but denser shell for data/model/governance work, with operational status and model lineage always visible.
 
 Implementation gate: do not replace the full UI until the current public, user, and admin screenshots are captured and reviewed. The Prediction page must be audited per property type and per sub-tab because it contains nested state, role-only controls, map/media panels, and result diagnostics.
+
+Image Codex concept pass on 2026-06-22 tightened the direction into a production cockpit:
+
+- graphite/white surfaces with teal, emerald and amber accents; avoid purple hero gradients and decorative radial orbs;
+- Prediction shows role, PostgreSQL/PostGIS scope, serving model version and cached response target before the tab workflow;
+- Login becomes an access console for OAuth/JWT/PostgreSQL/CI evidence instead of a broad marketing hero;
+- admin/user keep one shared component language, but admin surfaces operational depth while user screens stay guided.
 
 ## Screen priorities
 
