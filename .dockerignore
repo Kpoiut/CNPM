@@ -38,4 +38,5 @@ src/models_archive
 reports
 paper
 tests
-scripts/quality
+scripts/quality/*
+!scripts/quality/seed_ci_reference_data.py
