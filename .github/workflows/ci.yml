@@ -228,6 +228,7 @@ jobs:
         if: always()
         shell: bash
         run: |
+          mkdir -p reports/ci
           docker compose ps --format json > reports/ci/docker-compose-ps.json || true
           docker compose logs --no-color > reports/ci/docker-compose.log || true
 
