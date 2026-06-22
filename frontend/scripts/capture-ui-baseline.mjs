@@ -2,6 +2,7 @@ import { chromium } from 'playwright-core'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { APP_ROUTES } from '../src/app/routes/routeRegistry.js'
+import { shouldIgnoreAuditConsoleMessage } from './ui-audit-console-policy.mjs'
 
 const BASE_URL = process.env.UI_BASE_URL || 'http://127.0.0.1:5173'
 const API_BASE_URL = process.env.API_BASE_URL || 'http://127.0.0.1:8000'
@@ -527,12 +528,13 @@ async function main() {
   const page = await context.newPage()
   page.on('console', msg => {
     if (!['error', 'warning'].includes(msg.type())) return
-    manifest.console.push({
+    const entry = {
       type: msg.type(),
       text: msg.text().slice(0, 700),
       location: msg.location(),
       at: new Date().toISOString(),
-    })
+    }
+    if (!shouldIgnoreAuditConsoleMessage(entry)) manifest.console.push(entry)
   })
   page.on('pageerror', error => {
     manifest.page_errors.push({

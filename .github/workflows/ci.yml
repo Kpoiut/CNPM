@@ -261,6 +261,9 @@ jobs:
           docker compose logs --no-color
           exit 1
 
+      - name: Seed Docker production-like reference data
+        run: docker compose exec -T backend python scripts/quality/seed_ci_reference_data.py
+
       - name: Enforce prediction latency SLO inside backend container
         shell: bash
         run: |
