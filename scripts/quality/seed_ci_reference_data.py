@@ -61,7 +61,7 @@ def _reference_properties(now: datetime) -> list[dict[str, object]]:
         rows.append(
             {
                 "property_type": ptype,
-                "province_city": "TP. Ho Chi Minh",
+                "province_city": "TP. Hồ Chí Minh",
                 "district": "Quận 7",
                 "ward": ward,
                 "street_or_project": street,
@@ -186,7 +186,7 @@ def seed() -> dict[str, int]:
                     source_description, is_active, notes
                 )
                 VALUES (
-                    'townhouse', 'TP. Ho Chi Minh', 'Quận 7', NULL, NULL,
+                    'townhouse', 'TP. Hồ Chí Minh', 'Quận 7', NULL, NULL,
                     35, 130, 1800000000, 8000000000, 3,
                     'ownership_certificate', 'normal', 'ci_reference_profile', NULL,
                     'CI production-like buyer profile for release gates.', true,
