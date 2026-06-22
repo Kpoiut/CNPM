@@ -22,6 +22,14 @@ export const listFactors = (params = {}) => {
 /** GET /api/v2/valuation/:id */
 export const getValuation = (id) => getJson(`${V2_BASE}/valuation/${id}`)
 
+/** GET /api/v2/valuation/runs — lịch sử định giá theo account */
+export const listValuationRuns = (limit = 20) =>
+  getJson(`${V2_BASE}/valuation/runs?limit=${encodeURIComponent(limit)}`)
+
+/** POST /api/v2/valuation/:requestId/feedback — user gửi giá thật để admin duyệt training */
+export const submitValuationFeedback = (requestId, payload) =>
+  postJson(`${V2_BASE}/valuation/${encodeURIComponent(requestId)}/feedback`, payload)
+
 /** POST /api/v2/impact-analysis — Contextual Comparable-SHAP δ% analysis (Admin-only) */
 export const fetchImpactAnalysis = (payload, options = {}) =>
   postJson(`${V2_BASE}/impact-analysis`, payload, {

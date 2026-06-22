@@ -223,7 +223,7 @@ const algorithmTracks = [
 const LAB_TABS = [
   { key: 'overview', label: 'Tổng quan', abbr: 'OV' },
   { key: 'workbench', label: 'API Workbench', abbr: 'WB' },
-  { key: 'adminOps', label: 'Quyền Admin thật', abbr: 'AD' },
+  { key: 'adminOps', label: 'Quyền admin', abbr: 'AD' },
   { key: 'datasets', label: 'Dữ liệu test', abbr: 'DS' },
   { key: 'algorithms', label: 'Thuật toán', abbr: 'AL' },
   { key: 'simulation', label: 'Trace thật', abbr: 'TR' },
@@ -1731,7 +1731,7 @@ function LiveExecutionStrip({ pulse, tokenExpiresAt, overview }) {
         <div>
           <span className="lab-mini-title">Live execution</span>
           <strong>{pulse?.title || 'Sẵn sàng nhận lệnh admin'}</strong>
-          <p>{pulse?.detail || 'Mỗi thao tác hiển thị request, ack, execute và publish từ backend thật.'}</p>
+          <p>{pulse?.detail || 'Mỗi thao tác hiển thị request, ack, execute và publish từ backend.'}</p>
         </div>
         <div className="lab-exec-meta">
           <span className={`lab-pill ${active ? 'live' : 'idle'}`}>{active ? 'Đang chạy' : 'Idle'}</span>
@@ -1765,10 +1765,11 @@ function AdminOperationsPanel({ token, isAdmin, onPulse }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [trainParams, setTrainParams] = useState({ test_size: '0.15', min_clean: '500' })
+  const [mlopsVersion, setMlopsVersion] = useState('')
   const serverToken = token && !String(token).startsWith(LOCAL_TOKEN_PREFIX)
 
   const labAdminFetch = useCallback(async (path, options = {}) => {
-    if (!serverToken) throw new Error('Cần phiên Research Lab thật từ backend để chạy quyền admin.')
+    if (!serverToken) throw new Error('Cần phiên Research Lab từ backend để chạy quyền admin.')
     const separator = path.includes('?') ? '&' : '?'
     const res = await fetch(`${API_BASE}${path}${separator}token=${encodeURIComponent(token)}`, {
       ...options,
@@ -1842,7 +1843,7 @@ function AdminOperationsPanel({ token, isAdmin, onPulse }) {
       setError('Phiên hiện tại là fallback local, không có quyền chạy test/train thật. Hãy bấm "Gửi mã vào chuông thông báo" rồi mở Lab bằng mã backend.')
       return
     }
-    const meta = [...testing, ...training, ...adminOps].find(item => item.operation === operation)
+    const meta = [...testing, ...training, ...adminOps, ...mlops].find(item => item.operation === operation)
     onPulse?.begin?.(meta?.label || operation, meta?.description || 'Đang dispatch job thật tới backend.', { checksum: operation, jobId: '' })
     setLoading(true)
     setError('')
@@ -1902,13 +1903,14 @@ function AdminOperationsPanel({ token, isAdmin, onPulse }) {
   const testing = capabilities?.testing || []
   const training = capabilities?.training || []
   const adminOps = capabilities?.admin || []
+  const mlops = capabilities?.mlops || []
 
   return (
     <div className="lab-admin-ops">
       {!serverToken && (
         <div className="lab-warning-card">
           <strong>Phiên fallback chỉ xem được mô phỏng</strong>
-          <span>Để có quyền admin thật, Lab phải lấy token từ backend. Hãy khóa lại, bấm gửi mã, rồi mở bằng mã Research Lab do backend cấp.</span>
+          <span>Để có quyền admin, Lab phải lấy token từ backend. Hãy khóa lại, bấm gửi mã, rồi mở bằng mã Research Lab do backend cấp.</span>
         </div>
       )}
       {error && <div className="lab-error">{error}</div>}
@@ -1941,6 +1943,26 @@ function AdminOperationsPanel({ token, isAdmin, onPulse }) {
             ))}
             {adminOps.map(item => renderOperationButton(item))}
           </div>
+        </div>
+      </div>
+
+      <div className="card">
+        <LabSectionTitle code="MLOps" title="MLOps — vận hành model trực tiếp" subtitle="Experiment tracking, registry, health-check, data drift (PSI) và rollback version — chạy thật trên backend, không cần đụng code." />
+        <div className="lab-train-param-grid">
+          <label>
+            <span>Version stamp (cho Activate/rollback)</span>
+            <input
+              value={mlopsVersion}
+              placeholder="VD: 20260514_110830"
+              onChange={(e) => setMlopsVersion(e.target.value)}
+            />
+          </label>
+        </div>
+        <div className="lab-admin-op-grid">
+          {mlops.map(item => renderOperationButton(
+            item,
+            item.operation === 'mlops_activate' ? { version: mlopsVersion.trim() } : {},
+          ))}
         </div>
       </div>
 
@@ -2159,7 +2181,7 @@ function ResearchLab() {
     const timer = window.setTimeout(() => {
       closeLab()
       if (canUseAdminRecovery(isAdmin)) {
-        setNotice('Phiên Research Lab backend đã hết hạn. Bấm gửi mã để mở lại quyền admin thật.')
+        setNotice('Phiên Research Lab backend đã hết hạn. Bấm gửi mã để mở lại quyền admin.')
       } else {
         setError('Phiên Research Lab đã hết hạn sau 60 phút.')
       }
@@ -2173,7 +2195,7 @@ function ResearchLab() {
     setError(null)
     try {
       if (canUseAdminRecovery(isAdmin)) {
-        const startedAt = beginPulse('Mở Research Lab', 'Đang xin token backend thật để mở quyền admin.')
+        const startedAt = beginPulse('Mở Research Lab', 'Đang xin token backend để mở quyền admin.')
         const code = accessCode.trim().toUpperCase()
         const res = await fetch(`${API_BASE}/research-lab/access`, {
           method: 'POST',
@@ -2193,12 +2215,12 @@ function ResearchLab() {
         updatePulse({ phase: 'ack', jobId: data.token.slice(0, 12), checksum: 'research-token' })
         updatePulse({ phase: 'execute', jobId: data.token.slice(0, 12), checksum: 'research-token' })
         await settlePulse(startedAt, 240)
-        completePulse('done', 'Research Lab đã mở bằng token backend thật. Các quyền test/train/admin hiện có thể chạy command thật.', {
+        completePulse('done', 'Research Lab đã mở bằng token backend. Các quyền test/train/admin hiện có thể chạy command thật.', {
           jobId: data.token.slice(0, 12),
           checksum: 'research-token',
           result: 'access-granted',
         })
-        setNotice('Research Lab đã mở bằng token backend thật. Các quyền test/train/admin hiện có thể chạy command thật.')
+        setNotice('Research Lab đã mở bằng token backend. Các quyền test/train/admin hiện có thể chạy command thật.')
         return
       }
       setError('Chỉ admin mới có quyền mở Research Lab.')
@@ -2241,16 +2263,16 @@ function ResearchLab() {
       updatePulse({ phase: 'ack', jobId: data.code, checksum: 'research-code' })
       updatePulse({ phase: 'execute', jobId: data.code, checksum: 'research-code' })
       await settlePulse(startedAt, 240)
-      completePulse('done', 'Mã Research Lab backend đã được cấp và tự điền. Bấm Mở Lab để nhận token thật.', {
+      completePulse('done', 'Mã Research Lab backend đã được cấp và tự điền. Bấm Mở Lab để nhận token backend.', {
         jobId: data.code,
         checksum: 'research-code',
         result: data.code,
       })
-      setNotice('Mã Research Lab backend đã được cấp và tự điền. Bấm Mở Lab để nhận token thật.')
+      setNotice('Mã Research Lab backend đã được cấp và tự điền. Bấm Mở Lab để nhận token backend.')
       addNotification(user, {
         type: 'research',
         title: 'Mã Research Lab backend',
-        body: data.message || 'Mã dùng một lần trong 10 phút để mở quyền admin thật.',
+        body: data.message || 'Mã dùng một lần trong 10 phút để mở quyền admin.',
         code: data.code,
         expiresAt: data.expires_at,
         actionTo: '/research-lab',
@@ -2447,7 +2469,7 @@ function ResearchLab() {
 
           {activeLabTab === 'workbench' && (
             <div className="card animate-slideUp">
-              <LabSectionTitle code="WB" title="API Workbench cho thuật toán AVM" subtitle="Chọn endpoint/preset, tự nhập payload JSON để soi logic thuật toán. Kiểm thử, train và nâng cấp thật nằm trong tab Quyền Admin thật." />
+              <LabSectionTitle code="WB" title="API Workbench cho thuật toán AVM" subtitle="Chọn endpoint/preset, tự nhập payload JSON để soi logic thuật toán. Kiểm thử, train và nâng cấp thật nằm trong tab Quyền admin." />
               <ResearchWorkbench
                 overview={overview}
                 labSamples={labSamples}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ContributionChart } from './ContributionChart';
 import { FactorDetailModal } from './FactorDetailModal';
@@ -35,15 +35,17 @@ function fmtPct(v) {
 export function ImpactAnalysisPanel({ formData, runId }) {
   const [selectedFactor, setSelectedFactor] = useState(null);
   const { isAdmin } = useAuth();
+  const requestPayload = useMemo(() => ({ ...formData, run_id: runId }), [formData, runId]);
+  const requestFingerprint = useMemo(() => JSON.stringify(requestPayload), [requestPayload]);
 
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['impact-analysis', runId, formData?.district, formData?.area_m2],
+    queryKey: ['impact-analysis', requestFingerprint],
     queryFn: () => fetchImpactAnalysis(
-      { ...formData, run_id: runId },
+      requestPayload,
       { adminSession: isAdmin }
     ),
     enabled: !!(isAdmin && formData?.asset_type && formData?.district),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
     retry: 1,
   });
 

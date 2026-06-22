@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { icon as lucideIcon, MapPin, Satellite } from '../../components/ui/icons';
+import markerIcon2xUrl from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIconUrl from 'leaflet/dist/images/marker-icon.png';
+import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png';
 
 /**
  * PropertyMapView — Hiển thị vị trí BĐS trên bản đồ OpenStreetMap/Leaflet.
@@ -58,9 +61,9 @@ export default function PropertyMapView({ latitude, longitude, label, area_m2, c
       const leaflet = leafletModule.default || leafletModule;
       delete leaflet.Icon.Default.prototype._getIconUrl;
       leaflet.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+        iconRetinaUrl: markerIcon2xUrl,
+        iconUrl: markerIconUrl,
+        shadowUrl: markerShadowUrl,
       });
       setL(leaflet);
     }).catch(err => {

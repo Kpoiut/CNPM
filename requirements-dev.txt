@@ -1,0 +1,7 @@
+-r requirements.txt
+
+# Test, coverage và workbook quality gate; không đóng gói vào runtime image.
+pytest==7.4.4
+pytest-asyncio==0.23.3
+pytest-cov==5.0.0
+openpyxl==3.1.5

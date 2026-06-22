@@ -82,7 +82,7 @@ class TestComparableEngine:
         assert closest.geo_proximity_score > farthest.geo_proximity_score
 
     def test_evidence_tier_ordering(self, engine, sample_comparables):
-        """E1 phải được xếp trước E2, E3, E4."""
+        """E5 phải được xếp trước vì là tier bằng chứng mạnh nhất."""
         engine.db_loader = lambda q: sample_comparables
         query = ComparableQuery(
             asset_type="TOWNHOUSE", province_city="Hà Nội",
@@ -92,8 +92,8 @@ class TestComparableEngine:
         results = engine.find_comparables(query)
 
         # Sorted by tier then similarity
-        assert results[0].evidence_tier == "E1"
-        assert results[-1].evidence_tier in ("E3", "E4")
+        assert results[0].evidence_tier in ("E5", "E4")
+        assert results[-1].evidence_tier in ("E1", "E2")
 
     def test_similarity_min_threshold(self, engine, sample_comparables):
         """Candidates có similarity < min_similarity phải được lọc ra."""
@@ -156,11 +156,11 @@ class TestComparableEngine:
 
     def test_evidence_score_mapping(self, engine):
         """E1-E5 phải map đúng sang scores."""
-        assert engine._evidence_score("E1") == 1.0
-        assert engine._evidence_score("E2") == 0.85
+        assert engine._evidence_score("E1") == 0.15
+        assert engine._evidence_score("E2") == 0.35
         assert engine._evidence_score("E3") == 0.65
-        assert engine._evidence_score("E4") == 0.35
-        assert engine._evidence_score("E5") == 0.15
+        assert engine._evidence_score("E4") == 0.85
+        assert engine._evidence_score("E5") == 1.0
         assert engine._evidence_score("UNKNOWN") == 0.30
 
     def test_recency_score_favors_recent(self, engine):

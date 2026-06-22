@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import PrefillBanner from './PrefillBanner';
 import {
   ROAD_CLASSES,
   OWNERSHIP_TYPES,
@@ -9,56 +10,41 @@ import {
 import { ProvinceSelector, DistrictSelector } from '../ui/ProvinceSelector';
 import {
   COMMON_HINTS,
-  HintOptions,
   LOCATION_HINTS,
   clearInvalidField,
-  displayOption,
-  inputToOptionCode,
-  mapEntriesToOptions,
   scrollInvalidField,
   submitLabel,
   toFloat,
   toInt,
+  useFormPrefill,
+  useIotAutoFill,
 } from './formHelpers';
+import {
+  OpenSection, CollapsibleSection, SelectField, NumberField, TextField, CheckField, FormProgress, IotAutoNote,
+} from './SmartFields';
 
 /**
- * HouseIntakeForm — Asset-specific intake cho NHÀ RIÊNG
- *
- * Phase 2: Tách riêng khỏi TOWNHOUSE.
- * Nhà riêng = nhà độc lập, thường cấp thấp hơn, nhiều tuổi hơn.
- *
- * Fields: land_area_m2, construction_year, renovation_year, structure_grade thấp,
- * kitchen, garden, car_access, main_facing, death_history, stigma.
- *
- * Priority factors: LEGAL, ACCESS, BUILDING_DEPRECATION, LAND
+ * HouseIntakeForm — NHÀ RIÊNG (bản tinh gọn: chọn 1 chạm, gập phần nâng cao).
  */
-export default function HouseIntakeForm({ onSubmit, loading, isAdmin = false, engineLabel }) {
-  const subtypeOptions = mapEntriesToOptions(ASSET_SUBTYPES.HOUSE || {});
-  const structureOptions = mapEntriesToOptions({
-    NEW: 'Mới xây dựng (< 5 năm)',
-    GOOD: 'Tốt — đã cải tạo gần đây',
-    AVERAGE: 'Trung bình — cần bảo trì nhẹ',
-    POOR: 'Kém — cần sửa chữa lớn',
-    VERY_POOR: 'Rất kém — có thể phá dỡ',
-  });
-  const fengShuiOptions = mapEntriesToOptions(FENG_SHUI_SENSITIVITIES);
-  const roadClassOptions = mapEntriesToOptions(ROAD_CLASSES);
-  const ownershipOptions = mapEntriesToOptions(OWNERSHIP_TYPES);
-  const floodOptions = mapEntriesToOptions(FLOOD_RISK);
+const STRUCTURE_GRADES = {
+  NEW: 'Mới xây dựng (< 5 năm)',
+  GOOD: 'Tốt — đã cải tạo gần đây',
+  AVERAGE: 'Trung bình — cần bảo trì nhẹ',
+  POOR: 'Kém — cần sửa chữa lớn',
+  VERY_POOR: 'Rất kém — có thể phá dỡ',
+};
+const WARD_HINTS = [...LOCATION_HINTS.hanoiWards, ...LOCATION_HINTS.hcmWards];
+
+export default function HouseIntakeForm({ onSubmit, loading, isAdmin = false, engineLabel, prefill, onLiveChange }) {
   const [form, setForm] = useState({
-    // Identity
     asset_type: 'HOUSE',
     asset_subtype: 'HOUSE_OLD',
-
-    // Location
     province_city: 'Hà Nội',
     district: '',
     ward: '',
     street_or_project: '',
     latitude: '',
     longitude: '',
-
-    // Geometry
     area_m2: '',
     land_area_m2: '',
     built_area_m2: '',
@@ -66,30 +52,20 @@ export default function HouseIntakeForm({ onSubmit, loading, isAdmin = false, en
     bedrooms: '2',
     bathrooms: '1',
     kitchen_count: '1',
-
-    // Building
     construction_year: '',
     renovation_year: '',
     structure_grade: 'POOR',
     main_facing: '',
-
-    // Access
     road_class: '',
     road_width_m: '',
     car_access: false,
     dead_end: false,
-
-    // Legal
     ownership_type: 'FULL_OWNERSHIP',
     dispute_flag: false,
     mortgage_flag: false,
-
-    // Environment
     flood_risk: 'unknown',
     cemetery_distance_m: '',
     park_distance_m: '',
-
-    // Fit layer
     death_history_flag: false,
     worship_site_distance_m: '',
     stigma_known: false,
@@ -98,10 +74,10 @@ export default function HouseIntakeForm({ onSubmit, loading, isAdmin = false, en
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  useFormPrefill(prefill, setForm);
+  const iotAuto = useIotAutoFill(form, setForm);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const payload = {
+  const buildPayload = () => ({
       ...form,
       area_m2: toFloat(form.area_m2),
       land_area_m2: toFloat(form.land_area_m2, toFloat(form.area_m2)),
@@ -119,340 +95,82 @@ export default function HouseIntakeForm({ onSubmit, loading, isAdmin = false, en
       park_distance_m: toFloat(form.park_distance_m),
       worship_site_distance_m: toFloat(form.worship_site_distance_m),
       birth_year: toInt(form.birth_year),
-    };
-    onSubmit(payload);
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(buildPayload());
   };
 
-  const STRUCTURE_GRADES = {
-    NEW: 'Mới xây dựng (< 5 năm)',
-    GOOD: 'Tốt — đã cải tạo gần đây',
-    AVERAGE: 'Trung bình — cần bảo trì nhẹ',
-    POOR: 'Kém — cần sửa chữa lớn',
-    VERY_POOR: 'Rất kém — có thể phá dỡ',
-  };
-
-  const FACING_OPTIONS = [
-    { value: '', label: '— Chọn hướng —' },
-    { value: 'Đông', label: 'Đông' },
-    { value: 'Tây', label: 'Tây' },
-    { value: 'Nam', label: 'Nam' },
-    { value: 'Bắc', label: 'Bắc' },
-    { value: 'Đông Nam', label: 'Đông Nam' },
-    { value: 'Tây Nam', label: 'Tây Nam' },
-    { value: 'Đông Bắc', label: 'Đông Bắc' },
-    { value: 'Tây Bắc', label: 'Tây Bắc' },
-  ];
+  useEffect(() => { if (onLiveChange) onLiveChange(buildPayload()); }, [form]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <form onSubmit={handleSubmit} onInvalid={scrollInvalidField} onInput={clearInvalidField} className="space-y-4">
-      <HintOptions id="house-wards" options={[...LOCATION_HINTS.hanoiWards, ...LOCATION_HINTS.hcmWards]} />
-      <HintOptions id="house-streets" options={LOCATION_HINTS.streets} />
-      <HintOptions id="house-subtypes" options={subtypeOptions} />
-      <HintOptions id="house-structure" options={structureOptions} />
-      <HintOptions id="house-facing" options={COMMON_HINTS.orientations} />
-      <HintOptions id="house-feng-shui" options={fengShuiOptions} />
-      <HintOptions id="house-road-class" options={roadClassOptions} />
-      <HintOptions id="house-ownership" options={ownershipOptions} />
-      <HintOptions id="house-flood" options={floodOptions} />
-      {/* Vị trí */}
-      <div className="card">
-        <div className="card-header"><span>Vị trí</span></div>
-        <div className="form-grid">
-          <div className="form-group">
-            <label className="form-label">Loại nhà riêng</label>
-            <input className="form-input" list="house-subtypes"
-              value={displayOption(subtypeOptions, form.asset_subtype)}
-              onChange={e => set('asset_subtype', inputToOptionCode(subtypeOptions, e.target.value))}
-              placeholder="VD: Nhà cũ / truyền thống" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Tỉnh / TP</label>
-            <ProvinceSelector
-              value={form.province_city}
-              onChange={val => { set('province_city', val); set('district', '') }}
-              className="form-select" required />
-          </div>
-          <div className="form-group">
-            <label className="form-label required">Quận / Huyện *</label>
-            <DistrictSelector
-              provinceCode={form.province_city}
-              value={form.district}
-              onChange={val => set('district', val)}
-              className="form-select" required />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Phường / Xã</label>
-            <input className="form-input" list="house-wards"
-              value={form.ward}
-              onChange={e => set('ward', e.target.value)} />
-          </div>
-          <div className="form-group span-2">
-            <label className="form-label">Đường / Dự án</label>
-            <input className="form-input" list="house-streets"
-              value={form.street_or_project}
-              onChange={e => set('street_or_project', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Vĩ độ (GPS)</label>
-            <input type="number" step="0.0001" className="form-input"
-              value={form.latitude}
-              onChange={e => set('latitude', e.target.value)}
-              placeholder="21.0285" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Kinh độ (GPS)</label>
-            <input type="number" step="0.0001" className="form-input"
-              value={form.longitude}
-              onChange={e => set('longitude', e.target.value)}
-              placeholder="105.8542" />
-          </div>
-        </div>
-      </div>
+      <PrefillBanner prefill={prefill} onPick={set} />
+      <FormProgress form={form} />
+      <IotAutoNote data={iotAuto} />
 
-      {/* Diện tích & Quy mô */}
-      <div className="card">
-        <div className="card-header">
-          <span>Diện tích & Quy mô nhà riêng</span>
-          <span className="text-xs text-muted" style={{ marginLeft: 'auto' }}>
-            Nhà riêng: đất + công trình cũ/khấu hao
-          </span>
+      <OpenSection title="Vị trí" hint="Mẹo: dùng “Định vị thông minh” để tự điền">
+        <SelectField label="Loại nhà riêng" value={form.asset_subtype} onChange={v => set('asset_subtype', v)} options={ASSET_SUBTYPES.HOUSE} placeholder="— Chọn loại —" />
+        <div className="form-group">
+          <label className="form-label">Tỉnh / TP</label>
+          <ProvinceSelector value={form.province_city} onChange={val => { set('province_city', val); set('district', '') }} className="form-select" required />
         </div>
-        <div className="form-grid">
-          <div className="form-group">
-            <label className="form-label required">Diện tích đất (m²) *</label>
-            <input type="number" step="0.1" className="form-input" required
-              value={form.area_m2}
-              onChange={e => set('area_m2', e.target.value)}
-              placeholder="VD: 60.0" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Diện tích sàn xây dựng (m²)</label>
-            <input type="number" step="0.1" className="form-input"
-              value={form.built_area_m2}
-              onChange={e => set('built_area_m2', e.target.value)}
-              placeholder="VD: 120.0" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Số tầng</label>
-            <input type="number" min="1" max="5" className="form-input"
-              value={form.floor_count}
-              onChange={e => set('floor_count', e.target.value)}
-              placeholder="VD: 2" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Phòng ngủ</label>
-            <input type="number" min="0" className="form-input"
-              value={form.bedrooms}
-              onChange={e => set('bedrooms', e.target.value)}
-              placeholder="VD: 3" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Phòng tắm</label>
-            <input type="number" min="0" className="form-input"
-              value={form.bathrooms}
-              onChange={e => set('bathrooms', e.target.value)}
-              placeholder="VD: 2" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Số bếp</label>
-            <input type="number" min="0" className="form-input"
-              value={form.kitchen_count}
-              onChange={e => set('kitchen_count', e.target.value)}
-              placeholder="VD: 1" />
-          </div>
+        <div className="form-group">
+          <label className="form-label required">Quận / Huyện *</label>
+          <DistrictSelector provinceCode={form.province_city} value={form.district} onChange={val => set('district', val)} className="form-select" required />
         </div>
-      </div>
+        <TextField label="Phường / Xã" value={form.ward} onChange={v => set('ward', v)} options={WARD_HINTS} />
+        <TextField label="Đường / Dự án" value={form.street_or_project} onChange={v => set('street_or_project', v)} options={LOCATION_HINTS.streets} span />
+        <NumberField label="Vĩ độ (GPS)" value={form.latitude} onChange={v => set('latitude', v)} step="0.0001" placeholder="Tự điền từ bản đồ" />
+        <NumberField label="Kinh độ (GPS)" value={form.longitude} onChange={v => set('longitude', v)} step="0.0001" placeholder="Tự điền từ bản đồ" />
+      </OpenSection>
 
-      {/* Tuổi & Cấp công trình */}
-      <div className="card">
-        <div className="card-header"><span>Tuổi & Cấp công trình</span></div>
-        <div className="form-grid">
-          <div className="form-group">
-            <label className="form-label">Năm xây dựng</label>
-            <input type="number" min="1950" max="2026" className="form-input"
-              value={form.construction_year}
-              onChange={e => set('construction_year', e.target.value)}
-              placeholder="VD: 2000" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Năm cải tạo gần nhất</label>
-            <input type="number" min="1950" max="2026" className="form-input"
-              value={form.renovation_year}
-              onChange={e => set('renovation_year', e.target.value)}
-              placeholder="VD: 2020" />
-          </div>
-          <div className="form-group span-2">
-            <label className="form-label">Cấp công trình hiện tại</label>
-            <input className="form-input" list="house-structure"
-              value={displayOption(structureOptions, form.structure_grade)}
-              onChange={e => set('structure_grade', inputToOptionCode(structureOptions, e.target.value))}
-              placeholder="VD: Tốt / Trung bình" />
-          </div>
-        </div>
-      </div>
+      <OpenSection title="Diện tích & Quy mô">
+        <NumberField label="Diện tích đất (m²)" value={form.area_m2} onChange={v => set('area_m2', v)} required step="0.1" placeholder="VD: 60" />
+        <NumberField label="Diện tích sàn xây dựng (m²)" value={form.built_area_m2} onChange={v => set('built_area_m2', v)} step="0.1" placeholder="VD: 120" />
+        <NumberField label="Số tầng" value={form.floor_count} onChange={v => set('floor_count', v)} min="1" max="5" suggestions={[1, 2, 3, 4]} />
+        <NumberField label="Phòng ngủ" value={form.bedrooms} onChange={v => set('bedrooms', v)} min="0" suggestions={[2, 3, 4]} />
+        <NumberField label="Phòng tắm" value={form.bathrooms} onChange={v => set('bathrooms', v)} min="0" suggestions={[1, 2, 3]} />
+        <NumberField label="Số bếp" value={form.kitchen_count} onChange={v => set('kitchen_count', v)} min="0" suggestions={[1, 2]} />
+      </OpenSection>
 
-      {/* Hướng nhà */}
-      <div className="card">
-        <div className="card-header">
-          <span>Hướng nhà</span>
-          <span className="text-xs text-muted" style={{ marginLeft: 'auto' }}>
-            Lớp FIT — ảnh hưởng ±1-5%
-          </span>
-        </div>
-        <div className="form-grid">
-          <div className="form-group">
-            <label className="form-label">Hướng cửa chính</label>
-            <input className="form-input" list="house-facing"
-              value={form.main_facing}
-              onChange={e => set('main_facing', e.target.value)}
-              placeholder="VD: Đông Nam" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Năm sinh chủ nhà</label>
-            <input type="number" min="1920" max="2015" className="form-input"
-              value={form.birth_year}
-              onChange={e => set('birth_year', e.target.value)}
-              placeholder="VD: 1985" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Mức quan tâm phong thủy</label>
-            <input className="form-input" list="house-feng-shui"
-              value={displayOption(fengShuiOptions, form.feng_shui_sensitivity)}
-              onChange={e => set('feng_shui_sensitivity', inputToOptionCode(fengShuiOptions, e.target.value))}
-              placeholder="VD: Tham khảo nhẹ / Quan tâm cao" />
-          </div>
-        </div>
-      </div>
+      <OpenSection title="Pháp lý" hint="Impact ±5-15%">
+        <SelectField label="Pháp lý" value={form.ownership_type} onChange={v => set('ownership_type', v)} options={OWNERSHIP_TYPES} required />
+        <CheckField label="Đang tranh chấp" checked={form.dispute_flag} onChange={v => set('dispute_flag', v)} />
+        <CheckField label="Đang thế chấp ngân hàng" checked={form.mortgage_flag} onChange={v => set('mortgage_flag', v)} />
+      </OpenSection>
 
-      {/* Tiếp cận */}
-      <div className="card">
-        <div className="card-header"><span>Tiếp cận</span></div>
-        <div className="form-grid">
-          <div className="form-group">
-            <label className="form-label">Hạng đường</label>
-            <input className="form-input" list="house-road-class"
-              value={displayOption(roadClassOptions, form.road_class)}
-              onChange={e => set('road_class', inputToOptionCode(roadClassOptions, e.target.value))}
-              placeholder="VD: Hẻm 3-5m / Đường chính" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Bề rộng đường (m)</label>
-            <input type="number" step="0.5" className="form-input"
-              value={form.road_width_m}
-              onChange={e => set('road_width_m', e.target.value)}
-              placeholder="VD: 3.5" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">
-              <input type="checkbox"
-                checked={form.car_access}
-                onChange={e => set('car_access', e.target.checked)} />
-              {' '}Ô tô đỗ được vào
-            </label>
-          </div>
-          <div className="form-group">
-            <label className="form-label">
-              <input type="checkbox"
-                checked={form.dead_end}
-                onChange={e => set('dead_end', e.target.checked)} />
-              {' '}Hẻm cụt
-            </label>
-          </div>
-        </div>
-      </div>
+      <CollapsibleSection title="Tuổi & Cấp công trình">
+        <NumberField label="Năm xây dựng" value={form.construction_year} onChange={v => set('construction_year', v)} min="1950" max="2026" placeholder="VD: 2000" />
+        <NumberField label="Năm cải tạo gần nhất" value={form.renovation_year} onChange={v => set('renovation_year', v)} min="1950" max="2026" placeholder="VD: 2020" />
+        <SelectField label="Cấp công trình hiện tại" value={form.structure_grade} onChange={v => set('structure_grade', v)} options={STRUCTURE_GRADES} span />
+      </CollapsibleSection>
 
-      {/* Pháp lý */}
-      <div className="card">
-        <div className="card-header">
-          <span>Pháp lý</span>
-          <span className="text-xs text-muted" style={{ marginLeft: 'auto' }}>Impact: ±5-15%</span>
-        </div>
-        <div className="form-grid">
-          <div className="form-group">
-            <label className="form-label required">Pháp lý</label>
-            <input className="form-input" list="house-ownership" required
-              value={displayOption(ownershipOptions, form.ownership_type)}
-              onChange={e => set('ownership_type', inputToOptionCode(ownershipOptions, e.target.value))}
-              placeholder="VD: Sổ đỏ/Sổ hồng đầy đủ" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">
-              <input type="checkbox"
-                checked={form.dispute_flag}
-                onChange={e => set('dispute_flag', e.target.checked)} />
-              {' '}Đang tranh chấp
-            </label>
-          </div>
-          <div className="form-group">
-            <label className="form-label">
-              <input type="checkbox"
-                checked={form.mortgage_flag}
-                onChange={e => set('mortgage_flag', e.target.checked)} />
-              {' '}Đang thế chấp ngân hàng
-            </label>
-          </div>
-        </div>
-      </div>
+      <CollapsibleSection title="Hướng nhà & Phong thủy" hint="Lớp FIT ±1-5%" accent="var(--primary-200)">
+        <SelectField label="Hướng cửa chính" value={form.main_facing} onChange={v => set('main_facing', v)} options={COMMON_HINTS.orientations} placeholder="— Chọn hướng —" />
+        <NumberField label="Năm sinh chủ nhà" value={form.birth_year} onChange={v => set('birth_year', v)} min="1920" max="2015" placeholder="VD: 1985" />
+        <SelectField label="Mức quan tâm phong thủy" value={form.feng_shui_sensitivity} onChange={v => set('feng_shui_sensitivity', v)} options={FENG_SHUI_SENSITIVITIES} />
+      </CollapsibleSection>
 
-      {/* Môi trường */}
-      <div className="card">
-        <div className="card-header"><span>Môi trường</span></div>
-        <div className="form-grid">
-          <div className="form-group">
-            <label className="form-label">Nguy cơ ngập</label>
-            <input className="form-input" list="house-flood"
-              value={displayOption(floodOptions, form.flood_risk)}
-              onChange={e => set('flood_risk', inputToOptionCode(floodOptions, e.target.value))}
-              placeholder="VD: Không rõ / Không ngập" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Cách nghĩa trang (m)</label>
-            <input type="number" className="form-input"
-              value={form.cemetery_distance_m}
-              onChange={e => set('cemetery_distance_m', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Cách công viên (m)</label>
-            <input type="number" className="form-input"
-              value={form.park_distance_m}
-              onChange={e => set('park_distance_m', e.target.value)} />
-          </div>
-        </div>
-      </div>
+      <CollapsibleSection title="Tiếp cận">
+        <SelectField label="Hạng đường" value={form.road_class} onChange={v => set('road_class', v)} options={ROAD_CLASSES} />
+        <NumberField label="Bề rộng đường (m)" value={form.road_width_m} onChange={v => set('road_width_m', v)} step="0.5" placeholder="VD: 3.5" />
+        <CheckField label="Ô tô đỗ được vào" checked={form.car_access} onChange={v => set('car_access', v)} />
+        <CheckField label="Hẻm cụt" checked={form.dead_end} onChange={v => set('dead_end', v)} />
+      </CollapsibleSection>
 
-      {/* Tâm linh (Fit layer) */}
-      <div className="card" style={{ borderColor: 'var(--warning-border)' }}>
-        <div className="card-header" style={{ color: 'var(--warning-dark)' }}>
-          Lịch sử tâm linh
-          <span className="text-xs" style={{ marginLeft: 'auto', opacity: 0.7 }}>
-            Lớp FIT — không ảnh hưởng giá thị trường
-          </span>
-        </div>
-        <div className="form-grid">
-          <div className="form-group">
-            <label className="form-label">
-              <input type="checkbox"
-                checked={form.death_history_flag}
-                onChange={e => set('death_history_flag', e.target.checked)} />
-              {' '}Có tử vong trong nhà
-            </label>
-          </div>
-          <div className="form-group">
-            <label className="form-label">
-              <input type="checkbox"
-                checked={form.stigma_known}
-                onChange={e => set('stigma_known', e.target.checked)} />
-              {' '}Điểm nhạy cảm đã biết trong khu vực
-            </label>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Cách nơi thờ cúng (m)</label>
-            <input type="number" className="form-input"
-              value={form.worship_site_distance_m}
-              onChange={e => set('worship_site_distance_m', e.target.value)} />
-          </div>
-        </div>
-      </div>
+      <CollapsibleSection title="Môi trường">
+        <SelectField label="Nguy cơ ngập" value={form.flood_risk} onChange={v => set('flood_risk', v)} options={FLOOD_RISK} />
+        <NumberField label="Cách nghĩa trang (m)" value={form.cemetery_distance_m} onChange={v => set('cemetery_distance_m', v)} />
+        <NumberField label="Cách công viên (m)" value={form.park_distance_m} onChange={v => set('park_distance_m', v)} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Lịch sử tâm linh" hint="Lớp FIT — không ảnh hưởng giá thị trường" accent="var(--warning-border)">
+        <CheckField label="Có tử vong trong nhà" checked={form.death_history_flag} onChange={v => set('death_history_flag', v)} />
+        <CheckField label="Điểm nhạy cảm đã biết trong khu vực" checked={form.stigma_known} onChange={v => set('stigma_known', v)} />
+        <NumberField label="Cách nơi thờ cúng (m)" value={form.worship_site_distance_m} onChange={v => set('worship_site_distance_m', v)} />
+      </CollapsibleSection>
 
       <button type="submit" className="btn btn-primary btn-lg btn-full" disabled={loading}>
         {submitLabel(isAdmin, loading, engineLabel)}

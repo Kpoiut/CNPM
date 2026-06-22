@@ -12,6 +12,8 @@ POST /api/v2/impact-analysis — Phân tích tác động (Admin-only)
 
 from __future__ import annotations
 
+import os
+from functools import lru_cache
 from typing import Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
@@ -175,8 +177,11 @@ class ImpactAnalysisResponse(BaseModel):
 # HELPERS
 # =============================================================================
 
+@lru_cache(maxsize=1)
 def _load_pipeline():
     """Lazy-load MLPipeline; impact analysis can fall back to rule-based mode."""
+    if os.environ.get("IMPACT_FAST_MODE", "1").lower() not in {"0", "false", "no"}:
+        return None
     from src.ml.pipeline import MLPipeline
     pipeline = MLPipeline()
     try:
@@ -296,7 +301,7 @@ def _map_impact_result(result: ImpactResult) -> ImpactAnalysisResponse:
             fmv_low=int(round(s.fmv_low)),
             fmv_high=int(round(s.fmv_high)),
             fmv_mid=int(round(s.fmv_mid)),
-            confidence=round(s.confidence, 1),
+            confidence=round(s.confidence, 3),
             confidence_grade=s.confidence_grade,
             interval_width_pct=round(s.interval_width_pct, 1),
             filled_fields=s.filled_fields,

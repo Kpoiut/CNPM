@@ -1,0 +1,8 @@
+{
+  "stamp": "20260504_144753",
+  "model_file": "model_20260504_144753.pkl",
+  "metadata_file": "metadata_20260504_144753.json",
+  "activated_at": "2026-06-20",
+  "selection_policy": "serving_by_ACTIVE_MODEL_pointer; compare MAPE, MAE, R2, n_test and data-policy stability before activation",
+  "reason": "Pinned verified production model: official test MAPE 16.0864%, test MAE 776,510,800 VND, test R2 0.8449 on n_test=485. Historical snapshot 20260503_185414 has lower MAPE 14.1962% but higher MAE 804,022,708 VND, lower R2 0.7648 and smaller n_test=456, so it is shown as best-by-MAPE history, not the current serving model. Later retrains are kept as candidates because their serving metrics are worse."
+}

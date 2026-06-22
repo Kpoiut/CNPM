@@ -18,6 +18,31 @@ function formatDate(dateStr) {
   try { return new Date(dateStr).toLocaleDateString('vi-VN') } catch { return dateStr }
 }
 
+function buildPageItems(totalPages, currentPage) {
+  if (totalPages <= 7) {
+    return Array.from({ length: totalPages }, (_, index) => index + 1)
+  }
+
+  const pageSet = new Set([
+    1, 2, 3, 4,
+    totalPages - 3, totalPages - 2, totalPages - 1, totalPages,
+    currentPage - 1, currentPage, currentPage + 1,
+  ])
+
+  const pages = [...pageSet]
+    .filter(page => page >= 1 && page <= totalPages)
+    .sort((a, b) => a - b)
+
+  const items = []
+  let previous = 0
+  pages.forEach(page => {
+    if (page - previous > 1) items.push('ellipsis-' + page)
+    items.push(page)
+    previous = page
+  })
+  return items
+}
+
 function buildSourcesFromProperties(records) {
   const rows = asArray(records)
   const sourceMap = rows.reduce((acc, row) => {
@@ -57,10 +82,12 @@ function DataSources() {
   const [overview, setOverview] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedSource, setSelectedSource] = useState(null)
+  const [sourcePage, setSourcePage] = useState(1)
   const [sourceRecords, setSourceRecords] = useState([])
   const [loadingRecords, setLoadingRecords] = useState(false)
   const [selectedRecordForDetail, setSelectedRecordForDetail] = useState(null)
   const [showDetail, setShowDetail] = useState(false)
+  const SOURCE_PAGE_SIZE = 10
 
   useEffect(() => { fetchData() }, [])
 
@@ -79,18 +106,24 @@ function DataSources() {
       setSources(normalizedSources)
       setOverview(oData)
       if (normalizedSources.length > 0) handleSourceClick(normalizedSources[0])
-    } catch (err) { console.error(err) }
+    } catch (_err) {
+      setSources([])
+      setOverview({})
+    }
     finally { setLoading(false) }
   }
 
   const handleSourceClick = async (source) => {
     setSelectedSource(source)
+    setSourcePage(1)
     setLoadingRecords(true)
     try {
       const res = await authFetch(`${API_BASE}/properties?limit=5000`)
       const allRecords = asArray(await res.json())
       setSourceRecords(allRecords.filter(r => r.source_name === source.source_name))
-    } catch (err) { console.error(err) }
+    } catch (_err) {
+      setSourceRecords([])
+    }
     finally { setLoadingRecords(false) }
   }
 
@@ -104,6 +137,16 @@ function DataSources() {
 
   const fieldSources = useMemo(() => sources.filter(s => s.source_type === 'field_survey'), [sources])
   const websiteSources = useMemo(() => sources.filter(s => s.source_type !== 'field_survey'), [sources])
+  const totalSourcePages = Math.max(1, Math.ceil(sourceRecords.length / SOURCE_PAGE_SIZE))
+  const paginatedSourceRecords = useMemo(() => {
+    const start = (sourcePage - 1) * SOURCE_PAGE_SIZE
+    return sourceRecords.slice(start, start + SOURCE_PAGE_SIZE)
+  }, [sourceRecords, sourcePage])
+  const sourcePageItems = useMemo(() => buildPageItems(totalSourcePages, sourcePage), [totalSourcePages, sourcePage])
+
+  useEffect(() => {
+    if (sourcePage > totalSourcePages) setSourcePage(1)
+  }, [sourcePage, totalSourcePages])
 
   if (loading) return (
     <div className="loading-overlay">
@@ -282,7 +325,7 @@ function DataSources() {
                     ) : sourceRecords.length === 0 ? (
                       <tr><td colSpan={6} style={{ textAlign: 'center' }}>Không có bản ghi</td></tr>
                     ) : (
-                      sourceRecords.slice(0, 80).map(record => (
+                      paginatedSourceRecords.map(record => (
                         <tr key={record.id}>
                           <td className="font-semibold">#{record.id}</td>
                           <td>
@@ -307,6 +350,38 @@ function DataSources() {
                   </tbody>
                 </table>
               </div>
+
+              {totalSourcePages > 1 && (
+                <div className="app-pagination">
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                    Trang {sourcePage} / {totalSourcePages} · {sourceRecords.length.toLocaleString('vi-VN')} bản ghi
+                  </span>
+                  <div className="app-pagination-pages">
+                    {sourcePageItems.map(item => (
+                      typeof item === 'number' ? (
+                        <button
+                          key={item}
+                          type="button"
+                          className={`app-pagination-page ${sourcePage === item ? 'active' : ''}`}
+                          onClick={() => setSourcePage(item)}
+                        >
+                          {item}
+                        </button>
+                      ) : (
+                        <span key={item} className="app-pagination-ellipsis">…</span>
+                      )
+                    ))}
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
+                    <button className="btn btn-ghost btn-sm" disabled={sourcePage <= 1} onClick={() => setSourcePage(p => Math.max(1, p - 1))}>
+                      ← Trước
+                    </button>
+                    <button className="btn btn-ghost btn-sm" disabled={sourcePage >= totalSourcePages} onClick={() => setSourcePage(p => Math.min(totalSourcePages, p + 1))}>
+                      Sau →
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <div className="empty-state">

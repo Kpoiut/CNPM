@@ -1,0 +1,223 @@
+{
+  "training_standard": "CVX-BDS/IoT 1.1-VN Research Extension",
+  "best_model": "ReliabilityAwareGradientBoosting",
+  "all_results": {
+    "QualityWeightedRandomForest": {
+      "mae": 5056707377.773575,
+      "rmse": 21192438521.594105,
+      "r2": 0.4682262206101624,
+      "cv_mae_mean": 4667239561.58671,
+      "cv_mae_std": 558784142.9315346
+    },
+    "ReliabilityAwareGradientBoosting": {
+      "mae": 4096732617.5672197,
+      "rmse": 15423690769.632795,
+      "r2": 0.7183292991469197,
+      "cv_mae_mean": 3947236737.015864,
+      "cv_mae_std": 435509865.7817398,
+      "test_mae": 3669632881.982324,
+      "test_median_ae": 1436516214.5071373,
+      "test_mape": 31.445353120566544,
+      "test_rmse": 16866524240.349976,
+      "test_r2": 0.18794292643514532,
+      "n_test": 491
+    },
+    "ConfidenceWeightedXGBoost": {
+      "mae": 12370442632.570778,
+      "rmse": 29069383622.81931,
+      "r2": -0.0005451749589866495,
+      "cv_mae_mean": 12653176050.101982,
+      "cv_mae_std": 630157652.3576757
+    }
+  },
+  "train_size": 2287,
+  "validation_size": 491,
+  "test_size": 491,
+  "n_features": 53,
+  "feature_names": [
+    "area_m2_norm",
+    "bedrooms_norm",
+    "bathrooms_norm",
+    "floor_count",
+    "frontage_m",
+    "latitude_norm",
+    "longitude_norm",
+    "is_house",
+    "is_apartment",
+    "is_land",
+    "is_townhouse",
+    "is_villa",
+    "province_HN",
+    "province_HCM",
+    "province_DN",
+    "province_HP",
+    "province_CT",
+    "province_BD",
+    "noise_level_norm",
+    "temperature_norm",
+    "humidity_norm",
+    "light_level_norm",
+    "distance_to_center",
+    "area_type",
+    "legal_status",
+    "furnishing",
+    "province_price_mean",
+    "rqs_norm",
+    "provenance_score_norm",
+    "verification_score_norm",
+    "market_anchor_score_norm",
+    "timeliness_score_norm",
+    "training_weight_norm",
+    "evidence_weight_norm",
+    "confidence_stage1_score_norm",
+    "confidence_prob_a_norm",
+    "confidence_prob_b_norm",
+    "confidence_prob_c_norm",
+    "confidence_prob_d_norm",
+    "anchor_flag_feature",
+    "has_iot_signal_feature",
+    "area_bedrooms_interaction",
+    "floor_bedrooms_interaction",
+    "knn5_price_density",
+    "knn10_price_density"
+  ],
+  "trained_at": "2026-06-21T10:55:34.782105",
+  "training_quality_summary": {
+    "profile_count": 3269,
+    "avg_rqs": 6.79,
+    "median_rqs": 6.85,
+    "avg_training_weight": 0.7292,
+    "max_training_weight": 1.5062,
+    "min_training_weight": 0.3764,
+    "evidence_distribution": {
+      "E4": 522,
+      "E5": 263,
+      "E3": 1970,
+      "E2": 514
+    },
+    "grade_distribution": {
+      "B": 1498,
+      "C": 1574,
+      "D": 181,
+      "A": 16
+    },
+    "anchor_rate": 0.2401
+  },
+  "confidence_metadata": {
+    "stage_name": "P-CONF Prediction Confidence \u2014 sample-depth gated classifier",
+    "best_model": "EntropyTree",
+    "feature_names": [
+      "support_volume_score",
+      "support_quality_score",
+      "support_completeness_score",
+      "support_anchor_share",
+      "support_source_count",
+      "support_volatility",
+      "district_support_count",
+      "province_support_count",
+      "property_type_support_count",
+      "effective_sample_size",
+      "input_completeness_score",
+      "input_iot_signal_count",
+      "input_has_legal_status",
+      "input_has_coordinates",
+      "input_has_furnishing",
+      "local_price_gap_ratio",
+      "self_collected_hint"
+    ],
+    "validation_results": {
+      "EntropyTree": {
+        "accuracy": 1.0,
+        "precision_macro": 1.0,
+        "recall_macro": 1.0,
+        "f1_macro": 1.0
+      },
+      "GiniTree": {
+        "accuracy": 1.0,
+        "precision_macro": 1.0,
+        "recall_macro": 1.0,
+        "f1_macro": 1.0
+      },
+      "HybridConfidenceForest": {
+        "accuracy": 1.0,
+        "precision_macro": 1.0,
+        "recall_macro": 1.0,
+        "f1_macro": 1.0
+      }
+    },
+    "test_metrics": {
+      "accuracy": 1.0,
+      "precision_macro": 1.0,
+      "recall_macro": 1.0,
+      "f1_macro": 1.0
+    },
+    "split_summary": {
+      "train_size": 2288,
+      "validation_size": 490,
+      "test_size": 491,
+      "strategy": "70/15/15 holdout split"
+    },
+    "label_distribution": {
+      "C": 2939,
+      "D": 330
+    },
+    "tree_rules": "|--- support_volume_score <= 3.65\n|   |--- class: D\n|--- support_volume_score >  3.65\n|   |--- support_anchor_share <= 0.03\n|   |   |--- class: C\n|   |--- support_anchor_share >  0.03\n|   |   |--- class: C\n",
+    "label_source": "P-CONF_sample_depth_gate_v2",
+    "grade_policy": {
+      "A": "effective_sample_size >= 800 plus good quality, multi-source support and stable market",
+      "B": "effective_sample_size >= 300 plus acceptable quality and multi-source support",
+      "C": "effective_sample_size >= 100, or >=30 with acceptable support quality",
+      "D": "sparse support; prediction confidence must stay capped"
+    }
+  },
+  "conformal_calibration": {
+    "A": {
+      "count": 0,
+      "ratio_q90": 0.12,
+      "ratio_median": 0.08
+    },
+    "B": {
+      "count": 0,
+      "ratio_q90": 0.12,
+      "ratio_median": 0.08
+    },
+    "C": {
+      "count": 435,
+      "ratio_q90": 0.47322495175583074,
+      "ratio_median": 0.17120385814029798
+    },
+    "D": {
+      "count": 56,
+      "ratio_q90": 0.7437969171443062,
+      "ratio_median": 0.22189450662694665
+    }
+  },
+  "sample_weight_summary": {
+    "min": 0.3764,
+    "max": 1.5062,
+    "mean": 0.729232578770266
+  },
+  "split_strategy": "70/15/15 holdout with validation-driven model selection",
+  "interval_strategy": "quality-weighted point models + quantile interval heads + grouped conformal calibration",
+  "training_flow_tree": {
+    "name": "Research Training Pipeline",
+    "children": [
+      {
+        "name": "Dataset",
+        "value": 3269
+      },
+      {
+        "name": "Stage 1 - Confidence Classifier",
+        "value": "EntropyTree"
+      },
+      {
+        "name": "Stage 2 - Price Interval Model",
+        "value": "ReliabilityAwareGradientBoosting"
+      },
+      {
+        "name": "Calibration",
+        "value": "Grouped conformal by trust band"
+      }
+    ]
+  }
+}

@@ -4,6 +4,7 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../components/auth';
+import { authFetch } from '../../api/client';
 import { icon } from '../../components/ui/icons';
 
 const API = '/api/auth';
@@ -11,8 +12,8 @@ const tk = () => localStorage.getItem('avm-token');
 const hdr = () => ({ 'Content-Type': 'application/json', Authorization: `Bearer ${tk()}` });
 
 const ROLE_META = {
-  admin: { label: 'Quản trị viên', color: '#a78bfa', bg: 'rgba(167,139,250,.1)' },
-  user:  { label: 'Người dùng',   color: '#38bdf8', bg: 'rgba(56,189,248,.1)' },
+  admin: { label: 'Quản lý', color: '#a78bfa', bg: 'rgba(167,139,250,.1)' },
+  user:  { label: 'Người dùng', color: '#38bdf8', bg: 'rgba(56,189,248,.1)' },
 };
 
 export default function UserManagement() {
@@ -28,7 +29,7 @@ export default function UserManagement() {
     setLoading(true);
     setError(null);
     try {
-      const r = await fetch(`${API}/users`, { headers: hdr() });
+      const r = await authFetch(`${API}/users`, { headers: hdr() });
       if (!r.ok) {
         const body = await r.json().catch(() => ({}));
         throw new Error(body.detail || `HTTP ${r.status}`);
@@ -47,7 +48,7 @@ export default function UserManagement() {
   const handleRoleChange = async (userId, newRole) => {
     setUpdating(userId);
     try {
-      const r = await fetch(`${API}/users/${userId}`, {
+      const r = await authFetch(`${API}/users/${userId}`, {
         method: 'PATCH',
         headers: hdr(),
         body: JSON.stringify({ role: newRole }),
@@ -68,7 +69,7 @@ export default function UserManagement() {
   const handleToggleActive = async (userId, currentActive) => {
     setUpdating(userId);
     try {
-      const r = await fetch(`${API}/users/${userId}`, {
+      const r = await authFetch(`${API}/users/${userId}`, {
         method: 'PATCH',
         headers: hdr(),
         body: JSON.stringify({ is_active: !currentActive }),
@@ -116,7 +117,7 @@ export default function UserManagement() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
         {[
           { label: 'Tổng tài khoản', value: stats.total, iconKey: 'users', color: '#6366f1' },
-          { label: 'Quản trị viên', value: stats.admins, iconKey: 'shieldCheck', color: '#a78bfa' },
+          { label: 'Quản lý', value: stats.admins, iconKey: 'shieldCheck', color: '#a78bfa' },
           { label: 'Người dùng', value: stats.users, iconKey: 'user', color: '#38bdf8' },
           { label: 'Đã khóa', value: stats.inactive, iconKey: 'lock', color: '#f87171' },
         ].map(s => (
@@ -156,7 +157,7 @@ export default function UserManagement() {
                 transition: 'all 150ms',
               }}
             >
-              {f === 'all' ? 'Tất cả' : f === 'admin' ? 'Admin' : 'Người dùng'}
+              {f === 'all' ? 'Tất cả' : f === 'admin' ? 'Quản lý' : 'Người dùng'}
             </button>
           ))}
         </div>
@@ -182,11 +183,11 @@ export default function UserManagement() {
         {loading ? (
           <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
             <span className="spinner" style={{ display: 'inline-block', width: 24, height: 24, border: '2px solid var(--border)', borderTopColor: 'var(--primary)', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-            <p style={{ marginTop: '0.75rem' }}>Đang tải danh sách người dùng...</p>
+            <p style={{ marginTop: '0.75rem' }}>Đang tải danh sách tài khoản...</p>
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            <p>Không có người dùng nào.</p>
+            <p>Không có tài khoản nào.</p>
           </div>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
@@ -232,7 +233,7 @@ export default function UserManagement() {
                         }}
                       >
                         <option value="user">Người dùng</option>
-                        <option value="admin">Quản trị viên</option>
+                        <option value="admin">Quản lý</option>
                       </select>
                     </td>
                     <td style={{ padding: '0.75rem 1rem' }}>
@@ -290,7 +291,7 @@ export default function UserManagement() {
       </div>
 
       <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '0.75rem', textAlign: 'right' }}>
-        {filtered.length} / {users.length} người dùng
+        {filtered.length} / {users.length} tài khoản
       </p>
     </div>
   );

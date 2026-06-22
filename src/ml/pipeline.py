@@ -3,11 +3,12 @@ ML Pipeline for Real Estate AVM.
 Handles model training, evaluation, and prediction with full traceability.
 """
 
+import hashlib
+import json
 import os
-import sys
 from pathlib import Path
 import pickle
-import json
+import sys
 import numpy as np
 import pandas as pd
 from datetime import datetime
@@ -98,6 +99,8 @@ class MLPipeline:
         self.confidence_metadata = {}
         self.confidence_training_rows = []
         self.regression_confidence_signal = None
+        self.dataset_record_ids = []
+        self.split_manifest = {}
 
     def _build_features(self, prop) -> np.ndarray:
         """
@@ -319,14 +322,14 @@ class MLPipeline:
         if not include_self_collected:
             query = query.filter(Property.data_origin_type != "self_collected")
 
-        properties = query.all()
+        properties = query.order_by(Property.id.asc()).all()
 
         if len(properties) < 50:
             raise ValueError(
                 f"INSUFFICIENT_DATA: Chỉ có {len(properties)} bản ghi trong 6 quận được phép. "
                 f"Cần tối thiểu 50 bản ghi để train ML model. "
-                f"Hành động: python scripts/seed_data.py --seed-demo 30 "
-                f"(hoặc: python scripts/seed_data.py --collect để thu thập dữ liệu thực)"
+                f"Hành động: python scripts/import_real_data.py --template, "
+                f"sau đó import dữ liệu thực có nguồn tham chiếu."
             )
 
         data = []
@@ -352,6 +355,7 @@ class MLPipeline:
                 'data_origin_type': p.data_origin_type,
                 'record_status': p.record_status,
                 'verification_status': p.verification_status,
+                'evidence_tier': p.evidence_tier,
                 'source_name': p.source_name,
                 'source_url': p.source_url,
                 'source_page_title': p.source_page_title,
@@ -589,6 +593,14 @@ class MLPipeline:
         """
         from src.ml.feature_engineering import FeatureEngineer
 
+        if "id" in df.columns:
+            self.dataset_record_ids = [
+                value.item() if isinstance(value, np.generic) else value
+                for value in df["id"].tolist()
+            ]
+        else:
+            self.dataset_record_ids = list(range(len(df)))
+
         prepared_df = self._append_quality_features(df.copy())
         prepared_df = self._train_confidence_stage(prepared_df, y=y)
         self.regression_confidence_signal = prepared_df.get("confidence_stage1_score", pd.Series(np.zeros(len(prepared_df)))).values
@@ -599,6 +611,48 @@ class MLPipeline:
         self.feature_names = engineer.get_feature_names()
 
         return X
+
+    def _build_split_manifest(
+        self,
+        train_indices,
+        validation_indices,
+        test_indices,
+    ) -> Dict[str, Any]:
+        """Record exact dataset membership so model metrics remain comparable."""
+        record_ids = self.dataset_record_ids or list(
+            range(
+                len(train_indices)
+                + len(validation_indices)
+                + len(test_indices)
+            )
+        )
+
+        def ids_for(indices) -> List[Any]:
+            return [record_ids[int(index)] for index in indices]
+
+        def checksum(values) -> str:
+            payload = json.dumps(
+                values,
+                ensure_ascii=False,
+                separators=(",", ":"),
+            ).encode("utf-8")
+            return hashlib.sha256(payload).hexdigest()
+
+        train_ids = ids_for(train_indices)
+        validation_ids = ids_for(validation_indices)
+        test_ids = ids_for(test_indices)
+
+        return {
+            "record_order": "Property.id ASC",
+            "random_state": 42,
+            "train_record_ids": train_ids,
+            "validation_record_ids": validation_ids,
+            "test_record_ids": test_ids,
+            "dataset_sha256": checksum(record_ids),
+            "train_sha256": checksum(train_ids),
+            "validation_sha256": checksum(validation_ids),
+            "test_sha256": checksum(test_ids),
+        }
 
     def _fit_with_optional_weights(self, model, X_train, y_train, sample_weight=None):
         """Fit a model while gracefully handling estimators without sample_weight."""
@@ -652,6 +706,52 @@ class MLPipeline:
             }
         return calibration
 
+    @staticmethod
+    def _percentage_error_diagnostics(y_true, y_pred) -> Dict[str, Any]:
+        """Return robust percentage metrics and price-band diagnostics."""
+        y_true = np.asarray(y_true, dtype=float)
+        y_pred = np.asarray(y_pred, dtype=float)
+        official_mask = y_true > 500_000_000
+        official_true = y_true[official_mask]
+        official_pred = y_pred[official_mask]
+
+        if len(official_true) == 0:
+            return {
+                "mape_pct": None,
+                "median_ape_pct": None,
+                "p90_ape_pct": None,
+                "wmape_pct": None,
+                "record_count": 0,
+                "price_bands": {},
+            }
+
+        absolute_errors = np.abs(official_true - official_pred)
+        ape = absolute_errors / np.maximum(np.abs(official_true), 1.0) * 100
+        price_bands = {}
+        for name, lower, upper in (
+            ("0.5-1B", 500_000_000, 1_000_000_000),
+            ("1-3B", 1_000_000_000, 3_000_000_000),
+            ("3-5B", 3_000_000_000, 5_000_000_000),
+            ("5-10B", 5_000_000_000, 10_000_000_000),
+            ("10B+", 10_000_000_000, np.inf),
+        ):
+            mask = (official_true >= lower) & (official_true < upper)
+            band_ape = ape[mask]
+            price_bands[name] = {
+                "count": int(mask.sum()),
+                "mape_pct": float(np.mean(band_ape)) if len(band_ape) else None,
+                "median_ape_pct": float(np.median(band_ape)) if len(band_ape) else None,
+            }
+
+        return {
+            "mape_pct": float(np.mean(ape)),
+            "median_ape_pct": float(np.median(ape)),
+            "p90_ape_pct": float(np.quantile(ape, 0.90)),
+            "wmape_pct": float(np.sum(absolute_errors) / np.sum(np.abs(official_true)) * 100),
+            "record_count": int(len(official_true)),
+            "price_bands": price_bands,
+        }
+
     def train(self, X: np.ndarray, y: np.ndarray, test_size: float = 0.15) -> Dict:
         """
         Train the price model with a full train/validation/test workflow.
@@ -665,46 +765,44 @@ class MLPipeline:
         if self.training_quality_profiles:
             sample_weight = np.array([item["training_weight"] for item in self.training_quality_profiles], dtype=float)
 
-        confidence_signal = self.regression_confidence_signal
-        split_args = [X, y]
-        if sample_weight is not None:
-            split_args.append(sample_weight)
-        if confidence_signal is not None:
-            split_args.append(confidence_signal)
+        y = np.asarray(y)
+        confidence_signal = (
+            np.asarray(self.regression_confidence_signal)
+            if self.regression_confidence_signal is not None
+            else None
+        )
+        all_indices = np.arange(len(X))
+        trainval_indices, test_indices = train_test_split(
+            all_indices,
+            test_size=test_size,
+            random_state=42,
+        )
+        train_indices, validation_indices = train_test_split(
+            trainval_indices,
+            test_size=(0.15 / 0.85),
+            random_state=42,
+        )
 
-        split_result = train_test_split(*split_args, test_size=test_size, random_state=42)
-        if sample_weight is not None and confidence_signal is not None:
-            X_trainval, X_test, y_trainval, y_test, w_trainval, w_test, c_trainval, c_test = split_result
-        elif sample_weight is not None:
-            X_trainval, X_test, y_trainval, y_test, w_trainval, w_test = split_result
-            c_trainval = None
-            c_test = None
-        else:
-            X_trainval, X_test, y_trainval, y_test = split_result
-            w_trainval = None
-            w_test = None
-            c_trainval = None
-            c_test = None
+        X_trainval, X_test = X[trainval_indices], X[test_indices]
+        y_trainval, y_test = y[trainval_indices], y[test_indices]
+        X_train, X_val = X[train_indices], X[validation_indices]
+        y_train, y_val = y[train_indices], y[validation_indices]
 
-        trainval_args = [X_trainval, y_trainval]
-        if w_trainval is not None:
-            trainval_args.append(w_trainval)
-        if c_trainval is not None:
-            trainval_args.append(c_trainval)
+        w_trainval = sample_weight[trainval_indices] if sample_weight is not None else None
+        w_test = sample_weight[test_indices] if sample_weight is not None else None
+        w_train = sample_weight[train_indices] if sample_weight is not None else None
+        w_val = sample_weight[validation_indices] if sample_weight is not None else None
 
-        trainval_split = train_test_split(*trainval_args, test_size=(0.15 / 0.85), random_state=42)
-        if w_trainval is not None and c_trainval is not None:
-            X_train, X_val, y_train, y_val, w_train, w_val, c_train, c_val = trainval_split
-        elif w_trainval is not None:
-            X_train, X_val, y_train, y_val, w_train, w_val = trainval_split
-            c_train = None
-            c_val = None
-        else:
-            X_train, X_val, y_train, y_val = trainval_split
-            w_train = None
-            w_val = None
-            c_train = None
-            c_val = None
+        c_trainval = confidence_signal[trainval_indices] if confidence_signal is not None else None
+        c_test = confidence_signal[test_indices] if confidence_signal is not None else None
+        c_train = confidence_signal[train_indices] if confidence_signal is not None else None
+        c_val = confidence_signal[validation_indices] if confidence_signal is not None else None
+
+        self.split_manifest = self._build_split_manifest(
+            train_indices=train_indices,
+            validation_indices=validation_indices,
+            test_indices=test_indices,
+        )
 
         X_train_scaled = self.scaler.fit_transform(X_train)
         X_val_scaled = self.scaler.transform(X_val)
@@ -813,12 +911,11 @@ class MLPipeline:
         abs_errors = np.abs(y_test - test_pred)
         median_ae = float(np.median(abs_errors))
 
-        # MAPE (only for records with realistic prices > 500M)
-        mape_mask = y_test > 500_000_000
-        if mape_mask.sum() > 0:
-            mape = float(np.mean(np.abs(y_test[mape_mask] - test_pred[mape_mask]) / y_test[mape_mask])) * 100
-        else:
-            mape = None
+        percentage_diagnostics = self._percentage_error_diagnostics(
+            y_true=y_test,
+            y_pred=test_pred,
+        )
+        mape = percentage_diagnostics["mape_pct"]
 
         results = {
             name: validation_results[name].copy()
@@ -828,6 +925,11 @@ class MLPipeline:
             "test_mae": float(mean_absolute_error(y_test, test_pred, sample_weight=w_test)),
             "test_median_ae": median_ae,
             "test_mape": mape,
+            "test_median_ape": percentage_diagnostics["median_ape_pct"],
+            "test_p90_ape": percentage_diagnostics["p90_ape_pct"],
+            "test_wmape": percentage_diagnostics["wmape_pct"],
+            "test_mape_record_count": percentage_diagnostics["record_count"],
+            "test_mape_price_bands": percentage_diagnostics["price_bands"],
             "test_rmse": float(np.sqrt(mean_squared_error(y_test, test_pred, sample_weight=w_test))),
             "test_r2": float(r2_score(y_test, test_pred, sample_weight=w_test)),
             "n_test": int(len(y_test)),
@@ -884,6 +986,7 @@ class MLPipeline:
                 "mean": float(np.mean(sample_weight)) if sample_weight is not None else None,
             },
             "split_strategy": "70/15/15 holdout with validation-driven model selection",
+            "split_manifest": self.split_manifest,
             "interval_strategy": "quality-weighted point models + quantile interval heads + grouped conformal calibration",
             "training_flow_tree": {
                 "name": "Research Training Pipeline",
@@ -993,6 +1096,7 @@ class MLPipeline:
             'metadata': self.metadata,
             'best_model_name': self.best_model_name,
             'training_quality_summary': self.training_quality_summary,
+            'split_manifest': self.split_manifest,
             'version': version,
             'trained_at': datetime.now().isoformat()
         }
@@ -1011,16 +1115,15 @@ class MLPipeline:
     def load(self, version: str = None):
         """Load model from disk."""
         if version is None:
-            # Find latest model by timestamp in filename (model_YYYYMMDD_HHMMSS.pkl)
-            import re
-            files = [f for f in os.listdir(self.model_dir) if f.startswith('model_') and f.endswith('.pkl')]
-            if not files:
-                raise FileNotFoundError("No model found")
-            # Sort by timestamp: model_YYYYMMDD_HHMMSS.pkl or model_NAME.pkl
-            def version_key(f):
-                m = re.match(r'model_(\d{8}_\d{6})', f)
-                return m.group(1) if m else '00000000_000000'  # non-timestamped last
-            version = max(files, key=version_key).replace('model_', '').replace('.pkl', '')
+            active_pointer = os.path.join(self.model_dir, 'ACTIVE_MODEL.json')
+            if not os.path.exists(active_pointer):
+                raise FileNotFoundError("ACTIVE_MODEL.json is required; refusing to load latest candidate")
+            with open(active_pointer, encoding='utf-8') as f:
+                active = json.load(f)
+            version = str(active.get('stamp') or '').strip()
+            expected_file = f"model_{version}.pkl"
+            if not version or active.get('model_file') != expected_file:
+                raise FileNotFoundError("ACTIVE_MODEL.json must point to model_<stamp>.pkl")
 
         model_path = os.path.join(self.model_dir, f'model_{version}.pkl')
 
@@ -1048,6 +1151,10 @@ class MLPipeline:
         self.feature_names = stored_fn
         self.metadata = data.get('metadata', {})
         self.training_quality_summary = data.get('training_quality_summary', {})
+        self.split_manifest = data.get(
+            'split_manifest',
+            self.metadata.get('split_manifest', {}),
+        )
         self.is_fitted = True
 
         print(f"Model loaded from: {model_path}")

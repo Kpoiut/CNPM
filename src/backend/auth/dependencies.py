@@ -11,20 +11,40 @@ Usage:
 
 from types import SimpleNamespace
 from typing import Optional
+import os
+from datetime import datetime
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from src.backend.deps import get_db
-from src.backend.auth.models import User
-from src.backend.auth.service import decode_access_token
+from src.backend.auth.models import User, UserSession
+from src.backend.auth.service import decode_access_token, hash_token
 
 
 _bearer_scheme = HTTPBearer(auto_error=False)
 
 
+def _valid_session(db: Session, token: str) -> bool:
+    """Access token chỉ hợp lệ nếu phiên DB còn sống + chưa bị thu hồi (logout/revoke có hiệu lực thật)."""
+    th = hash_token(token)
+    s = (
+        db.query(UserSession)
+        .filter(UserSession.token_hash == th, UserSession.is_revoked == False)
+        .first()
+    )
+    if not s:
+        return False
+    if s.expires_at and s.expires_at < datetime.utcnow():
+        return False
+    return True
+
+
 def _has_local_admin_dashboard_session(request: Request) -> bool:
+    # Backdoor admin local CHỈ bật khi đặt rõ ALLOW_LOCAL_ADMIN_SESSION=1 (mặc định TẮT → an toàn).
+    if os.getenv("ALLOW_LOCAL_ADMIN_SESSION", "0") != "1":
+        return False
     host = request.headers.get("host", "")
     origin = request.headers.get("origin", "")
     return (
@@ -77,13 +97,13 @@ async def get_current_user(
         )
 
     payload = decode_access_token(credentials.credentials)
-    if not payload:
+    if not payload or not _valid_session(db, credentials.credentials):
         local_admin = _local_dashboard_admin(request, db)
         if local_admin:
             return local_admin
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token không hợp lệ hoặc đã hết hạn.",
+            detail="Token không hợp lệ, đã hết hạn hoặc phiên đã bị thu hồi.",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -111,7 +131,7 @@ async def get_optional_user(
         return _local_dashboard_admin(request, db)
 
     payload = decode_access_token(credentials.credentials)
-    if not payload:
+    if not payload or not _valid_session(db, credentials.credentials):
         return _local_dashboard_admin(request, db)
 
     user_id = payload.get("sub")

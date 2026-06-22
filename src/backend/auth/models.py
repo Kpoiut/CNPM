@@ -1,4 +1,4 @@
-"""User + UserSession models — production SQLAlchemy models matching SQLite schema."""
+"""Authentication account models — production SQLAlchemy models."""
 
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
 from sqlalchemy.sql import func
@@ -8,7 +8,7 @@ from src.backend.database import Base
 
 class User(Base):
     """User account for authentication and RBAC."""
-    __tablename__ = "users"
+    __tablename__ = "auth_accounts"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     username = Column(String(100), unique=True, nullable=False, index=True)
@@ -25,10 +25,10 @@ class User(Base):
 
 class UserSession(Base):
     """Login session tracking — every login creates a record."""
-    __tablename__ = "user_sessions"
+    __tablename__ = "auth_account_sessions"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("auth_accounts.id"), nullable=False, index=True)
     token_hash = Column(String(64), nullable=False, index=True)
     ip_address = Column(String(45), nullable=True)
     user_agent = Column(String(500), nullable=True)
@@ -38,3 +38,20 @@ class UserSession(Base):
 
     def __repr__(self):
         return f"<UserSession(id={self.id}, user_id={self.user_id}, revoked={self.is_revoked})>"
+
+
+class RefreshToken(Base):
+    """Refresh token (opaque, lưu hash) — cho phép thu hồi + xoay vòng."""
+    __tablename__ = "auth_refresh_tokens"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("auth_accounts.id"), nullable=False, index=True)
+    token_hash = Column(String(64), nullable=False, unique=True, index=True)
+    created_at = Column(DateTime, server_default=func.now())
+    expires_at = Column(DateTime, nullable=False)
+    is_revoked = Column(Boolean, default=False)
+    ip_address = Column(String(45), nullable=True)
+    user_agent = Column(String(500), nullable=True)
+
+    def __repr__(self):
+        return f"<RefreshToken(id={self.id}, user_id={self.user_id}, revoked={self.is_revoked})>"

@@ -51,7 +51,7 @@ class ReputationLedger(Base):
     __tablename__ = "reputation_ledger"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), unique=True, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("auth_accounts.id"), unique=True, index=True, nullable=False)
     
     global_score = Column(Float, default=100.0)
     area_scores = Column(JSON, default=dict)       # e.g., {"District_9": 150.0, "Thu_Duc": 80.0}
@@ -70,7 +70,7 @@ class Claim(Base):
     __tablename__ = "claims"
 
     id = Column(Integer, primary_key=True, index=True)
-    author_id = Column(Integer, ForeignKey("users.id"), index=True, nullable=False)
+    author_id = Column(Integer, ForeignKey("auth_accounts.id"), index=True, nullable=False)
     
     # Core Definition
     claim_type = Column(String(50), nullable=False) # e.g. opinion, forecast...
@@ -115,7 +115,7 @@ class CommunityComment(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     claim_id = Column(Integer, ForeignKey("claims.id", ondelete="CASCADE"), index=True)
-    author_id = Column(Integer, ForeignKey("users.id"))
+    author_id = Column(Integer, ForeignKey("auth_accounts.id"))
     content = Column(Text, nullable=False)
     
     # Comment Risk Layer
@@ -130,7 +130,7 @@ class Challenge(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     target_claim_id = Column(Integer, ForeignKey("claims.id", ondelete="CASCADE"), index=True)
-    challenger_id = Column(Integer, ForeignKey("users.id"))
+    challenger_id = Column(Integer, ForeignKey("auth_accounts.id"))
     
     reason_type = Column(String(100)) # "fake_evidence", "market_manipulation", "wrong_fact"
     argument_content = Column(Text)
@@ -159,7 +159,7 @@ class PredictionBond(Base):
     __tablename__ = "prediction_bonds"
 
     id = Column(Integer, primary_key=True, index=True)
-    forecaster_id = Column(Integer, ForeignKey("users.id"))
+    forecaster_id = Column(Integer, ForeignKey("auth_accounts.id"))
     claim_id = Column(Integer, ForeignKey("claims.id", ondelete="CASCADE"))
     
     staked_points = Column(Float, nullable=False)
@@ -199,7 +199,7 @@ class AppealCase(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     claim_id = Column(Integer, ForeignKey("claims.id", ondelete="CASCADE"))
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(Integer, ForeignKey("auth_accounts.id"))
     
     appeal_reason = Column(Text, nullable=False)
     status = Column(String(50), default="open") # "open", "accepted_rollback", "rejected"

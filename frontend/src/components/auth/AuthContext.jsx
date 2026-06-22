@@ -58,6 +58,7 @@ export function AuthProvider({ children }) {
     setToken(data.access_token)
     setUser(data.user)
     localStorage.setItem(TOKEN_KEY, data.access_token)
+    if (data.refresh_token) localStorage.setItem('avm-refresh', data.refresh_token)
     localStorage.setItem(USER_KEY, JSON.stringify(data.user))
     return data.user
   }, [])
@@ -78,6 +79,7 @@ export function AuthProvider({ children }) {
     setToken(data.access_token)
     setUser(data.user)
     localStorage.setItem(TOKEN_KEY, data.access_token)
+    if (data.refresh_token) localStorage.setItem('avm-refresh', data.refresh_token)
     localStorage.setItem(USER_KEY, JSON.stringify(data.user))
     return data.user
   }, [])
@@ -86,6 +88,7 @@ export function AuthProvider({ children }) {
     setToken(null)
     setUser(null)
     localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem('avm-refresh')
     localStorage.removeItem(USER_KEY)
     sessionStorage.removeItem(RESEARCH_LAB_TOKEN_KEY)
     sessionStorage.removeItem(RESEARCH_LAB_EXPIRES_KEY)

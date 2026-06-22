@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
+from copy import deepcopy
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -26,6 +28,11 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from src.backend.database import get_db
 from src.backend.api_v2 import router as api_router
 from src.backend.models import Property
+from src.backend.model_metrics import build_metric_provenance, load_model_metrics
+
+
+RESIDUALS_CACHE_TTL_SECONDS = int(os.getenv("RESIDUALS_CACHE_TTL_SECONDS", "300"))
+_RESIDUALS_CACHE: dict = {"expires_at": 0.0, "payload": None}
 
 
 # =============================================================================
@@ -61,15 +68,126 @@ def _get_latest_model_metadata() -> dict:
     return {}
 
 
+def _model_dirs() -> list[Path]:
+    return [PROJECT_ROOT / "models", PROJECT_ROOT / "src" / "models_archive"]
+
+
+def _read_active_model_stamp(model_dirs: list[Path] | None = None) -> str | None:
+    """Read the production-serving model version from ACTIVE_MODEL.json."""
+    for model_dir in model_dirs or _model_dirs():
+        pointer = model_dir / "ACTIVE_MODEL.json"
+        if not pointer.exists():
+            continue
+        try:
+            payload = json.loads(pointer.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+
+        stamp = payload.get("stamp")
+        if stamp:
+            return str(stamp)
+
+        model_file = payload.get("model_file")
+        if model_file:
+            match = re.search(r"model_(\d{8}_\d{6})\.pkl", str(model_file))
+            if match:
+                return match.group(1)
+    return None
+
+
+def _get_serving_model_metadata() -> dict:
+    """Load metadata for the active serving model, falling back to latest metadata."""
+    active_stamp = _read_active_model_stamp()
+    if active_stamp:
+        for model_dir in _model_dirs():
+            metadata_path = model_dir / f"metadata_{active_stamp}.json"
+            if metadata_path.exists():
+                with open(metadata_path, encoding="utf-8") as f:
+                    metadata = json.load(f)
+                metadata["model_version"] = active_stamp
+                metadata["serving_source"] = "ACTIVE_MODEL.json"
+                return metadata
+    metadata = _get_latest_model_metadata()
+    metadata.setdefault("model_version", "unknown")
+    metadata.setdefault("serving_source", "auto_latest")
+    return metadata
+
+
 def _load_pipeline():
-    """Load the MLPipeline and best model."""
+    """Load the production-serving MLPipeline.
+
+    Never swallow model loading failures: a stale or incompatible artifact must
+    be visible as a 503 instead of producing misleading residual metrics.
+    """
     from src.ml.pipeline import MLPipeline
+    active_stamp = None
     pipeline = MLPipeline()
     try:
-        pipeline.load()
-    except Exception:
-        pass
+        active_stamp = _read_active_model_stamp()
+        pipeline.load(active_stamp)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        version = active_stamp or "latest"
+        raise HTTPException(
+            status_code=503,
+            detail=f"Active ML model {version} cannot be loaded: {exc}",
+        ) from exc
+
+    if not getattr(pipeline, "is_fitted", False):
+        raise HTTPException(
+            status_code=503,
+            detail=f"Active ML model {active_stamp or 'latest'} loaded but is not fitted",
+        )
     return pipeline
+
+
+def _predict_property_price(pipeline, prop) -> float:
+    """Build production features and predict through the full pipeline transform."""
+    feat = pipeline._build_features(prop)
+    X = np.array([feat])
+    return float(pipeline.predict(X)[0])
+
+
+def _extract_serving_test_metrics(metadata: dict) -> dict:
+    """Extract holdout-test metrics from the active model metadata."""
+    best_model = metadata.get("best_model")
+    result = (metadata.get("all_results") or {}).get(best_model, {})
+    if not isinstance(result, dict):
+        result = {}
+    return {
+        "mape_pct": result.get("test_mape"),
+        "mae_vnd": result.get("test_mae", result.get("mae")),
+        "median_ae_vnd": result.get("test_median_ae"),
+        "r2": result.get("test_r2", result.get("r2")),
+        "n_test": result.get("n_test", metadata.get("test_size")),
+        "source": "metadata.all_results[best_model].holdout_test",
+    }
+
+
+def _cache_get(now: float) -> dict | None:
+    payload = _RESIDUALS_CACHE.get("payload")
+    if payload is None or now >= float(_RESIDUALS_CACHE.get("expires_at", 0)):
+        return None
+    cached = deepcopy(payload)
+    cached["cache"] = {
+        "status": "hit",
+        "ttl_seconds": RESIDUALS_CACHE_TTL_SECONDS,
+        "expires_in_seconds": round(float(_RESIDUALS_CACHE["expires_at"]) - now, 2),
+    }
+    return cached
+
+
+def _cache_set(payload: dict, now: float) -> dict:
+    cached_payload = deepcopy(payload)
+    cached_payload["cache"] = {
+        "status": "miss",
+        "ttl_seconds": RESIDUALS_CACHE_TTL_SECONDS,
+        "expires_in_seconds": RESIDUALS_CACHE_TTL_SECONDS,
+    }
+    _RESIDUALS_CACHE["payload"] = deepcopy(cached_payload)
+    _RESIDUALS_CACHE["expires_at"] = now + RESIDUALS_CACHE_TTL_SECONDS
+    return cached_payload
 
 
 def _vnd(v: float) -> str:
@@ -185,12 +303,18 @@ class PredictionExplainResponse(BaseModel):
 
 
 class ModelCompareItem(BaseModel):
+    model_version: str = ""
     model_name: str
+    trained_at: str | None = None
     mape_pct: float
     median_ae_vnd: float
     r2: float
     mae_vnd: float
     n_test: int
+    is_latest: bool = False
+    is_best_verified: bool = False
+    is_serving: bool = False
+    metric_source: str = "metadata.test_mape"
 
 
 class ModelCompareResponse(BaseModel):
@@ -215,7 +339,7 @@ def explain_global():
     if not cache:
         raise HTTPException(status_code=404, detail="SHAP cache not found. Run `python scripts/compute_shap_explanations.py` first.")
 
-    metadata = _get_latest_model_metadata()
+    metadata = _get_serving_model_metadata()
 
     importance = cache.get("feature_importance", [])
     beeswarm = cache.get("beeswarm_data", [])
@@ -287,7 +411,7 @@ def explain_prediction(property_id: int, db: Session = Depends(get_db)):
     steps.sort(key=lambda s: abs(s.contribution), reverse=True)
 
     predicted = base_value + sum(s.contribution for s in steps)
-    metadata = _get_latest_model_metadata()
+    metadata = _get_serving_model_metadata()
 
     return {
         "property_id": property_id,
@@ -300,7 +424,7 @@ def explain_prediction(property_id: int, db: Session = Depends(get_db)):
         "confidence_grade": None,
         "base_value": round(base_value, -6),
         "final_value": round(predicted, -6),
-        "model_version": metadata.get("trained_at", "unknown"),
+        "model_version": metadata.get("model_version", metadata.get("trained_at", "unknown")),
         "steps": steps[:30],
         "top_positive": [s.feature for s in steps if s.is_positive][:5],
         "top_negative": [s.feature for s in steps if not s.is_positive][:5],
@@ -308,7 +432,7 @@ def explain_prediction(property_id: int, db: Session = Depends(get_db)):
 
 
 @api_router.get("/explain/residuals", response_model=dict)
-def explain_residuals(db: Session = Depends(get_db)):
+def explain_residuals(force_refresh: bool = False, db: Session = Depends(get_db)):
     """
     Residual analysis — 4-tier metric system:
 
@@ -320,8 +444,15 @@ def explain_residuals(db: Session = Depends(get_db)):
        NOT silently excluded from official metric.
     Also includes: WAPE and MdAPE for stability.
     """
+    now = datetime.now().timestamp()
+    if not force_refresh:
+        cached = _cache_get(now)
+        if cached is not None:
+            return cached
+
     pipeline = _load_pipeline()
-    metadata = _get_latest_model_metadata()
+    metadata = _get_serving_model_metadata()
+    serving_test_metrics = _extract_serving_test_metrics(metadata)
 
     from sqlalchemy import or_, and_
     from src.ml.pipeline import ALLOWED_DISTRICTS
@@ -347,9 +478,7 @@ def explain_residuals(db: Session = Depends(get_db)):
     predictions = []
     for p in props:
         try:
-            feat = pipeline._build_features(p)
-            X = np.array([feat])
-            pred = float(pipeline.best_model.predict(X)[0])
+            pred = _predict_property_price(pipeline, p)
             actual = float(p.price)
             residual_pct = (pred - actual) / actual if actual > 0 else 0
             predictions.append({
@@ -504,10 +633,36 @@ def explain_residuals(db: Session = Depends(get_db)):
         for _, r in tier_grp.iterrows()
     }
 
-    return {
+    payload = {
         "status": "success",
-        "model_version": metadata.get("trained_at", "unknown"),
-        # Official metrics (primary)
+        "model_version": metadata.get("model_version", metadata.get("trained_at", "unknown")),
+        "model_serving_source": metadata.get("serving_source", "unknown"),
+        "metric_scope": {
+            "official_test": (
+                "Holdout test metrics from active model metadata. "
+                "This is the serving model quality number, e.g. the pinned 16.09% MAPE."
+            ),
+            "live_residual": (
+                "Diagnostics recomputed over the current PostgreSQL property table. "
+                "This can differ from holdout MAPE because the database contains train, validation, "
+                "new, noisy, and drifted records."
+            ),
+        },
+        # Official holdout-test metrics (headline model quality)
+        "official_test_mape_pct": round(float(serving_test_metrics["mape_pct"]), 2)
+        if serving_test_metrics.get("mape_pct") is not None else None,
+        "official_test_mae_vnd": round(float(serving_test_metrics["mae_vnd"]), -6)
+        if serving_test_metrics.get("mae_vnd") is not None else None,
+        "official_test_median_ae_vnd": round(float(serving_test_metrics["median_ae_vnd"]), -6)
+        if serving_test_metrics.get("median_ae_vnd") is not None else None,
+        "official_test_r2": round(float(serving_test_metrics["r2"]), 4)
+        if serving_test_metrics.get("r2") is not None else None,
+        "official_test_n": int(serving_test_metrics["n_test"])
+        if serving_test_metrics.get("n_test") is not None else None,
+        "official_test_metric_source": serving_test_metrics["source"],
+        # Live residual metrics (current database diagnostics)
+        "live_residual_mape_pct": round(official_mape, 2),
+        "live_residual_mae_vnd": round(official_mae, -6),
         "overall_mae_vnd": round(official_mae, -6),
         "overall_mape_pct": round(official_mape, 2),
         "overall_wape_pct": round(official_wape, 2),
@@ -515,7 +670,7 @@ def explain_residuals(db: Session = Depends(get_db)):
         "overall_median_ae_vnd": round(official_median_ae, -6),
         "overall_r2": round(official_r2, 4),
         "n_official": int(len(official)),
-        "price_threshold_note": "MAPE computed on records with actual_price >= 500M (aligned with ML pipeline)",
+        "price_threshold_note": "Live residual MAPE computed on current DB records with actual_price >= 500M; not the holdout-test MAPE.",
         # Raw metrics (debug only)
         "raw_mape_pct": round(raw_mape, 2),
         "raw_mae_vnd": round(raw_mae, -6),
@@ -532,6 +687,7 @@ def explain_residuals(db: Session = Depends(get_db)):
         "district_breakdown": district_breakdown,
         "tier_breakdown": tier_breakdown,
     }
+    return _cache_set(payload, now)
 
 
 @api_router.get("/explain/calibration", response_model=dict)
@@ -540,7 +696,7 @@ def explain_calibration(db: Session = Depends(get_db)):
     ICP (Interval Coverage Probability) by confidence band.
     Uses conformal calibration data from model metadata.
     """
-    metadata = _get_latest_model_metadata()
+    metadata = _get_serving_model_metadata()
     calib = metadata.get("conformal_calibration", {})
 
     bands = []
@@ -568,7 +724,8 @@ def explain_calibration(db: Session = Depends(get_db)):
 
     return {
         "status": "success",
-        "model_version": metadata.get("trained_at", "unknown"),
+        "model_version": metadata.get("model_version", "unknown"),
+        "metric_source": metadata.get("serving_source", "unknown"),
         "bands": [b.model_dump() for b in bands],
         "icp_80_actual": round(icp80, 1),
         "icp_90_actual": round(icp90, 1),
@@ -580,53 +737,32 @@ def explain_calibration(db: Session = Depends(get_db)):
 def explain_model_compare(db: Session = Depends(get_db)):
     """
     MAPE comparison across different model variants.
-    Loads all metadata files and compares.
+    Loads all metadata files and compares official test metrics.
     """
-    import re
-    all_metadata = (
-        list((PROJECT_ROOT / "models").glob("metadata_*.json")) +
-        list((PROJECT_ROOT / "src" / "models_archive").glob("metadata_*.json"))
-    )
-    def _meta_sort_key(p: Path):
-        m = re.search(r'metadata_(\d{8})_(\d{6})', p.name)
-        if m:
-            return (m.group(1), m.group(2))
-        return ("00000000", "000000")
-    all_metadata.sort(key=_meta_sort_key, reverse=True)
+    provenance = build_metric_provenance()
+    metrics = load_model_metrics()
+    latest_stamp = provenance["latest"]["stamp"] if provenance.get("latest") else None
+    serving_stamp = provenance["serving"]["stamp"] if provenance.get("serving") else None
+    best_stamp = provenance["best_verified"]["stamp"] if provenance.get("best_verified") else None
 
-    models = []
-    seen_names = set()
-    for mf in all_metadata[:8]:
-        with open(mf, encoding="utf-8") as f:
-            m = json.load(f)
-        results = m.get("all_results", {})
-        if not results:
-            continue
-        best_name = m.get("best_model", "unknown")
-        if best_name in seen_names:
-            continue
-        seen_names.add(best_name)
-        best_result = results.get(best_name, {})
-
-        # Find test metrics
-        test_mae = best_result.get("test_mae", best_result.get("mae", 0))
-        test_rmse = best_result.get("test_rmse", best_result.get("rmse", 0))
-        test_r2 = best_result.get("test_r2", best_result.get("r2", 0))
-        cv_mae = best_result.get("cv_mae_mean", 0)
-
-        # Estimate MAPE from MAE/median_price
-        median_price = 3_500_000_000
-        mape_est = (test_mae / median_price) * 100 if test_mae > 0 else 0
-        median_ae_est = test_mae * 0.5 if test_mae > 0 else 0
-
-        models.append(ModelCompareItem(
-            model_name=best_name,
-            mape_pct=round(min(mape_est, 100), 1),
-            median_ae_vnd=round(median_ae_est, -6),
-            r2=round(test_r2, 4),
-            mae_vnd=round(test_mae, -6),
-            n_test=m.get("test_size", 0),
-        ))
+    models = [
+        ModelCompareItem(
+            model_version=metric.stamp,
+            model_name=f"{metric.stamp} · {metric.model_name}",
+            trained_at=metric.trained_at,
+            mape_pct=round(metric.test_mape, 2) if metric.test_mape is not None else 0,
+            median_ae_vnd=round(metric.test_median_ae or 0, -6),
+            r2=round(metric.test_r2 or 0, 4),
+            mae_vnd=round(metric.test_mae or 0, -6),
+            n_test=metric.n_test or 0,
+            is_latest=metric.stamp == latest_stamp,
+            is_best_verified=metric.stamp == best_stamp,
+            is_serving=metric.stamp == serving_stamp,
+            metric_source="metadata.all_results[best_model].test_mape",
+        )
+        for metric in metrics
+        if metric.test_mae is not None and metric.test_mape is not None
+    ]
 
     if not models:
         raise HTTPException(status_code=404, detail="No model metadata found")
@@ -634,11 +770,12 @@ def explain_model_compare(db: Session = Depends(get_db)):
     models.sort(key=lambda m: m.mape_pct)
     return {
         "status": "success",
-        "model_version": all_metadata[0].stem.replace("metadata_", "") if all_metadata else "unknown",
+        "model_version": serving_stamp or latest_stamp or "unknown",
         "n_test": max(m.n_test for m in models),
         "models": [m.model_dump() for m in models],
         "best_model": models[0].model_name,
         "worst_model": models[-1].model_name,
+        "metric_provenance": provenance,
     }
 
 from src.backend.api_v2 import router

@@ -1,36 +1,93 @@
-version: "3.9"
-
 services:
-  # ---------------------------------------------------------------------------
-  # Backend — FastAPI + Uvicorn
-  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgis/postgis:18-3.6
+    container_name: avm-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - postgres-backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    networks:
+      - avm-private
+    shm_size: 256mb
+    stop_grace_period: 60s
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: avm-migrate
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY is required}
+      RESEARCH_LAB_ACCESS_CODE: ${RESEARCH_LAB_ACCESS_CODE:?RESEARCH_LAB_ACCESS_CODE is required}
+    command: ["python", "-m", "alembic", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - avm-private
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: "no"
+
   backend:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: avm-backend
-    ports:
-      - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./real_estate_avm.db
-      - RESEARCH_LAB_ACCESS_CODE=${RESEARCH_LAB_ACCESS_CODE:-avm-research-2026}
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-change-me-in-production}
-      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:8000}
-      - VALUATION_ENGINE_VERSION=v2.0.0
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:?POSTGRES_USER is required}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?JWT_SECRET_KEY is required}
+      RESEARCH_LAB_ACCESS_CODE: ${RESEARCH_LAB_ACCESS_CODE:?RESEARCH_LAB_ACCESS_CODE is required}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://127.0.0.1}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-http://127.0.0.1:8000/api/auth/google/callback}
+      GOOGLE_OAUTH_FRONTEND_REDIRECT: ${GOOGLE_OAUTH_FRONTEND_REDIRECT:-http://127.0.0.1:5173/}
+      GOOGLE_OAUTH_ALLOWED_REDIRECT_ORIGINS: ${GOOGLE_OAUTH_ALLOWED_REDIRECT_ORIGINS:-http://127.0.0.1:5173,http://localhost:5173}
+      VALUATION_ENGINE_VERSION: v2.0.0
+      ALLOW_LOCAL_ADMIN_SESSION: "0"
     volumes:
-      # Persist SQLite DB and models
-      - avm-data:/app
+      - uploads-data:/app/uploads
+      - reports-data:/app/reports
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/health"]
       interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - avm-private
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,noexec,nosuid
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
     restart: unless-stopped
 
-  # ---------------------------------------------------------------------------
-  # Frontend — React + Vite built into Nginx
-  # ---------------------------------------------------------------------------
   frontend:
     build:
       context: .
@@ -41,6 +98,11 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    networks:
+      - avm-private
+      - avm-public
+    security_opt:
+      - no-new-privileges:true
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:80/health"]
       interval: 30s
@@ -50,5 +112,12 @@ services:
     restart: unless-stopped
 
 volumes:
-  avm-data:
-    driver: local
+  postgres-data:
+  postgres-backups:
+  uploads-data:
+  reports-data:
+
+networks:
+  avm-private:
+    internal: true
+  avm-public:

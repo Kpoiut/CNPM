@@ -10,7 +10,7 @@ COPY frontend/package*.json ./
 RUN npm ci
 
 COPY frontend/ ./
-RUN npm run build
+RUN npm run build:check
 
 # =============================================================================
 # Production stage — Nginx serving static build

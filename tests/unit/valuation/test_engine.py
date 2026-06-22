@@ -291,7 +291,7 @@ class TestValuationEngine:
             ComparableRecord(
                 legacy_id=i, asset_type="TOWNHOUSE", province_city="Hà Nội",
                 district="Quận Cầu Giấy", area_m2=100.0, price=8_000_000_000,
-                price_per_m2=80_000_000, evidence_tier="E1" if i % 2 == 0 else "E2",
+                price_per_m2=80_000_000, evidence_tier="E5" if i % 2 == 0 else "E4",
                 legal_status="full"
             ) for i in range(10)
         ]

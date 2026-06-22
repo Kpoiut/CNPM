@@ -6,6 +6,8 @@ Production-grade: every action writes to DB.
 
 import hashlib
 import os
+import secrets
+import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -26,7 +28,10 @@ if not _env_secret:
     )
 SECRET_KEY = _env_secret
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "1440"))  # 24h default
+ISSUER = "real-estate-avm"
+# Access token NGẮN (mặc định 120 phút); refresh token dài hơn + xoay vòng.
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "120"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("JWT_REFRESH_DAYS", "14"))
 
 
 # --- Password hashing ---
@@ -47,19 +52,42 @@ def verify_password(plain: str, hashed: str) -> bool:
 # --- JWT tokens ---
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
-    """Create a JWT access token with expiry."""
+    """Create a JWT access token with expiry + jti + issuer (defense-in-depth)."""
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
-    to_encode.update({"exp": expire, "iat": datetime.utcnow()})
+    now = datetime.utcnow()
+    expire = now + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    to_encode.update({
+        "exp": expire,
+        "iat": now,
+        "iss": ISSUER,
+        "typ": "access",
+        "jti": uuid.uuid4().hex,
+    })
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 def decode_access_token(token: str) -> Optional[dict]:
-    """Decode and validate a JWT. Returns payload dict or None."""
+    """Decode + validate JWT (signature, exp, issuer; algorithm pinned). None on fail."""
     try:
-        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return jwt.decode(
+            token,
+            SECRET_KEY,
+            algorithms=[ALGORITHM],
+            issuer=ISSUER,
+            options={"verify_aud": False, "require": ["exp", "iat"]},
+        )
     except JWTError:
         return None
+
+
+def create_refresh_token() -> str:
+    """Random opaque refresh token (lưu DB dạng hash, có thể thu hồi + xoay vòng)."""
+    return secrets.token_urlsafe(48)
+
+
+def get_refresh_expiry() -> datetime:
+    """Expiry datetime for a new refresh token."""
+    return datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
 
 
 def hash_token(token: str) -> str:

@@ -1,98 +1,74 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import PrefillBanner from './PrefillBanner';
 import { ProvinceSelector, DistrictSelector } from '../ui/ProvinceSelector';
-
 import {
-  ROAD_CLASSES,
   OWNERSHIP_TYPES,
   FLOOD_RISK,
   ASSET_SUBTYPES,
 } from '../../constants/vnStrings';
 import {
   COMMON_HINTS,
-  HintOptions,
   LOCATION_HINTS,
   clearInvalidField,
-  displayOption,
-  inputToOptionCode,
-  mapEntriesToOptions,
   scrollInvalidField,
   submitLabel,
   toFloat,
   toInt,
+  useFormPrefill,
+  useIotAutoFill,
 } from './formHelpers';
+import {
+  OpenSection, CollapsibleSection, SelectField, SegmentedField, NumberField, TextField, CheckField, SliderField, FormProgress, IotAutoNote,
+} from './SmartFields';
 
 /**
- * LandIntakeForm — Asset-specific intake cho ĐẤT ĐÔ THỊ
- *
- * Fields riêng cho đất:
- * - polygon geometry (vẽ trên bản đồ)
- * - đa đỉnh, edge lengths
- * - nở hậu / thóp hậu score
- * - chiều sâu biến thiên
- * - hẻm phụ
- * - frontage/depth ratio
- *
- * Priority factors: LEGAL, ACCESS, GEOMETRY, FLOOD
+ * LandIntakeForm — ĐẤT ĐÔ THỊ (bản tinh gọn).
  */
-export default function LandIntakeForm({ onSubmit, loading, isAdmin = false, engineLabel }) {
-  const subtypeOptions = mapEntriesToOptions(ASSET_SUBTYPES.LAND_URBAN || {});
-  const ownershipOptions = mapEntriesToOptions(OWNERSHIP_TYPES);
-  const roadRiskOptions = COMMON_HINTS.riskLevels;
-  const floodOptions = mapEntriesToOptions(FLOOD_RISK);
+const WARD_HINTS = [...LOCATION_HINTS.hanoiWards, ...LOCATION_HINTS.hcmWards];
+const STREET_HINTS = [...LOCATION_HINTS.streets, ...LOCATION_HINTS.projects];
+
+export default function LandIntakeForm({ onSubmit, loading, isAdmin = false, engineLabel, prefill, onLiveChange }) {
   const [form, setForm] = useState({
-    // Asset identity
     asset_type: 'LAND_URBAN',
     asset_subtype: 'LAND_LEGAL_STREET',
-
-    // Location
     province_city: 'Hà Nội',
     district: '',
     ward: '',
     street_or_project: '',
     latitude: '',
     longitude: '',
-
-    // Parcel geometry (CRITICAL — đây là phần mới nhất)
     area_m2: '',
-    polygon_json: '',       // JSON array của [{lat, lng}]
+    polygon_json: '',
     frontage_m: '',
     frontage_road_class: '',
     depth_min_m: '',
     depth_max_m: '',
     taper_type: 'uniform',
-    nö_hậu_score: '0.8',  // 0→1, vuông = 1.0
-    thóp_hậu_score: '0.0', // 0→1, bị thắt = 1.0
+    'nö_hậu_score': '0.8',
+    'thóp_hậu_score': '0.0',
     irregularity_score: '0.0',
     corner_plot: false,
     alley_branch_count: '0',
-
-    // Legal
     ownership_type: 'FULL_OWNERSHIP',
     road_expansion_risk: 'none',
     dispute_flag: false,
     mortgage_flag: false,
-
-    // Environment
     flood_risk: 'unknown',
     cemetery_distance_m: '',
     pollution_score: '',
     river_distance_m: '',
     park_distance_m: '',
-
-    // Spiritual history
     death_history_flag: false,
     stigma_known: false,
     worship_site_distance_m: '',
-
-    // IoT / environmental
     noise_level: '',
   });
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  useFormPrefill(prefill, setForm);
+  const iotAuto = useIotAutoFill(form, setForm);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const payload = {
+  const buildPayload = () => ({
       ...form,
       area_m2: toFloat(form.area_m2, 0),
       latitude: toFloat(form.latitude),
@@ -100,8 +76,8 @@ export default function LandIntakeForm({ onSubmit, loading, isAdmin = false, eng
       frontage_m: toFloat(form.frontage_m),
       depth_min_m: toFloat(form.depth_min_m),
       depth_max_m: toFloat(form.depth_max_m),
-      nö_hậu_score: toFloat(form.nö_hậu_score, 0),
-      thóp_hậu_score: toFloat(form.thóp_hậu_score, 0),
+      'nö_hậu_score': toFloat(form['nö_hậu_score'], 0),
+      'thóp_hậu_score': toFloat(form['thóp_hậu_score'], 0),
       irregularity_score: toFloat(form.irregularity_score, 0),
       alley_branch_count: toInt(form.alley_branch_count, 0),
       cemetery_distance_m: toFloat(form.cemetery_distance_m),
@@ -110,276 +86,86 @@ export default function LandIntakeForm({ onSubmit, loading, isAdmin = false, eng
       park_distance_m: toFloat(form.park_distance_m),
       worship_site_distance_m: toFloat(form.worship_site_distance_m),
       noise_level: toFloat(form.noise_level),
-    };
-    onSubmit(payload);
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(buildPayload());
+  };
+
+  useEffect(() => { if (onLiveChange) onLiveChange(buildPayload()); }, [form]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onNoHau = (v) => {
+    set('nö_hậu_score', String(v));
+    set('thóp_hậu_score', String(Math.max(0, 1 - parseFloat(v)).toFixed(2)));
   };
 
   return (
     <form onSubmit={handleSubmit} onInvalid={scrollInvalidField} onInput={clearInvalidField} className="space-y-4">
-      <HintOptions id="land-wards" options={[...LOCATION_HINTS.hanoiWards, ...LOCATION_HINTS.hcmWards]} />
-      <HintOptions id="land-streets" options={[...LOCATION_HINTS.streets, ...LOCATION_HINTS.projects]} />
-      <HintOptions id="land-subtypes" options={subtypeOptions} />
-      <HintOptions id="land-ownership" options={ownershipOptions} />
-      <HintOptions id="land-road-risk" options={roadRiskOptions} />
-      <HintOptions id="land-flood" options={floodOptions} />
-      {/* Section: Vị trí */}
-      <div className="card">
-        <div className="card-header">
-          <span>Vị trí</span>
-        </div>
-        <div className="form-grid">
-          <div className="form-group">
-            <label className="form-label">Loại đất</label>
-            <input
-              className="form-input"
-              list="land-subtypes"
-              value={displayOption(subtypeOptions, form.asset_subtype)}
-              onChange={e => set('asset_subtype', inputToOptionCode(subtypeOptions, e.target.value))}
-              placeholder="VD: Đất mặt đường chính" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Tỉnh / TP</label>
-            <ProvinceSelector value={form.province_city} onChange={val => { set('province_city', val); set('district', '') }} className="form-select" />
-          </div>
-          <div className="form-group">
-            <label className="form-label required">Quận / Huyện *</label>
-            <DistrictSelector provinceCode={form.province_city} value={form.district} onChange={val => set('district', val)} className="form-select" required />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Phường / Xã</label>
-            <input className="form-input" list="land-wards" value={form.ward}
-              onChange={e => set('ward', e.target.value)} placeholder="VD: Xuân Thủy" />
-          </div>
-          <div className="form-group span-2">
-            <label className="form-label">Đường / Dự án</label>
-            <input className="form-input" list="land-streets" value={form.street_or_project}
-              onChange={e => set('street_or_project', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Vĩ độ (GPS)</label>
-            <input type="number" step="0.0001" className="form-input"
-              value={form.latitude} onChange={e => set('latitude', e.target.value)}
-              placeholder="VD: 21.0285" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Kinh độ (GPS)</label>
-            <input type="number" step="0.0001" className="form-input"
-              value={form.longitude} onChange={e => set('longitude', e.target.value)}
-              placeholder="VD: 105.8542" />
-          </div>
-        </div>
-      </div>
+      <PrefillBanner prefill={prefill} onPick={set} />
+      <FormProgress form={form} />
+      <IotAutoNote data={iotAuto} />
 
-      {/* Section: Hình dạng & Diện tích — CRITICAL cho đất */}
-      <div className="card">
-        <div className="card-header">
-          <span>Diện tích & Hình dạng đất</span>
+      <OpenSection title="Vị trí" hint="Mẹo: dùng “Định vị thông minh” để tự điền">
+        <SelectField label="Loại đất" value={form.asset_subtype} onChange={v => set('asset_subtype', v)} options={ASSET_SUBTYPES.LAND_URBAN} placeholder="— Chọn loại đất —" />
+        <div className="form-group">
+          <label className="form-label">Tỉnh / TP</label>
+          <ProvinceSelector value={form.province_city} onChange={val => { set('province_city', val); set('district', '') }} className="form-select" />
         </div>
-        <div className="form-grid">
-          <div className="form-group">
-            <label className="form-label required">Diện tích (m²)</label>
-            <input type="number" step="0.1" className="form-input" required
-              value={form.area_m2}
-              onChange={e => set('area_m2', e.target.value)}
-              placeholder="VD: 120.5" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Mặt tiền (m)</label>
-            <input type="number" step="0.1" className="form-input"
-              value={form.frontage_m}
-              onChange={e => set('frontage_m', e.target.value)}
-              placeholder="VD: 5.0" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Chiều sâu tối thiểu (m)</label>
-            <input type="number" step="0.1" className="form-input"
-              value={form.depth_min_m}
-              onChange={e => set('depth_min_m', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Chiều sâu tối đa (m)</label>
-            <input type="number" step="0.1" className="form-input"
-              value={form.depth_max_m}
-              onChange={e => set('depth_max_m', e.target.value)} />
-          </div>
-          {/* Nở hậu / thóp hậu slider */}
-          <div className="span-2">
-            <label className="form-label">
-              Hình dạng: Nở hậu → Thóp hậu
-            </label>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Nở hậu (vuông)</span>
-              <input type="range" min="0" max="1" step="0.05"
-                value={form.nö_hậu_score}
-                onChange={e => {
-                  const v = parseFloat(e.target.value);
-                  set('nö_hậu_score', String(v));
-                  set('thóp_hậu_score', String(Math.max(0, 1 - v)));
-                }}
-                style={{ flex: 1 }}
-              />
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Thóp hậu (bị thắt)</span>
-            </div>
-            <div style={{ textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-              Nở hậu: {form.nö_hậu_score} | Thóp hậu: {form.thóp_hậu_score}
-            </div>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Điểm vuông vắn (0→1)</label>
-            <input type="range" min="0" max="1" step="0.05"
-              value={form.nö_hậu_score}
-              onChange={e => set('nö_hậu_score', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Điểm méo (0→1)</label>
-            <input type="range" min="0" max="1" step="0.05"
-              value={form.irregularity_score}
-              onChange={e => set('irregularity_score', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">
-              <input type="checkbox" checked={form.corner_plot}
-                onChange={e => set('corner_plot', e.target.checked)} />
-              {' '}Đất góc (2+ mặt tiền)
-            </label>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Số hẻm phụ tách ra</label>
-            <input type="number" min="0" className="form-input"
-              value={form.alley_branch_count}
-              onChange={e => set('alley_branch_count', e.target.value)} />
-          </div>
-          <div className="form-group span-2">
-            <label className="form-label">Tọa độ polygon (JSON — cho map drawing)</label>
-            <textarea className="form-input" rows={3}
-              value={form.polygon_json}
-              onChange={e => set('polygon_json', e.target.value)}
-              placeholder='[{"lat": 21.0285, "lng": 105.8542}, ...]' />
-          </div>
+        <div className="form-group">
+          <label className="form-label required">Quận / Huyện *</label>
+          <DistrictSelector provinceCode={form.province_city} value={form.district} onChange={val => set('district', val)} className="form-select" required />
         </div>
-      </div>
+        <TextField label="Phường / Xã" value={form.ward} onChange={v => set('ward', v)} options={WARD_HINTS} placeholder="VD: Xuân Thủy" />
+        <TextField label="Đường / Dự án" value={form.street_or_project} onChange={v => set('street_or_project', v)} options={STREET_HINTS} span />
+        <NumberField label="Vĩ độ (GPS)" value={form.latitude} onChange={v => set('latitude', v)} step="0.0001" placeholder="Tự điền từ bản đồ" />
+        <NumberField label="Kinh độ (GPS)" value={form.longitude} onChange={v => set('longitude', v)} step="0.0001" placeholder="Tự điền từ bản đồ" />
+      </OpenSection>
 
-      {/* Section: Pháp lý — CRITICAL cho market valuation */}
-      <div className="card">
-        <div className="card-header">
-          <span>Pháp lý & Quy hoạch
-            <span className="text-xs text-muted" style={{ marginLeft: 'auto' }}>
-              (Impact: ±5-15%)
-            </span>
-          </span>
-        </div>
-        <div className="form-grid">
-          <div className="form-group">
-            <label className="form-label required">Pháp lý</label>
-            <input className="form-input" list="land-ownership" required
-              value={displayOption(ownershipOptions, form.ownership_type)}
-              onChange={e => set('ownership_type', inputToOptionCode(ownershipOptions, e.target.value))}
-              placeholder="VD: Sổ đỏ/Sổ hồng đầy đủ" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Quy hoạch mở đường</label>
-            <input className="form-input" list="land-road-risk"
-              value={displayOption(roadRiskOptions, form.road_expansion_risk)}
-              onChange={e => set('road_expansion_risk', inputToOptionCode(roadRiskOptions, e.target.value))}
-              placeholder="VD: Thấp / Trung bình / Cao" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">
-              <input type="checkbox" checked={form.dispute_flag}
-                onChange={e => set('dispute_flag', e.target.checked)} />
-              {' '}Đang có tranh chấp
-            </label>
-          </div>
-          <div className="form-group">
-            <label className="form-label">
-              <input type="checkbox" checked={form.mortgage_flag}
-                onChange={e => set('mortgage_flag', e.target.checked)} />
-              {' '}Đang thế chấp ngân hàng
-            </label>
-          </div>
-        </div>
-      </div>
+      <OpenSection title="Diện tích & Hình dạng đất">
+        <NumberField label="Diện tích (m²)" value={form.area_m2} onChange={v => set('area_m2', v)} required step="0.1" placeholder="VD: 120.5" />
+        <NumberField label="Mặt tiền (m)" value={form.frontage_m} onChange={v => set('frontage_m', v)} step="0.1" placeholder="VD: 5.0" suggestions={[4, 5, 6, 8]} />
+        <NumberField label="Chiều sâu tối thiểu (m)" value={form.depth_min_m} onChange={v => set('depth_min_m', v)} step="0.1" />
+        <NumberField label="Chiều sâu tối đa (m)" value={form.depth_max_m} onChange={v => set('depth_max_m', v)} step="0.1" />
+        <SegmentedField span
+          label="📐 Hình dạng thửa đất"
+          value={form['nö_hậu_score']}
+          onChange={onNoHau}
+          options={[['0.1', '🔻 Thóp hậu (hẹp dần về sau)'], ['0.6', '⬛ Vuông vắn đều'], ['1', '🔺 Nở hậu (rộng dần về sau)']]}
+          hint="Nở hậu = hậu đất rộng hơn mặt tiền (quan niệm tụ tài → giá tốt hơn). Thóp hậu = hẹp dần về sau → thường bị trừ giá."
+        />
+        <SegmentedField
+          label="📏 Độ vuông vức"
+          value={form.irregularity_score}
+          onChange={v => set('irregularity_score', v)}
+          options={[['0', '⬛ Vuông vức'], ['0.5', '◇ Hơi méo'], ['1', '⬡ Méo / đa giác']]}
+          hint="Đất méo, nhiều cạnh khó bố trí xây dựng → thường bị trừ giá."
+        />
+        <NumberField label="Số hẻm phụ tách ra" value={form.alley_branch_count} onChange={v => set('alley_branch_count', v)} min="0" />
+        <CheckField label="Đất góc (2+ mặt tiền)" checked={form.corner_plot} onChange={v => set('corner_plot', v)} />
+      </OpenSection>
 
-      {/* Section: Môi trường & Hạ tầng */}
-      <div className="card">
-        <div className="card-header">
-          <span>Môi trường & Hạ tầng
-            <span className="text-xs text-muted" style={{ marginLeft: 'auto' }}>
-              (Impact: ±3-16%)
-            </span>
-          </span>
-        </div>
-        <div className="form-grid">
-          <div className="form-group">
-            <label className="form-label">Nguy cơ ngập</label>
-            <input className="form-input" list="land-flood"
-              value={displayOption(floodOptions, form.flood_risk)}
-              onChange={e => set('flood_risk', inputToOptionCode(floodOptions, e.target.value))}
-              placeholder="VD: Không rõ / Không ngập / Ngập nhẹ" />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Cách nghĩa trang (m)</label>
-            <input type="number" className="form-input"
-              value={form.cemetery_distance_m}
-              onChange={e => set('cemetery_distance_m', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Cách sông (m)</label>
-            <input type="number" className="form-input"
-              value={form.river_distance_m}
-              onChange={e => set('river_distance_m', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Cách công viên (m)</label>
-            <input type="number" className="form-input"
-              value={form.park_distance_m}
-              onChange={e => set('park_distance_m', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Điểm ô nhiễm (0→1)</label>
-            <input type="range" min="0" max="1" step="0.1"
-              value={form.pollution_score}
-              onChange={e => set('pollution_score', e.target.value)} />
-            <div className="text-xs text-muted text-right">
-              {form.pollution_score || '0'}
-            </div>
-          </div>
-        </div>
-      </div>
+      <OpenSection title="Pháp lý & Quy hoạch" hint="Impact ±5-15%">
+        <SelectField label="Pháp lý" value={form.ownership_type} onChange={v => set('ownership_type', v)} options={OWNERSHIP_TYPES} required />
+        <SelectField label="Quy hoạch mở đường" value={form.road_expansion_risk} onChange={v => set('road_expansion_risk', v)} options={COMMON_HINTS.riskLevels} />
+        <CheckField label="Đang có tranh chấp" checked={form.dispute_flag} onChange={v => set('dispute_flag', v)} />
+        <CheckField label="Đang thế chấp ngân hàng" checked={form.mortgage_flag} onChange={v => set('mortgage_flag', v)} />
+      </OpenSection>
 
-      {/* Section: Tâm linh (Fit layer, không ảnh hưởng market_value */}
-      <div className="card" style={{ borderColor: 'var(--warning-border)' }}>
-        <div className="card-header" style={{ color: 'var(--warning-dark)' }}>
-          Lịch sử tâm linh
-          <span className="text-xs" style={{ marginLeft: 'auto', opacity: 0.7 }}>
-            Lớp FIT — không ảnh hưởng giá thị trường
-          </span>
-        </div>
-        <div className="form-grid">
-          <div className="form-group">
-            <label className="form-label">
-              <input type="checkbox"
-                checked={form.death_history_flag}
-                onChange={e => set('death_history_flag', e.target.checked)} />
-              {' '}Có tử vong trong nhà/đất
-            </label>
-          </div>
-          <div className="form-group">
-            <label className="form-label">
-              <input type="checkbox"
-                checked={form.stigma_known}
-                onChange={e => set('stigma_known', e.target.checked)} />
-              {' '}Điểm nhạy cảm đã biết trong khu vực
-            </label>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Cách nơi thờ cúng (m)</label>
-            <input type="number" className="form-input"
-              value={form.worship_site_distance_m}
-              onChange={e => set('worship_site_distance_m', e.target.value)} />
-          </div>
-        </div>
-      </div>
+      <CollapsibleSection title="Môi trường & Hạ tầng" hint="Impact ±3-16%">
+        <SelectField label="Nguy cơ ngập" value={form.flood_risk} onChange={v => set('flood_risk', v)} options={FLOOD_RISK} />
+        <NumberField label="Cách nghĩa trang (m)" value={form.cemetery_distance_m} onChange={v => set('cemetery_distance_m', v)} />
+        <NumberField label="Cách sông (m)" value={form.river_distance_m} onChange={v => set('river_distance_m', v)} />
+        <NumberField label="Cách công viên (m)" value={form.park_distance_m} onChange={v => set('park_distance_m', v)} />
+        <SegmentedField label="🌫️ Mức ô nhiễm" value={form.pollution_score} onChange={v => set('pollution_score', v)} options={[['0', '🌿 Sạch'], ['0.5', '😐 Trung bình'], ['1', '🏭 Ô nhiễm']]} />
+        <NumberField label="Độ ồn môi trường (dB) — IoT" value={form.noise_level} onChange={v => set('noise_level', v)} step="0.1" hint="Tự điền từ bản đồ" />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Lịch sử tâm linh" hint="Lớp FIT — không ảnh hưởng giá thị trường" accent="var(--warning-border)">
+        <CheckField label="Có tử vong trong nhà/đất" checked={form.death_history_flag} onChange={v => set('death_history_flag', v)} />
+        <CheckField label="Điểm nhạy cảm đã biết trong khu vực" checked={form.stigma_known} onChange={v => set('stigma_known', v)} />
+        <NumberField label="Cách nơi thờ cúng (m)" value={form.worship_site_distance_m} onChange={v => set('worship_site_distance_m', v)} />
+      </CollapsibleSection>
 
       <button type="submit" className="btn btn-primary btn-lg btn-full" disabled={loading}>
         {submitLabel(isAdmin, loading, engineLabel)}

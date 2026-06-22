@@ -20,12 +20,14 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from datetime import datetime
+from functools import lru_cache
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
 from src.domain.valuation.engine import AssetInput
 from src.config.province_config import SCOPE_DISTRICTS, normalize_province
+from src.domain.evidence_tier import evidence_weight
 
 
 # =============================================================================
@@ -470,8 +472,6 @@ class ImpactEngine:
         target_lat = inp.latitude or 21.0
         target_lng = inp.longitude or 105.8
 
-        tier_weights = {"E1": 1.0, "E2": 0.85, "E3": 0.65, "E4": 0.35, "E5": 0.15}
-
         for r in records:
             # Location
             loc_w = 1.0 if r.district == inp.district else 0.7
@@ -493,7 +493,7 @@ class ImpactEngine:
             road_w = 1.0
 
             # Evidence tier
-            tier_w = tier_weights.get(r.evidence_tier, 0.3)
+            tier_w = evidence_weight(r.evidence_tier)
 
             r.weight = loc_w * type_w * area_w * rec_w * legal_w * road_w * tier_w
 
@@ -986,6 +986,11 @@ class ImpactEngine:
         """Get field value from AssetInput."""
         return getattr(inp, field_code, None)
 
+    def _is_missing(self, inp: AssetInput, field_code: str) -> bool:
+        """Return whether an input field is absent for confidence/scenario logic."""
+        value = self._get_input_value(inp, field_code)
+        return value is None or value == 0 or value == "" or value is False
+
     def _determine_direction(self, delta_pct: float, semantics: str) -> str:
         """Determine direction based on delta and semantics."""
         if abs(delta_pct) < 0.5:
@@ -1141,18 +1146,24 @@ class ImpactEngine:
             fmv_mid=current_price,
             confidence=round(current_confidence, 3),
             confidence_grade=current_grade,
-            interval_width_pct=round(current_interval * 100, 1),
+            interval_width_pct=round(current_interval * 200, 1),
             filled_fields=self._get_filled_fields(inp),
             uncertainty_reduction_pct=0.0,
         )
 
-        # Full-info scenario: fill missing fields with median from pool
+        # Scenario cards are uncertainty projections for the same point estimate.
+        # Missing-field effects are already reflected in the current FMV; these
+        # cards must not move the mid price or users see different "fair values"
+        # for the same asset.
+        full_info_price = current_price
+
+        # Full-info scenario: fill missing fields with median from pool. This
+        # reduces uncertainty but keeps the same FMV mid.
         full_info_confidence = min(
-            sample_cap,
-            current_confidence + min(total_conf_loss, 20) / 100
+            0.82 if sample_count >= 300 else 0.62,
+            max(current_confidence + 0.10, current_confidence + min(total_conf_loss, 26) / 100)
         )
         full_info_interval = self._confidence_interval(full_info_confidence)
-        full_info_price = current_price  # Same point estimate
         full_info_low = int(full_info_price * (1 - full_info_interval))
         full_info_high = int(full_info_price * (1 + full_info_interval))
         full_info_uncertainty_reduction = round(
@@ -1167,16 +1178,19 @@ class ImpactEngine:
             fmv_mid=full_info_price,
             confidence=round(full_info_confidence, 3),
             confidence_grade=self._confidence_to_grade(full_info_confidence),
-            interval_width_pct=round(full_info_interval * 100, 1),
+            interval_width_pct=round(full_info_interval * 200, 1),
             filled_fields=["Tất cả các trường"],
             uncertainty_reduction_pct=full_info_uncertainty_reduction,
         )
 
-        # Max credibility scenario: chỉ đạt A nếu pool thực sự đủ 800 mẫu gần.
-        max_confidence = 0.95 if sample_count >= 800 else min(sample_cap, current_confidence + 0.08)
+        # Max credibility scenario is explicitly hypothetical: best evidence
+        # tier, verified legal/GPS, and tighter comparable support. It represents
+        # the maximum credibility envelope, not a price premium.
+        max_price = current_price
+        max_confidence = 0.95
         max_interval = self._confidence_interval(max_confidence)
-        max_low = int(current_price * (1 - max_interval))
-        max_high = int(current_price * (1 + max_interval))
+        max_low = int(max_price * (1 - max_interval))
+        max_high = int(max_price * (1 + max_interval))
         max_uncertainty_reduction = round(
             (current_interval - max_interval) / max(current_interval, 0.001) * 100, 1
         )
@@ -1186,18 +1200,25 @@ class ImpactEngine:
             scenario_type="MAX_CREDIBILITY",
             fmv_low=max_low,
             fmv_high=max_high,
-            fmv_mid=current_price,
+            fmv_mid=max_price,
             confidence=round(max_confidence, 3),
             confidence_grade=self._confidence_to_grade(max_confidence),
-            interval_width_pct=round(max_interval * 100, 1),
+            interval_width_pct=round(max_interval * 200, 1),
             filled_fields=[
-                "Tất cả + GPS + Pháp lý verified + Tier E1/E2",
-                "Cần >=800 mẫu gần để đạt A"
+                "Tất cả + GPS + Pháp lý verified + Tier E4/E5",
             ],
             uncertainty_reduction_pct=max_uncertainty_reduction,
         )
 
         return current, full_info, max_cred
+
+    def _scenario_missing_price_shift(self, inp: AssetInput, pool: ComparablePool) -> float:
+        """Estimate the price shift implied by missing fields for what-if cards."""
+        shift = 0.0
+        for fname in MISSING_CONFIDENCE_PENALTY:
+            if self._is_missing(inp, fname):
+                shift += self._missing_price_effect(fname, pool)
+        return max(-12.0, min(8.0, shift))
 
     def _confidence_to_grade(self, conf: float) -> str:
         if conf >= 0.85:
@@ -1210,13 +1231,8 @@ class ImpactEngine:
 
     def _confidence_interval(self, confidence: float) -> float:
         """Return interval ratio based on confidence."""
-        if confidence >= 0.85:
-            return 0.05
-        elif confidence >= 0.70:
-            return 0.08
-        elif confidence >= 0.55:
-            return 0.12
-        return 0.18
+        confidence = max(0.0, min(1.0, confidence))
+        return max(0.045, min(0.20, 0.22 - confidence * 0.17))
 
     def _get_filled_fields(self, inp: AssetInput) -> List[str]:
         """Get list of filled fields."""
@@ -1271,7 +1287,7 @@ class ImpactEngine:
                 fmv_mid=predicted,
                 confidence=0.65,
                 confidence_grade="B",
-                interval_width_pct=10.0,
+                interval_width_pct=20.0,
                 filled_fields=[],
                 uncertainty_reduction_pct=33.0,
             ),
@@ -1283,7 +1299,7 @@ class ImpactEngine:
                 fmv_mid=predicted,
                 confidence=0.95,
                 confidence_grade="A",
-                interval_width_pct=5.0,
+                interval_width_pct=10.0,
                 filled_fields=[],
                 uncertainty_reduction_pct=67.0,
             ),

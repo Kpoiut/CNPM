@@ -1,5 +1,6 @@
 import React from 'react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell, ResponsiveContainer, ReferenceLine } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell, ReferenceLine } from 'recharts'
+import ChartWrapper from '../ui/ChartWrapper'
 
 function CustomTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null
@@ -41,11 +42,14 @@ export default function ModelComparisonChart({ data, height = 300, showAllMetric
     r2: m.r2 * 100,
     mae_vnd: m.mae_vnd,
     n_test: m.n_test,
+    is_serving: Boolean(m.is_serving),
+    is_latest: Boolean(m.is_latest),
+    is_best_verified: Boolean(m.is_best_verified),
   }))
 
   if (showAllMetrics) {
     return (
-      <ResponsiveContainer width="100%" height={height}>
+      <ChartWrapper height={height}>
         <BarChart data={chartData} margin={{ top: 5, right: 10, left: 20, bottom: 25 }} barGap={2}>
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
           <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'var(--text-muted)' }} axisLine={{ stroke: '#334155' }} tickLine={false} angle={-20} textAnchor="end" />
@@ -57,12 +61,12 @@ export default function ModelComparisonChart({ data, height = 300, showAllMetric
           <Bar yAxisId="left" dataKey="mape_pct" name="MAPE %" fill="#ef4444" opacity={0.8} radius={[3, 3, 0, 0]} />
           <Bar yAxisId="right" dataKey="r2" name="R2 %" fill="#22c55e" opacity={0.8} radius={[3, 3, 0, 0]} />
         </BarChart>
-      </ResponsiveContainer>
+      </ChartWrapper>
     )
   }
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
+    <ChartWrapper height={height}>
       <BarChart data={chartData} margin={{ top: 5, right: 10, left: -5, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
         <XAxis dataKey="name" tick={{ fontSize: 9, fill: 'var(--text-muted)' }} axisLine={{ stroke: '#334155' }} tickLine={false} />
@@ -70,11 +74,12 @@ export default function ModelComparisonChart({ data, height = 300, showAllMetric
         <Tooltip content={<CustomTooltip />} />
         <ReferenceLine y={15} stroke="#f59e0b" strokeDasharray="3 3" />
         <Bar dataKey="mape_pct" name="MAPE %" radius={[3, 3, 0, 0]}>
-          {chartData.map((entry, i) => (
-            <Cell key={i} fill={entry.mape_pct < 15 ? '#22c55e' : entry.mape_pct < 25 ? '#f59e0b' : '#ef4444'} opacity={0.8} />
-          ))}
+          {chartData.map((entry, i) => {
+            const fill = entry.is_serving ? '#38bdf8' : entry.mape_pct < 15 ? '#22c55e' : entry.mape_pct < 25 ? '#f59e0b' : '#ef4444'
+            return <Cell key={i} fill={fill} opacity={0.85} />
+          })}
         </Bar>
       </BarChart>
-    </ResponsiveContainer>
+    </ChartWrapper>
   )
 }

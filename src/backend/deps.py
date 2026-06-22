@@ -8,6 +8,7 @@ Thread-safe, lazily-loaded, cached singleton.
 from __future__ import annotations
 
 import pickle
+import json
 import os
 import secrets
 from functools import lru_cache
@@ -44,11 +45,9 @@ def get_cached_model() -> Dict[str, Any]:
     """
     Load và cache ML model pipeline.
 
-    Priority:
-    1. Latest model_*.pkl trong src/models/
-    2. src/models/model_pipeline.pkl
-    3. Legacy models/randomforest_model.pkl
-    4. Raise HTTPException 503
+    Production policy: chỉ load artifact được pin bởi ACTIVE_MODEL.json.
+    Không tự chọn latest candidate vì điều đó có thể phục vụ model retrain kém
+    hơn production chỉ do timestamp mới hơn.
 
     Thread-safe: chỉ load 1 lần, reuse cho mọi request.
     """
@@ -58,52 +57,68 @@ def get_cached_model() -> Dict[str, Any]:
 
     project_root = Path(__file__).parent.parent.parent
 
-    # 1. New pipeline models (model_YYYYMMDD_HHMMSS.pkl)
-    # models/ is at the project root (same level as src/), not under src/
     model_dir = project_root / "models"
-    if model_dir.exists():
-        pkl_files = sorted(model_dir.glob("model_*.pkl"), key=lambda f: f.stat().st_mtime, reverse=True)
-        for pkl_path in pkl_files:
-            try:
-                with open(pkl_path, "rb") as f:
-                    data = pickle.load(f)
-                _cached_model = _build_model_cache(data)
-                return _cached_model
-            except Exception:
-                continue
+    _cached_model = _load_active_model(model_dir)
+    return _cached_model
 
-    # 2. Pipeline bundle
-    pipeline_path = model_dir / "model_pipeline.pkl"
-    if pipeline_path.exists():
-        try:
-            with open(pipeline_path, "rb") as f:
-                data = pickle.load(f)
-            _cached_model = _build_model_cache(data)
-            return _cached_model
-        except Exception:
-            pass
 
-    # 3. Legacy
-    legacy_path = project_root / "models" / "randomforest_model.pkl"
-    if legacy_path.exists():
-        try:
-            with open(legacy_path, "rb") as f:
-                data = {"model": pickle.load(f), "metadata": {}, "pipeline": None}
-            _cached_model = data
-            return _cached_model
-        except Exception:
-            pass
+def _load_active_model(model_dir: Path) -> Dict[str, Any]:
+    """Load đúng artifact được pin bởi ACTIVE_MODEL.json hoặc fail closed."""
+    pointer = model_dir / "ACTIVE_MODEL.json"
+    if not pointer.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ACTIVE_MODEL.json is required before serving predictions.",
+        )
 
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail="ML model not found. Run: python scripts/retrain_v2.py",
-    )
+    try:
+        active = json.loads(pointer.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ACTIVE_MODEL.json is invalid; refusing to serve an unpinned model.",
+        ) from exc
+
+    stamp = str(active.get("stamp") or "").strip()
+    model_file = str(active.get("model_file") or "").strip()
+    if not stamp or model_file != f"model_{stamp}.pkl":
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ACTIVE_MODEL.json must point to the exact model_<stamp>.pkl artifact.",
+        )
+
+    active_path = (model_dir / model_file).resolve()
+    model_root = model_dir.resolve()
+    if active_path.parent != model_root:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ACTIVE_MODEL.json contains an unsafe artifact path.",
+        )
+    if not active_path.is_file():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ACTIVE_MODEL artifact is missing; refusing to select latest candidate.",
+        )
+
+    try:
+        with active_path.open("rb") as f:
+            data = pickle.load(f)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="ACTIVE_MODEL artifact cannot be loaded; refusing to fallback to candidates.",
+        ) from exc
+
+    return _build_model_cache(data)
 
 
 def _build_model_cache(data: Dict[str, Any]) -> Dict[str, Any]:
     """Build standardized model cache dict from pipeline pickle."""
+    metadata = data.get("metadata", {}) or {}
+    version = data.get("version") or metadata.get("model_version")
     return {
         "model": data.get("model"),
+        "model_version": version,
         "feature_cols": data.get("feature_names", []),
         "scaler": data.get("scaler"),
         "quantile_models": data.get("quantile_models", {}),
@@ -112,9 +127,9 @@ def _build_model_cache(data: Dict[str, Any]) -> Dict[str, Any]:
         "confidence_best_model_name": data.get("confidence_best_model_name"),
         "confidence_feature_names": data.get("confidence_feature_names", []),
         "confidence_metadata": data.get("confidence_metadata", {}),
-        "metadata": data.get("metadata", {}),
+        "metadata": metadata,
         "metrics": (
-            data.get("metadata", {})
+            metadata
             .get("all_results", {})
             .get(data.get("best_model_name", "GradientBoosting"), {})
         ),

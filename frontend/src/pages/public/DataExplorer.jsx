@@ -233,6 +233,8 @@ export default function DataExplorer() {
     return r
   }, [records, filters])
 
+  const filteredRecords = filtered
+
   const sorted = useMemo(() => {
     return [...filtered].sort((a, b) => {
       let av = a[sortCol], bv = b[sortCol]
@@ -244,8 +246,17 @@ export default function DataExplorer() {
     })
   }, [filtered, sortCol, sortDir])
 
+  const summary = useMemo(() => ({
+    traceReady: filteredRecords.filter(r => r.source_url || r.data_origin_type === 'self_collected').length,
+    withIot: filteredRecords.filter(r => r.noise_level != null || r.temperature != null || r.humidity != null).length,
+  }), [filteredRecords])
+
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
   const paginated = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  useEffect(() => {
+    if (page > totalPages) setPage(1)
+  }, [page, totalPages])
 
   const handleSort = useCallback((col) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -253,7 +264,10 @@ export default function DataExplorer() {
     setPage(1)
   }, [sortCol])
 
-  const clearFilters = () => setFilters({ search: '', property_type: '', province_city: '', source_domain: '', data_origin: '', evidence_tier: '', status: '' })
+  const clearFilters = () => {
+    setFilters({ search: '', property_type: '', province_city: '', source_domain: '', data_origin: '', evidence_tier: '', status: '' })
+    setPage(1)
+  }
 
   const viewProvenance = (rec) => { setSelectedRecord(rec); setShowProvModal(true) }
   const confirmDelete = (rec) => { setDeleteTarget(rec); setShowDeleteModal(true) }
@@ -441,11 +455,11 @@ export default function DataExplorer() {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={11} style={{ textAlign: 'center', padding: '2rem' }}>
+                <tr><td colSpan={12} style={{ textAlign: 'center', padding: '2rem' }}>
                   <div className="spinner" style={{ margin: '0 auto' }}></div>
                 </td></tr>
               ) : paginated.length === 0 ? (
-                <tr><td colSpan={11} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                <tr><td colSpan={12} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                   Không có bản ghi phù hợp
                 </td></tr>
               ) : paginated.map(rec => {

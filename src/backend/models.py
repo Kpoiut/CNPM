@@ -1,6 +1,20 @@
 """SQLAlchemy models for Real Estate AVM - Research Standard Version."""
 
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, Date, Text, Enum, ForeignKey
+from sqlalchemy import (
+    JSON,
+    BigInteger,
+    Boolean,
+    Column,
+    Date,
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.sql import func
 from src.backend.database import Base
 import enum
@@ -115,7 +129,7 @@ class Property(Base):
     # =====================
     source_name = Column(String(200), nullable=False)  # Tên nguồn
     source_url = Column(String(500))  # Link gốc
-    source_page_title = Column(String(255))  # Tiêu đề trang nguồn
+    source_page_title = Column(Text)  # Tiêu đề trang nguồn
     source_collected_at = Column(DateTime)  # Thời điểm lấy từ nguồn
     source_access_method = Column(String(50))  # Cách truy cập (manual, api, scrape)
     source_screenshot_path = Column(String(255))  # Đường dẫn ảnh chụp màn hình
@@ -133,8 +147,7 @@ class Property(Base):
     collection_attempt_count = Column(Integer, default=0)  # Số lần thử thu thập
     last_collection_attempt = Column(DateTime)  # Lần thử cuối
 
-    # Verification
-    verification_status = Column(String(50), default="unverified")
+    # Verification details (status is declared once in DATA ORIGIN & STATUS)
     verification_note = Column(Text)
     verified_by = Column(String(100))
     verified_at = Column(DateTime)
@@ -234,6 +247,62 @@ class Property(Base):
         return f"<Property(id={self.id}, {self.property_type} in {self.district}, status={self.record_status})>"
 
 
+class DatasetVersion(Base):
+    """Immutable description of the records used by one or more training runs."""
+
+    __tablename__ = "dataset_versions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    snapshot_key = Column(String(100), nullable=False, unique=True, index=True)
+    source_table = Column(String(100), nullable=False, default="properties")
+    record_count = Column(Integer, nullable=False)
+    eligible_record_count = Column(Integer)
+    selection_query = Column(Text)
+    checksum_sha256 = Column(String(64), index=True)
+    notes = Column(Text)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+
+class TrainingRun(Base):
+    """One reproducible ML training execution linked to a dataset snapshot."""
+
+    __tablename__ = "training_runs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    run_version = Column(String(50), nullable=False, unique=True, index=True)
+    dataset_version_id = Column(Integer, ForeignKey("dataset_versions.id"), nullable=False, index=True)
+    parent_training_run_id = Column(Integer, ForeignKey("training_runs.id"), nullable=True)
+    status = Column(String(30), nullable=False, default="completed", index=True)
+    algorithm = Column(String(120))
+    random_seed = Column(Integer)
+    train_record_count = Column(Integer)
+    validation_record_count = Column(Integer)
+    test_record_count = Column(Integer)
+    started_at = Column(DateTime)
+    finished_at = Column(DateTime)
+    artifact_path = Column(String(500))
+    metadata_path = Column(String(500))
+    notes = Column(Text)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+
+class TrainingMetric(Base):
+    """Long-form metrics keep every split/metric comparable across cycles."""
+
+    __tablename__ = "training_metrics"
+    __table_args__ = (
+        UniqueConstraint("training_run_id", "split_name", "metric_name", name="uq_training_metric"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    training_run_id = Column(Integer, ForeignKey("training_runs.id", ondelete="CASCADE"), nullable=False, index=True)
+    split_name = Column(String(30), nullable=False)
+    metric_name = Column(String(50), nullable=False, index=True)
+    metric_value = Column(Float, nullable=False)
+    is_primary = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+
 class ModelVersion(Base):
     """Model version tracking (Quy tắc 8)"""
     __tablename__ = "model_versions"
@@ -241,6 +310,8 @@ class ModelVersion(Base):
     id = Column(Integer, primary_key=True, index=True)
     model_version = Column(String(50), nullable=False)
     model_name = Column(String(100))
+    training_run_id = Column(Integer, ForeignKey("training_runs.id"), nullable=True, index=True)
+    parent_model_version_id = Column(Integer, ForeignKey("model_versions.id"), nullable=True)
 
     # Training window
     train_start_date = Column(DateTime)
@@ -254,11 +325,21 @@ class ModelVersion(Base):
 
     # Metrics
     mae = Column(Float)
+    mape = Column(Float)
     rmse = Column(Float)
     r2 = Column(Float)
+    median_ae = Column(Float)
+
+    # Lifecycle and cycle-over-cycle comparison
+    status = Column(String(30), nullable=False, default="candidate", index=True)
+    is_active = Column(Boolean, nullable=False, default=False, index=True)
+    improvement_mape_pct_points = Column(Float)
+    activated_at = Column(DateTime)
 
     # Model file
     model_path = Column(String(255))
+    metadata_path = Column(String(500))
+    artifact_sha256 = Column(String(64))
 
     # Notes
     notes = Column(Text)
@@ -287,109 +368,25 @@ class AuditLog(Base):
         return f"<AuditLog(id={self.id}, action={self.action_type}, at={self.changed_at})>"
 
 
-class DataSource(Base):
-    """Data source tracking (Quy tắc 6, 7)"""
-    __tablename__ = "data_sources"
-
-    id = Column(Integer, primary_key=True, index=True)
-    source_name = Column(String(200), nullable=False)
-    source_url = Column(String(500))
-    source_type = Column(String(50))  # website, api, manual, field_survey
-
-    # Stats
-    total_records = Column(Integer, default=0)
-    verified_records = Column(Integer, default=0)
-    self_collected_records = Column(Integer, default=0)
-
-    # Last collection
-    last_collected_at = Column(DateTime)
-    collection_frequency = Column(String(50))  # daily, weekly, monthly, one_time
-
-    # Status
-    is_active = Column(Boolean, default=True)
-    notes = Column(Text)
-
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
-
-    def __repr__(self):
-        return f"<DataSource(id={self.id}, name={self.source_name})>"
-
-
-class BaselineModel(Base):
-    """Baseline model tracking - legacy"""
-    __tablename__ = "baseline_models"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(100), nullable=False)
-    repo_url = Column(String(500))
-    license = Column(String(50))
-    metrics = Column(Text)
-    is_active = Column(Boolean, default=True)
-    notes = Column(Text)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
-
-
-class Prediction(Base):
-    """Prediction history model - legacy compatibility"""
-    __tablename__ = "predictions"
-
-    id = Column(Integer, primary_key=True, index=True)
-    property_id = Column(Integer, index=True)
-    input_features = Column(Text)
-    predicted_price = Column(Float, nullable=False)
-    confidence = Column(Float)
-    model_used = Column(String(50))
-    created_at = Column(DateTime, server_default=func.now())
-
-
-class PredictionHistory(Base):
-    """Prediction history with full traceability"""
-    __tablename__ = "prediction_history"
-
-    id = Column(Integer, primary_key=True, index=True)
-    property_id = Column(Integer, ForeignKey("properties.id"), index=True)
-
-    # Input features
-    input_features_json = Column(Text)
-
-    # Prediction result
-    predicted_price = Column(Float, nullable=False)
-    confidence_low = Column(Float)
-    confidence_high = Column(Float)
-
-    # Model info
-    model_version = Column(String(50))
-    model_name = Column(String(100))
-
-    # Feature importance
-    feature_importance_json = Column(Text)
-
-    # Similar records used
-    similar_records_json = Column(Text)
-
-    # Explanation
-    explanation_text = Column(Text)
-
-    # Timestamp
-    created_at = Column(DateTime, server_default=func.now())
-
-    def __repr__(self):
-        return f"<PredictionHistory(id={self.id}, price={self.predicted_price})>"
-
-
 class ValuationRun(Base):
-    """Valuation run history — every /api/v2/valuation call is persisted."""
+    """Nguồn duy nhất lưu mọi dự đoán, phản hồi thực tế và training lineage."""
     __tablename__ = "valuation_runs"
 
     id = Column(Integer, primary_key=True, index=True)
+    request_id = Column(String(80), nullable=False, unique=True, index=True)
+    source_endpoint = Column(String(50), nullable=False, index=True)
+    account_id = Column(Integer, ForeignKey("auth_accounts.id", ondelete="SET NULL"), index=True)
     property_id = Column(Integer, ForeignKey("properties.id"), index=True, nullable=True)
+    model_version_id = Column(Integer, ForeignKey("model_versions.id"), index=True, nullable=True)
+    model_version_snapshot = Column(String(50), index=True)
+    model_name = Column(String(100))
     engine_version = Column(String(20))
+    request_status = Column(String(30), nullable=False, default="completed", index=True)
+    request_latency_ms = Column(Float)
     run_at = Column(DateTime, server_default=func.now())
     base_price_vnd = Column(Float)
     base_price_source = Column(String(50))
-    fair_market_value_vnd = Column(Float, nullable=False)
+    fair_market_value_vnd = Column(Float)
     quick_sale_value_vnd = Column(Float)
     recommended_listing_vnd = Column(Float)
     optimistic_ask_vnd = Column(Float)
@@ -405,7 +402,23 @@ class ValuationRun(Base):
     anchor_share = Column(Float)
     independent_source_count = Column(Integer)
     input_hash = Column(String(64))
+    input_features_json = Column(JSON)
+    result_json = Column(JSON)
+    feature_importance_json = Column(JSON)
+    comparable_records_json = Column(JSON)
     legacy_prediction_id = Column(Integer)
+    actual_price_vnd = Column(Float)
+    actual_price_recorded_at = Column(DateTime)
+    actual_price_source = Column(String(100))
+    actual_price_evidence_ref = Column(String(500))
+    feedback_by_account_id = Column(Integer, ForeignKey("auth_accounts.id", ondelete="SET NULL"), index=True)
+    feedback_verification_status = Column(String(30), default="not_submitted", index=True)
+    feedback_verified_at = Column(DateTime)
+    feedback_verified_by_account_id = Column(Integer, ForeignKey("auth_accounts.id", ondelete="SET NULL"))
+    training_eligible = Column(Boolean, nullable=False, default=False, index=True)
+    training_exclusion_reason = Column(String(255))
+    training_run_id = Column(Integer, index=True)
+    training_used_at = Column(DateTime)
     created_at = Column(DateTime, server_default=func.now())
 
     def __repr__(self):
@@ -434,10 +447,10 @@ class ProvenanceChain(Base):
     output_hash = Column(String(64))  # SHA256 của output sau bước này
 
     # Source
-    source = Column(String(200))  # Nguồn tại bước này
+    source = Column(Text)  # Nguồn tại bước này
 
     # Verification
-    verify_url = Column(String(500))  # URL để verify online (nếu có)
+    verify_url = Column(Text)  # URL để verify online (nếu có)
     metadata_json = Column(Text)  # Chi tiết bước (JSON)
 
     # Previous step link
@@ -620,3 +633,16 @@ class ExpertProperty(Base):
 
     def __repr__(self):
         return f"<ExpertProperty(prop={self.property_id}, status={self.status}, completed={self.completed_count}/3)>"
+
+
+class MigrationRejectedRow(Base):
+    """Bản ghi bị từ chối khi chuyển đổi dữ liệu, giữ lại để audit có căn cứ."""
+
+    __tablename__ = "migration_rejected_rows"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    source_table = Column(Text, nullable=False, index=True)
+    source_pk = Column(Text)
+    reason = Column(Text, nullable=False, index=True)
+    row_data = Column(JSON, nullable=False)
+    quarantined_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

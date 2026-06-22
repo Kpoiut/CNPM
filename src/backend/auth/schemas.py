@@ -9,7 +9,7 @@ from datetime import datetime
 
 class RegisterRequest(BaseModel):
     username: str = Field(..., min_length=3, max_length=100)
-    password: str = Field(..., min_length=6, max_length=128)
+    password: str = Field(..., min_length=8, max_length=128)
     email: Optional[str] = None
 
 
@@ -18,18 +18,14 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
 class SeedAdminRequest(BaseModel):
     username: str = Field(default="admin", min_length=3, max_length=100)
-    password: str = Field(..., min_length=6, max_length=128)
+    password: str = Field(..., min_length=8, max_length=128)
     email: Optional[str] = None
-
-
-# --- Response schemas ---
-
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    user: "UserResponse"
 
 
 class UserResponse(BaseModel):
@@ -42,6 +38,15 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# --- Response schemas ---
+
+class TokenResponse(BaseModel):
+    access_token: str
+    refresh_token: Optional[str] = None
+    token_type: str = "bearer"
+    user: UserResponse
 
 
 class MessageResponse(BaseModel):

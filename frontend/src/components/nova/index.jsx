@@ -6,6 +6,8 @@ import React, {
   useState, useEffect, useCallback, useRef, useMemo,
 } from 'react'
 import { icon } from '../ui/icons'
+import { getNovaContext } from './novaBus'
+import { useNavigate } from 'react-router-dom'
 
 // ─── State ───────────────────────────────────────────────────────────────────
 export const NovaState = {
@@ -15,12 +17,17 @@ export const NovaState = {
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const ORB = 48
-const CHAT_W = 360
+const ORB = 44
+const CHAT_W = 405
 const CHAT_H_MAX = 520
 const CHAT_H_MIN = 380
-const SAFE = 20
+const SAFE = 16
 const MAX_MESSAGES = 80
+const HISTORY_KEY = 'nova-chat-archive'
+const MAX_HISTORY = 3
+const MAX_ATTACHMENTS = 8
+const MAX_FOLDER_FILES = 80
+const MAX_TEXT_SNIPPET = 1800
 
 // Drag sensitivity — very small for instant response
 const DRAG_THRESH_PX = 5
@@ -29,31 +36,147 @@ const DRAG_THRESH_MS = 60
 // ─── Position ─────────────────────────────────────────────────────────────────
 // Always start at bottom-right — canonical initial position
 // Version 11: validates saved position against current viewport
-function savedPos() {
+function savedPos() { return null }
+function keepPos() {}
+
+function archiveChat(messages) {
+  if (!messages?.length) return
   try {
-    const raw = localStorage.getItem('np-v11')
-    if (!raw) return null
-    const p = JSON.parse(raw)
-    if (p == null || p.x == null || p.y == null) return null
-    // Validate: must be within current viewport bounds
-    const vw = window.innerWidth
-    const vh = window.innerHeight
-    if (p.x < -ORB || p.y < -ORB || p.x > vw + 100 || p.y > vh + 100) return null
-    return p
-  } catch { return null }
+    const raw = localStorage.getItem(HISTORY_KEY)
+    const archive = raw ? JSON.parse(raw) : []
+    const cleanMessages = messages.filter(m => m.role !== 'error')
+    if (!cleanMessages.length) return
+    const title = cleanMessages.find(m => m.role === 'user')?.text || 'Cuộc trò chuyện Nova'
+    archive.unshift({
+      id: `nova-${Date.now()}`,
+      closedAt: new Date().toISOString(),
+      title: title.slice(0, 64),
+      messages: cleanMessages,
+    })
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(archive.slice(0, MAX_HISTORY)))
+  } catch {}
 }
-function keepPos(p) { try { localStorage.setItem('np-v11', JSON.stringify(p)) } catch {} }
+
+function loadRecentChats() {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY)
+    const archive = raw ? JSON.parse(raw) : []
+    return Array.isArray(archive) ? archive.slice(0, MAX_HISTORY) : []
+  } catch {
+    return []
+  }
+}
+
+function formatBytes(n = 0) {
+  if (!n) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB']
+  let size = n
+  let i = 0
+  while (size >= 1024 && i < units.length - 1) { size /= 1024; i += 1 }
+  return `${size.toFixed(size >= 10 || i === 0 ? 0 : 1)} ${units[i]}`
+}
+
+function summarizeAttachment(a) {
+  if (!a) return ''
+  const folder = a.relativePath ? `${a.relativePath}` : a.name
+  return `${folder} (${a.kind || 'file'}, ${formatBytes(a.size)})`
+}
+
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+function readFileAsText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result || '').slice(0, MAX_TEXT_SNIPPET))
+    reader.onerror = reject
+    reader.readAsText(file)
+  })
+}
+
+async function fileToAttachment(file, source = 'file') {
+  const isImage = file.type?.startsWith('image/')
+  const isText = /^text\/|json|csv|xml|markdown|javascript|typescript|python/i.test(file.type || file.name)
+  const attachment = {
+    id: `att-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    kind: isImage ? 'image' : source,
+    name: file.name,
+    relativePath: file.webkitRelativePath || '',
+    mime: file.type || 'application/octet-stream',
+    size: file.size,
+  }
+  if (isImage) attachment.dataUrl = await readFileAsDataURL(file)
+  else if (isText && file.size <= 256 * 1024) attachment.textPreview = await readFileAsText(file)
+  return attachment
+}
+
+function novaContext(history = []) {
+  let authUser = null
+  try {
+    const stored = localStorage.getItem('avm-user')
+    authUser = stored ? JSON.parse(stored) : null
+  } catch {}
+  const role = authUser?.role === 'admin' ? 'admin' : 'user'
+  const moduleCtx = (() => { try { return getNovaContext() } catch { return {} } })()
+  return {
+    page: window.location.pathname,
+    title: document.title,
+    page_context: moduleCtx,
+    locale: navigator.language,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    auth_user: authUser ? {
+      username: authUser.username,
+      role,
+    } : { role: 'guest' },
+    nova_mode: role === 'admin' ? 'collaborator' : 'advisor',
+    recent_messages: history.slice(-6).map(m => ({
+      role: m.role,
+      text: m.text,
+      attachments: (m.attachments || []).map(a => ({
+        kind: a.kind,
+        name: a.name,
+        relativePath: a.relativePath,
+        mime: a.mime,
+        size: a.size,
+      })),
+    })),
+  }
+}
+
+async function readNovaResponse(res) {
+  let data = {}
+  try { data = await res.json() } catch {}
+  if (!res.ok) {
+    const detail = typeof data.detail === 'string' ? data.detail : `HTTP ${res.status}`
+    throw new Error(detail)
+  }
+  if (!data.text) {
+    throw new Error('Nova không trả về nội dung. Kiểm tra /api/nova/chat và API key backend.')
+  }
+  return data
+}
+
+function renderMessageText(text) {
+  const parts = String(text || '').split(/(\*\*[^*]+\*\*)/g)
+  return parts.map((part, idx) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={idx}>{part.slice(2, -2)}</strong>
+    }
+    return <React.Fragment key={idx}>{part}</React.Fragment>
+  })
+}
 
 // ─── Chat panel position relative to orb ──────────────────────────────────────
 function chatPos(orbX, orbY, vw, vh) {
-  const h = Math.min(CHAT_H_MAX, Math.max(CHAT_H_MIN, vh - SAFE * 2))
-  let left = orbX - CHAT_W - 12
-  let top = orbY - h / 2 + ORB / 2
-  if (left < SAFE) left = orbX + ORB + 12
-  if (top < SAFE) top = SAFE
-  if (top + h > vh - SAFE) top = vh - h - SAFE
-  if (left + CHAT_W > vw - SAFE) left = vw - CHAT_W - SAFE
-  return { left, top, height: h }
+  const width = Math.min(CHAT_W, Math.max(300, vw - SAFE * 2))
+  const height = Math.min(CHAT_H_MAX, Math.max(CHAT_H_MIN, vh - SAFE * 2 - ORB - 14))
+  return { right: SAFE, bottom: SAFE + ORB + 12, width, height }
 }
 
 // ─── Color palettes per state ─────────────────────────────────────────────────
@@ -89,6 +212,7 @@ function NovaOrb({ state, hovered }) {
         animation: pulseAnim,
         filter: `drop-shadow(0 0 6px rgba(125,211,252,0.4)) ${brightness}`,
         transition: 'filter 80ms ease-out',
+        zIndex: 6,
       }} />
 
       {/* ── Specular highlight (top-left) — sits above core ── */}
@@ -97,7 +221,7 @@ function NovaOrb({ state, hovered }) {
         background: 'radial-gradient(circle at 28% 22%, rgba(255,255,255,0.65) 0%, transparent 55%)',
         animation: 'specDrift 5s ease-in-out infinite',
         pointerEvents: 'none',
-        zIndex: 2,
+        zIndex: 7,
       }} />
 
       {/* ── Surface wave — single band sweeps across sphere surface only ── */}
@@ -116,7 +240,7 @@ function NovaOrb({ state, hovered }) {
         )`,
         animation: 'surfaceWave 2.5s linear infinite',
         pointerEvents: 'none',
-        zIndex: 3,
+        zIndex: 8,
         mixBlendMode: 'screen',
       }} />
 
@@ -126,7 +250,7 @@ function NovaOrb({ state, hovered }) {
         background: 'radial-gradient(circle, rgba(125,211,252,0.12) 0%, transparent 70%)',
         animation: 'shellBreathe 3s ease-in-out infinite',
         pointerEvents: 'none',
-        zIndex: 4,
+        zIndex: 7,
       }} />
 
       {/* ── Ring A — equatorial ── */}
@@ -136,7 +260,7 @@ function NovaOrb({ state, hovered }) {
         transform: 'rotateX(72deg) rotateZ(0deg)',
         animation: 'spinA 4s linear infinite',
         mixBlendMode: 'screen',
-        zIndex: 5,
+        zIndex: 9,
       }} />
 
       {/* ── Ring B — tilted ── */}
@@ -146,7 +270,7 @@ function NovaOrb({ state, hovered }) {
         transform: 'rotateY(72deg) rotateZ(18deg)',
         animation: 'spinB 5.5s linear infinite reverse',
         mixBlendMode: 'screen',
-        zIndex: 5,
+        zIndex: 9,
       }} />
 
       {/* ── Ring C — 3D tilt ── */}
@@ -156,83 +280,56 @@ function NovaOrb({ state, hovered }) {
         transform: 'rotateX(72deg) rotateY(72deg) rotateZ(-22deg) scale(0.92)',
         animation: 'spinC 6s linear infinite',
         mixBlendMode: 'screen',
-        zIndex: 5,
+        zIndex: 9,
       }} />
 
-      {/* ══════════════════════════════════════════════════════════════════════ */}
-      {/* ORBITAL SPHERES — Proper architecture:                                  */}
-      {/*   orbitA/B container = top:50% left:50% → transform-origin auto at     */}
-      {/*   the orb's center. Sphere child animates ellipse with no overlap.      */}
-      {/* ══════════════════════════════════════════════════════════════════════ */}
+    </div>
+  )
+}
 
-      {/* ── Orbit A: Rx=6 horizontal, Ry=4 vertical, 1.8s/cw ── */}
-      {/*    transform: translate(0,0) establishes transform-origin at orb center */}
+function SiriSphere({ listening = false, size = 48 }) {
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%', position: 'relative',
+      overflow: 'hidden',
+      background: 'radial-gradient(circle at 32% 24%, #ffffff 0%, #a7ecff 24%, #38bdf8 48%, #8b5cf6 78%, #0f172a 100%)',
+      boxShadow: listening
+        ? '0 0 18px rgba(56,189,248,0.55), 0 0 34px rgba(168,85,247,0.34), inset -5px -8px 16px rgba(15,23,42,0.28)'
+        : '0 5px 16px rgba(56,189,248,0.34), inset -4px -7px 14px rgba(15,23,42,0.22)',
+      animation: listening ? 'siriFloat 1.7s ease-in-out infinite' : 'none',
+    }}>
       <div style={{
-        position: 'absolute',
-        top: '50%', left: '50%',
-        width: 0, height: 0,
-        zIndex: 10,
-        transform: 'translate(0, 0)',
-      }}>
-        <div style={{
-          position: 'absolute',
-          width: 6, height: 6, borderRadius: '50%',
-          transformOrigin: '0 0',
-          // x(t) = 6*cos(t), y(t) = 4*sin(t) — parametric ellipse
-          // 0%  = 0°   → (6,  0)
-          // 25% = 90°  → (0,  4)
-          // 50% = 180° → (-6, 0)
-          // 75% = 270° → (0, -4)
-          animation: 'orbitA 1.8s linear infinite',
-          background: `radial-gradient(circle at 30% 30%, rgba(255,255,255,1), ${colors.sphereA} 50%, rgba(56,189,248,0.6))`,
-          boxShadow: state === NovaState.PROCESSING
-            ? '0 0 10px rgba(255,230,120,0.9), 0 0 20px rgba(245,158,11,0.5)'
-            : '0 0 8px rgba(125,211,252,0.9), 0 0 16px rgba(125,211,252,0.4)',
-          filter: brightness,
-          pointerEvents: 'none',
-        }} />
-      </div>
-
-      {/* ── Orbit B: Rx=4 horizontal, Ry=6 vertical, 1.4s/ccw ── */}
-      {/*    Phase 90° → starts at BOTTOM → NEVER crosses orbitA               */}
-      {/*    Same transform-origin trick for correct center-based orbit          */}
+        position: 'absolute', inset: '-18%',
+        background: 'conic-gradient(from 0deg, rgba(255,255,255,0), rgba(34,211,238,0.75), rgba(168,85,247,0.48), rgba(52,211,153,0.56), rgba(255,255,255,0))',
+        animation: listening ? 'siriSpin 2.6s linear infinite' : 'none',
+        mixBlendMode: 'screen',
+      }} />
       <div style={{
-        position: 'absolute',
-        top: '50%', left: '50%',
-        width: 0, height: 0,
-        zIndex: 10,
-        transform: 'translate(0, 0)',
-      }}>
-        <div style={{
-          position: 'absolute',
-          width: 5, height: 5, borderRadius: '50%',
-          transformOrigin: '0 0',
-          // x(t) = 4*cos(t+90°), y(t) = 6*sin(t+90°)
-          // Parametric ellipse with 90° phase offset from orbitA
-          // 0%  = 90°  → (0,  6)
-          // 25% = 180° → (-4, 0)
-          // 50% = 270° → (0, -6)
-          // 75% = 360° → (4,  0)
-          animation: 'orbitB 1.4s linear infinite reverse',
-          background: `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95), ${colors.sphereB} 50%, rgba(168,95,255,0.55))`,
-          boxShadow: state === NovaState.PROCESSING
-            ? '0 0 8px rgba(245,158,11,0.8), 0 0 16px rgba(245,158,11,0.35)'
-            : '0 0 7px rgba(208,98,255,0.8), 0 0 14px rgba(208,98,255,0.35)',
-          filter: brightness,
-          pointerEvents: 'none',
-        }} />
-      </div>
+        position: 'absolute', inset: '11%', borderRadius: '50%',
+        background: 'radial-gradient(circle at 35% 30%, rgba(255,255,255,0.82), rgba(125,211,252,0.2) 42%, transparent 72%)',
+        animation: listening ? 'siriPulse 1.8s ease-in-out infinite' : 'none',
+      }} />
+      <div style={{
+        position: 'absolute', inset: '21%', borderRadius: '50%',
+        border: '1px solid rgba(255,255,255,0.55)',
+        transform: 'rotateX(68deg) rotateZ(18deg)',
+        animation: listening ? 'siriRing 2.1s linear infinite' : 'none',
+      }} />
     </div>
   )
 }
 
 // ─── Chatbox panel ─────────────────────────────────────────────────────────────
-function Chatbox({ messages, onSend, onClose, orbX, orbY, sending, voiceTranscript, voiceListening }) {
+function Chatbox({ messages, onSend, onClose, onRestoreChat, recentChats, orbX, orbY, sending, voiceTranscript, voiceListening, onStartVoice, onStopVoice, onRunAction }) {
   const [input, setInput] = useState('')
+  const [attachments, setAttachments] = useState([])
+  const [showHistory, setShowHistory] = useState(false)
   const [typing, setTyping] = useState(false)
   const endRef = useRef(null)
   const inRef = useRef(null)
   const boxRef = useRef(null)
+  const imageInputRef = useRef(null)
+  const folderInputRef = useRef(null)
 
   const vw = window.innerWidth
   const vh = window.innerHeight
@@ -273,10 +370,40 @@ function Chatbox({ messages, onSend, onClose, orbX, orbY, sending, voiceTranscri
     return () => { clearTimeout(t); document.removeEventListener('mousedown', handler) }
   }, [onClose])
 
+  const addAttachments = useCallback(async (files, source = 'file') => {
+    const selected = Array.from(files || []).slice(0, source === 'folder' ? MAX_FOLDER_FILES : MAX_ATTACHMENTS)
+    if (!selected.length) return
+    const converted = []
+    for (const file of selected) converted.push(await fileToAttachment(file, source))
+    setAttachments(prev => [...prev, ...converted].slice(0, source === 'folder' ? MAX_FOLDER_FILES : MAX_ATTACHMENTS))
+    inRef.current?.focus()
+  }, [])
+
+  const handlePaste = useCallback(async (e) => {
+    const items = Array.from(e.clipboardData?.items || [])
+    const imageItems = items.filter(item => item.kind === 'file' && item.type?.startsWith('image/'))
+    if (!imageItems.length) return
+    e.preventDefault()
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-')
+    const files = imageItems
+      .map((item, index) => {
+        const file = item.getAsFile()
+        if (!file) return null
+        const ext = (file.type || 'image/png').split('/')[1] || 'png'
+        const name = file.name || `clipboard-${stamp}-${index + 1}.${ext}`
+        return new File([file], name, { type: file.type || 'image/png', lastModified: Date.now() })
+      })
+      .filter(Boolean)
+    await addAttachments(files, 'clipboard')
+    if (!input.trim()) setInput('Phân tích ảnh này')
+  }, [addAttachments, input])
+
   const send = () => {
-    if (!input.trim()) return
-    onSend(input.trim())
+    if (!input.trim() && !attachments.length) return
+    const text = input.trim() || 'Phân tích các tệp tôi vừa gửi.'
+    onSend(text, attachments)
     setInput('')
+    setAttachments([])
   }
 
   // When voice transcript updates, show it in the input field
@@ -290,12 +417,12 @@ function Chatbox({ messages, onSend, onClose, orbX, orbY, sending, voiceTranscri
     <div
       ref={boxRef}
       style={{
-        position: 'fixed', left: pos.left, top: pos.top, width: CHAT_W, height: pos.height,
+        position: 'fixed', right: pos.right, bottom: pos.bottom, width: pos.width, height: pos.height,
         display: 'flex', flexDirection: 'column',
-        background: 'rgba(240,249,255,0.98)',
+        background: 'linear-gradient(180deg, rgba(247,252,255,0.99), rgba(229,244,255,0.98))',
         border: '1px solid rgba(125,211,252,0.28)',
-        borderRadius: 14,
-        boxShadow: '0 8px 40px rgba(56,189,248,0.16), 0 2px 8px rgba(56,189,248,0.1)',
+        borderRadius: 12,
+        boxShadow: '0 18px 42px rgba(3, 7, 18, 0.34), 0 0 0 1px rgba(14,165,233,0.14)',
         backdropFilter: 'blur(18px)',
         WebkitBackdropFilter: 'blur(18px)',
         zIndex: 9998, overflow: 'hidden',
@@ -306,17 +433,15 @@ function Chatbox({ messages, onSend, onClose, orbX, orbY, sending, voiceTranscri
       <div style={{
         display: 'flex', alignItems: 'center', padding: '9px 12px',
         borderBottom: '1px solid rgba(125,211,252,0.12)',
-        background: 'linear-gradient(135deg, rgba(125,211,252,0.1) 0%, transparent 100%)',
+        background: 'linear-gradient(135deg, rgba(218,242,255,0.98), rgba(239,247,255,0.96))',
         gap: 9, flexShrink: 0,
       }}>
-        <div style={{
-          width: 28, height: 28, borderRadius: '50%',
-          background: 'radial-gradient(circle at 30% 28%, rgba(255,255,255,0.95), rgba(125,211,252,0.9) 45%, rgba(56,189,248,0.85))',
-          boxShadow: '0 1px 6px rgba(125,211,252,0.35)', flexShrink: 0,
-        }} />
+        <div style={{ flexShrink: 0 }}>
+          <SiriSphere listening={voiceListening || sending} size={30} />
+        </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0c4a6e' }}>Nova</div>
-          <div style={{ fontSize: '0.62rem', color: '#0284c7', display: 'flex', alignItems: 'center', gap: 3 }}>
+          <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#082f49' }}>Nova</div>
+          <div style={{ fontSize: '0.7rem', color: '#0369a1', display: 'flex', alignItems: 'center', gap: 3 }}>
             <div style={{
               width: 5, height: 5, borderRadius: '50%',
               background: voiceListening ? '#f59e0b' : '#06d6a0',
@@ -335,10 +460,39 @@ function Chatbox({ messages, onSend, onClose, orbX, orbY, sending, voiceTranscri
             Hey Nova...
           </div>
         )}
+        <button
+          onClick={voiceListening ? onStopVoice : onStartVoice}
+          title={voiceListening ? 'Tắt nghe' : 'Bật nghe Hey Nova'}
+          style={{
+            height: 24, minWidth: 30, borderRadius: 6,
+            border: '1px solid rgba(14,165,233,0.22)',
+            background: voiceListening ? 'rgba(245,158,11,0.16)' : 'rgba(14,165,233,0.08)',
+            color: voiceListening ? '#b45309' : '#0c4a6e',
+            cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
+          {icon('mic', 13)}
+        </button>
+        <button
+          onClick={() => setShowHistory(v => !v)}
+          title="3 cuộc trò chuyện gần nhất"
+          style={{
+            height: 24, minWidth: 30, borderRadius: 6,
+            border: '1px solid rgba(14,165,233,0.22)',
+            background: showHistory ? 'rgba(14,165,233,0.16)' : 'rgba(14,165,233,0.08)',
+            color: '#0c4a6e', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '0.72rem', gap: 4, flexShrink: 0,
+          }}
+        >
+          {icon('clock', 13)} {recentChats.length}
+        </button>
         <div style={{
-          fontSize: '0.6rem', color: 'rgba(125,211,252,0.45)',
-          background: 'rgba(125,211,252,0.06)', borderRadius: 4,
-          padding: '1px 5px', border: '1px solid rgba(125,211,252,0.12)',
+          fontSize: '0.68rem', color: '#0f6e93',
+          background: 'rgba(14,165,233,0.12)', borderRadius: 4,
+          padding: '1px 5px', border: '1px solid rgba(14,165,233,0.22)',
         }}>
           ESC để đóng
         </div>
@@ -355,6 +509,36 @@ function Chatbox({ messages, onSend, onClose, orbX, orbY, sending, voiceTranscri
         </button>
       </div>
 
+      {showHistory && (
+        <div style={{
+          padding: '8px 12px', borderBottom: '1px solid rgba(125,211,252,0.16)',
+          background: 'rgba(240,249,255,0.96)', display: 'grid', gap: 6,
+        }}>
+          {recentChats.length ? recentChats.map(chat => (
+            <button
+              key={chat.id}
+              onClick={() => { onRestoreChat(chat); setShowHistory(false) }}
+              style={{
+                textAlign: 'left', border: '1px solid rgba(125,211,252,0.24)',
+                background: '#fff', borderRadius: 8, padding: '6px 8px',
+                cursor: 'pointer', color: '#0f172a',
+              }}
+            >
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#075985' }}>
+                {chat.title || 'Cuộc trò chuyện Nova'}
+              </div>
+              <div style={{ fontSize: '0.64rem', color: '#64748b', marginTop: 2 }}>
+                {new Date(chat.closedAt).toLocaleString('vi-VN')} · {chat.messages?.length || 0} tin
+              </div>
+            </button>
+          )) : (
+            <div style={{ fontSize: '0.72rem', color: '#64748b', padding: '4px 0' }}>
+              Chưa có cuộc trò chuyện đã đóng.
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Message area */}
       <div style={{
         flex: 1, overflowY: 'auto', padding: '8px 11px',
@@ -367,12 +551,7 @@ function Chatbox({ messages, onSend, onClose, orbX, orbY, sending, voiceTranscri
             flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
             justifyContent: 'center', gap: 10, padding: '16px 0',
           }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: '50%',
-              background: 'radial-gradient(circle at 30% 28%, rgba(255,255,255,0.95), rgba(125,211,252,0.9) 45%, rgba(56,189,248,0.85))',
-              boxShadow: '0 3px 12px rgba(125,211,252,0.3)',
-              animation: 'orbBreathe 3.5s ease-in-out infinite',
-            }} />
+            <SiriSphere listening={voiceListening || sending} size={48} />
             <div style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#0c4a6e' }}>
                 Xin chào! Tôi là Nova
@@ -411,7 +590,7 @@ function Chatbox({ messages, onSend, onClose, orbX, orbY, sending, voiceTranscri
                   key={s.label}
                   onClick={() => { setInput(s.label); inRef.current?.focus() }}
                   style={{
-                    padding: '3px 9px', borderRadius: 14,
+                    padding: '3px 9px', borderRadius: 12,
                     border: '1px solid rgba(125,211,252,0.3)',
                     background: 'rgba(125,211,252,0.05)', color: '#0284c7',
                     fontSize: '0.68rem', cursor: 'pointer',
@@ -429,6 +608,7 @@ function Chatbox({ messages, onSend, onClose, orbX, orbY, sending, voiceTranscri
         {messages.map((m, i) => {
           const isFailed = m.error || m.role === 'error'
           const isVoiceMsg = m.isVoice
+          const isPending = m.pending
           return (
           <div key={m.id || i} style={{
             display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start',
@@ -437,12 +617,9 @@ function Chatbox({ messages, onSend, onClose, orbX, orbY, sending, voiceTranscri
           }}>
             {/* Avatar for assistant */}
             {m.role !== 'user' && !isFailed && (
-              <div style={{
-                width: 20, height: 20, borderRadius: '50%',
-                background: 'radial-gradient(circle, rgba(255,255,255), rgba(125,211,252,0.9))',
-                flexShrink: 0, marginRight: 5, alignSelf: 'flex-end',
-                boxShadow: '0 1px 3px rgba(125,211,252,0.3)',
-              }} />
+              <div style={{ flexShrink: 0, marginRight: 5, alignSelf: 'flex-end' }}>
+                <SiriSphere listening={sending || voiceListening} size={22} />
+              </div>
             )}
             {isFailed && (
               <div style={{
@@ -458,15 +635,18 @@ function Chatbox({ messages, onSend, onClose, orbX, orbY, sending, voiceTranscri
               borderRadius: m.role === 'user' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
               background: isFailed
                 ? 'rgba(239,68,68,0.08)'
+                : isPending
+                ? 'rgba(255,255,255,0.86)'
                 : m.role === 'user'
-                ? 'linear-gradient(135deg, #7dd3fc, #38bdf8)'
-                : 'rgba(255,255,255,0.95)',
-              color: isFailed ? '#ef233c' : m.role === 'user' ? '#0c4a6e' : '#1e293b',
+                ? 'linear-gradient(135deg, #0ea5e9, #2563eb)'
+                : 'rgba(255,255,255,0.98)',
+              color: isFailed ? '#b91c1c' : m.role === 'user' ? '#ffffff' : '#0f172a',
               fontSize: '0.8rem', lineHeight: 1.45,
               boxShadow: m.role === 'user'
                 ? '0 1px 5px rgba(56,189,248,0.22)'
                 : '0 1px 3px rgba(0,0,0,0.06)',
               wordBreak: 'break-word',
+              whiteSpace: 'pre-wrap',
             }}>
               {isVoiceMsg && (
                 <div style={{
@@ -476,20 +656,73 @@ function Chatbox({ messages, onSend, onClose, orbX, orbY, sending, voiceTranscri
                   <span style={{ fontStyle: 'normal' }}>🎤</span> giọng nói
                 </div>
               )}
-              {m.text || (isFailed ? 'Gửi thất bại. Nhấn để thử lại.' : '')}
+              {isPending ? (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, color: '#075985' }}>
+                  Nova đang suy nghĩ
+                  <span style={{ display: 'inline-flex', gap: 3 }}>
+                    {[0, 1, 2].map(d => (
+                      <span key={d} style={{
+                        width: 4, height: 4, borderRadius: '50%', background: '#38bdf8',
+                        animation: `tdot 1.1s ease-in-out ${d * 0.16}s infinite`,
+                      }} />
+                    ))}
+                  </span>
+                </span>
+              ) : (m.text ? renderMessageText(m.text) : (isFailed ? 'Gửi thất bại. Nhấn để thử lại.' : ''))}
+              {!!m.attachments?.length && (
+                <div style={{ display: 'grid', gap: 5, marginTop: 7 }}>
+                  {m.attachments.slice(0, 6).map(a => (
+                    <div key={a.id || a.name} style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '5px 6px', borderRadius: 7,
+                      background: m.role === 'user' ? 'rgba(255,255,255,0.16)' : 'rgba(14,165,233,0.06)',
+                      border: m.role === 'user' ? '1px solid rgba(255,255,255,0.22)' : '1px solid rgba(14,165,233,0.12)',
+                    }}>
+                      {a.dataUrl ? (
+                        <img src={a.dataUrl} alt="" style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ display: 'flex', color: m.role === 'user' ? '#e0f2fe' : '#0284c7' }}>
+                          {icon(a.kind === 'folder' ? 'package' : 'fileText', 15)}
+                        </span>
+                      )}
+                      <span style={{ fontSize: '0.68rem', lineHeight: 1.25 }}>
+                        {a.relativePath || a.name}
+                      </span>
+                    </div>
+                  ))}
+                  {m.attachments.length > 6 && (
+                    <div style={{ fontSize: '0.65rem', opacity: 0.8 }}>
+                      +{m.attachments.length - 6} tệp khác
+                    </div>
+                  )}
+                </div>
+              )}
+              {m.action && !isPending && m.role === 'assistant' && (
+                <button
+                  type="button"
+                  onClick={() => onRunAction?.(m.action, m.id)}
+                  disabled={m.actionDone}
+                  style={{
+                    marginTop: 8, width: '100%', cursor: m.actionDone ? 'default' : 'pointer',
+                    padding: '7px 10px', borderRadius: 9, border: '1px solid rgba(14,165,233,0.35)',
+                    background: m.actionDone ? 'rgba(148,163,184,0.18)' : 'linear-gradient(135deg, #0ea5e9, #2563eb)',
+                    color: m.actionDone ? '#475569' : '#fff', fontSize: '0.74rem', fontWeight: 700,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  }}
+                >
+                  {icon(m.action.type === 'navigate' ? 'arrowRight' : 'play', 14)}
+                  {m.actionDone ? 'Đã thực hiện' : (m.action.label || 'Thực hiện')}
+                </button>
+              )}
             </div>
           </div>
           )
         })}
 
         {/* Typing indicator */}
-        {typing && (
+        {typing && !messages.some(m => m.pending) && (
           <div style={{ display: 'flex', justifyContent: 'flex-start', gap: 5, alignItems: 'center' }}>
-            <div style={{
-              width: 20, height: 20, borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(255,255,255), rgba(125,211,252,0.9))',
-              boxShadow: '0 1px 3px rgba(125,211,252,0.3)',
-            }} />
+            <SiriSphere listening size={22} />
             <div style={{
               padding: '6px 11px', borderRadius: '12px 12px 12px 2px',
               background: 'rgba(255,255,255,0.95)',
@@ -510,22 +743,80 @@ function Chatbox({ messages, onSend, onClose, orbX, orbY, sending, voiceTranscri
       {/* Input area */}
       <div style={{
         padding: '7px 10px', borderTop: '1px solid rgba(125,211,252,0.1)',
-        background: 'rgba(255,255,255,0.65)', flexShrink: 0,
+        background: 'rgba(241,248,255,0.94)', flexShrink: 0,
       }}>
+        {!!attachments.length && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 6 }}>
+            {attachments.slice(0, 8).map(a => (
+              <div key={a.id} style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                maxWidth: '100%', padding: '4px 6px', borderRadius: 8,
+                background: '#fff', border: '1px solid rgba(125,211,252,0.24)',
+                color: '#0f172a', fontSize: '0.66rem',
+              }}>
+                {a.dataUrl ? <img src={a.dataUrl} alt="" style={{ width: 22, height: 22, borderRadius: 5, objectFit: 'cover' }} /> : icon(a.kind === 'folder' ? 'package' : 'fileText', 13)}
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 170 }}>
+                  {a.relativePath || a.name}
+                </span>
+                <button
+                  onClick={() => setAttachments(prev => prev.filter(x => x.id !== a.id))}
+                  title="Bỏ tệp"
+                  style={{ border: 'none', background: 'transparent', color: '#64748b', cursor: 'pointer', padding: 0 }}
+                >
+                  {icon('close', 12)}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            style={{ display: 'none' }}
+            onChange={e => { addAttachments(e.target.files, 'image'); e.target.value = '' }}
+          />
+          <input
+            ref={folderInputRef}
+            type="file"
+            multiple
+            webkitdirectory=""
+            directory=""
+            style={{ display: 'none' }}
+            onChange={e => { addAttachments(e.target.files, 'folder'); e.target.value = '' }}
+          />
           <button
+            onClick={() => imageInputRef.current?.click()}
             style={{
-              border: 'none', background: 'none', cursor: 'pointer',
-              fontSize: '0.95rem', padding: '2px 4px', color: '#94a3b8',
+              width: 30, height: 32, borderRadius: 8,
+              border: '1px solid rgba(125,211,252,0.22)',
+              background: '#fff', cursor: 'pointer',
+              color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
-            title="Đính kèm file"
+            title="Gửi ảnh"
           >
+            {icon('cloudUp', 15)}
+          </button>
+          <button
+            onClick={() => folderInputRef.current?.click()}
+            style={{
+              width: 30, height: 32, borderRadius: 8,
+              border: '1px solid rgba(125,211,252,0.22)',
+              background: '#fff', cursor: 'pointer',
+              color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+            title="Gửi thư mục"
+          >
+            {icon('package', 15)}
           </button>
 
           <textarea
             ref={inRef}
             value={input}
             onChange={e => setInput(e.target.value)}
+            onPaste={handlePaste}
             onKeyDown={e => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
@@ -549,19 +840,19 @@ function Chatbox({ messages, onSend, onClose, orbX, orbY, sending, voiceTranscri
 
           <button
             onClick={send}
-            disabled={!input.trim() || sending}
+            disabled={(!input.trim() && !attachments.length) || sending}
             style={{
               width: 32, height: 32, borderRadius: 8, border: 'none',
               background: sending
                 ? 'rgba(125,211,252,0.3)'
-                : input.trim()
+                : input.trim() || attachments.length
                 ? 'linear-gradient(135deg, #38bdf8, #0ea5e9)'
                 : 'rgba(125,211,252,0.12)',
-              color: sending ? '#94a3b8' : input.trim() ? '#fff' : 'rgba(125,211,252,0.35)',
-              cursor: !input.trim() || sending ? 'default' : 'pointer',
+              color: sending ? '#94a3b8' : (input.trim() || attachments.length) ? '#fff' : 'rgba(125,211,252,0.35)',
+              cursor: (!input.trim() && !attachments.length) || sending ? 'default' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: '0.85rem',
-              boxShadow: input.trim() && !sending ? '0 1px 5px rgba(56,189,248,0.28)' : 'none',
+              boxShadow: (input.trim() || attachments.length) && !sending ? '0 1px 5px rgba(56,189,248,0.28)' : 'none',
               flexShrink: 0,
               transition: 'background 150ms ease, box-shadow 150ms ease',
             }}
@@ -584,33 +875,68 @@ function Chatbox({ messages, onSend, onClose, orbX, orbY, sending, voiceTranscri
 export default function NovaAssistant() {
   const [state, setState] = useState(NovaState.IDLE)
   const [msgs, setMsgs] = useState([])
+  const [recentChats, setRecentChats] = useState(() => loadRecentChats())
   const [voiceListening, setVoiceListening] = useState(false)
   const [voiceTranscript, setVoiceTranscript] = useState('')
   const [sending, setSending] = useState(false)
-  const [isDragging, setIsDragging] = useState(false)
-
+  
   // Orb position — canonical: always start at bottom-right
-  const [orbPos, setOrbPos] = useState(() => {
-    const saved = savedPos()
-    if (saved && saved.x != null) return saved
-    return { x: window.innerWidth - ORB - SAFE, y: window.innerHeight - ORB - SAFE }
-  })
+  const [orbPos, setOrbPos] = useState(() => ({
+    x: window.innerWidth - ORB - SAFE,
+    y: window.innerHeight - ORB - SAFE,
+  }))
 
   // Refs for drag/voice without causing re-renders
-  const dragging = useRef(false)
-  const dragStartX = useRef(0)
-  const dragStartY = useRef(0)
-  const dragOrbX = useRef(0)
-  const dragOrbY = useRef(0)
-  const lastMoveX = useRef(0)
-  const lastMoveY = useRef(0)
-  const rafId = useRef(null)
   const recogRef = useRef(null)
   const voiceTimeout = useRef(null)
-  const clickTimer = useRef(null)
 
   const orbX = orbPos.x
   const orbY = orbPos.y
+
+  const navigate = useNavigate()
+
+  // ─── Agentic action: thực thi tác vụ hệ thống do người dùng xác nhận ─────────
+  const runNovaAction = useCallback(async (action, msgId) => {
+    if (!action) return
+    // Đánh dấu nút đã bấm để không gọi lại
+    setMsgs(prev => prev.map(m => (m.id === msgId ? { ...m, actionDone: true } : m)))
+
+    if (action.type === 'navigate' && action.to) {
+      try { navigate(action.to) } catch { window.location.assign(action.to) }
+      return
+    }
+
+    if (action.type === 'execute' && action.op) {
+      const pendingId = `act-${Date.now()}`
+      setMsgs(prev => [...prev, { id: pendingId, role: 'assistant', text: '', pending: true }])
+      try {
+        const token = localStorage.getItem('avm-token')
+        const res = await fetch('/api/nova/execute', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ action: action.op, params: action.params || {} }),
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`)
+        setMsgs(prev => prev.map(m =>
+          m.id === pendingId
+            ? { id: `asst-${Date.now()}`, role: 'assistant', text: data.text || 'Đã chạy xong.' }
+            : m,
+        ))
+      } catch (err) {
+        const detail = err?.message || 'Không thực thi được.'
+        const friendly = /403|quyền|admin/i.test(detail)
+          ? 'Tác vụ này cần quyền admin. Hãy đăng nhập tài khoản admin rồi thử lại.'
+          : `Không thực thi được: ${detail}`
+        setMsgs(prev => prev.map(m =>
+          m.id === pendingId ? { id: `err-${Date.now()}`, role: 'error', text: friendly } : m,
+        ))
+      }
+    }
+  }, [navigate])
 
   // ─── Voice: start speech recognition ──────────────────────────────────────
   const startVoice = useCallback(() => {
@@ -681,6 +1007,18 @@ export default function NovaAssistant() {
     setVoiceTranscript('')
     if (recogRef.current) { try { recogRef.current.stop() } catch {} }
   }, [])
+  const closeChat = useCallback(() => {
+    stopVoice()
+    archiveChat(msgs)
+    setRecentChats(loadRecentChats())
+    setMsgs([])
+    setState(NovaState.IDLE)
+  }, [msgs, stopVoice])
+
+  const restoreChat = useCallback((chat) => {
+    stopVoice()
+    setMsgs(Array.isArray(chat?.messages) ? chat.messages : [])
+  }, [stopVoice])
 
   // ─── Process voice command ──────────────────────────────────────────────────
   const processVoiceCommand = useCallback(async (text) => {
@@ -706,24 +1044,36 @@ export default function NovaAssistant() {
       const res = await fetch('/api/nova/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, context: novaContext() }),
       })
-      const d = await res.json()
-      const reply = d.text || 'Đã nhận yêu cầu.'
+      const d = await readNovaResponse(res)
+      const reply = d.text
       speakResponse(reply)
     } catch {
-      speakResponse('Xin lỗi, gặp lỗi kết nối.')
+      speakResponse('Xin lỗi, Nova chưa kết nối được backend. Hãy kiểm tra RUN_BACKEND.bat đang chạy ở cổng 8000.')
     }
     setState(NovaState.CHAT_OPEN)
-    // Resume listening after processing
-    setTimeout(() => startVoice(), 800)
-  }, [startVoice])
+    stopVoice()
+  }, [stopVoice])
 
   // ─── Chat send (text input) ─────────────────────────────────────────────────
-  const chatSend = useCallback(async (text) => {
+  const chatSend = useCallback(async (text, attachments = []) => {
     const optimisticId = `opt-${Date.now()}`
+    const pendingId = `pending-${Date.now()}`
+    const wantsPreviousAttachment = /ảnh|hình|file|tệp|giải|bài toán|đọc|phân tích|tóm tắt/i.test(text || '')
+    const recentAttachments = wantsPreviousAttachment
+      ? [...msgs].reverse().find(m => Array.isArray(m.attachments) && m.attachments.length)?.attachments || []
+      : []
+    const effectiveAttachments = attachments.length ? attachments : recentAttachments
+    const attachmentSummary = effectiveAttachments.length
+      ? `\n\n[Tệp gửi kèm]\n${effectiveAttachments.map(summarizeAttachment).join('\n')}`
+      : ''
     setMsgs(prev => {
-      const next = [...prev, { id: optimisticId, role: 'user', text }]
+      const next = [
+        ...prev,
+        { id: optimisticId, role: 'user', text, attachments },
+        { id: pendingId, role: 'assistant', text: '', pending: true },
+      ]
       return next.length > MAX_MESSAGES ? next.slice(-MAX_MESSAGES) : next
     })
     setSending(true)
@@ -731,125 +1081,74 @@ export default function NovaAssistant() {
       const res = await fetch('/api/nova/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({
+          message: text + attachmentSummary,
+          context: novaContext(msgs),
+          attachments: effectiveAttachments,
+        }),
       })
-      const d = await res.json()
+      const d = await readNovaResponse(res)
       setMsgs(prev => {
-        const filtered = prev.filter(m => m.id !== optimisticId)
-        const userConfirmed = [...filtered, { id: optimisticId, role: 'user', text }]
-        const next = [...userConfirmed, { id: `asst-${Date.now()}`, role: 'assistant', text: d.text || 'Đã nhận yêu cầu.' }]
+        const next = prev.map(m =>
+          m.id === pendingId
+            ? { id: `asst-${Date.now()}`, role: 'assistant', text: d.text, action: d.action || null }
+            : m
+        )
         return next.length > MAX_MESSAGES ? next.slice(-MAX_MESSAGES) : next
       })
     } catch (err) {
       setMsgs(prev => {
         const updated = prev.map(m =>
-          m.id === optimisticId ? { ...m, optimistic: false, error: true } : m
+          m.id === optimisticId
+            ? { ...m, optimistic: false, error: true }
+            : m.id === pendingId
+            ? { id: `err-${Date.now()}`, role: 'error', text: err?.message || 'Nova chưa nhận được phản hồi. Bạn thử gửi lại câu này nhé.' }
+            : m
         )
-        return [...updated, { id: `err-${Date.now()}`, role: 'error', text: 'Xin lỗi, gặp lỗi kết nối.' }]
-          .slice(-MAX_MESSAGES)
+        return updated.slice(-MAX_MESSAGES)
       })
     } finally {
       setSending(false)
     }
-  }, [])
+  }, [msgs])
 
   // ─── ESC to close ───────────────────────────────────────────────────────────
   useEffect(() => {
     const h = (e) => {
       if (e.key === 'Escape' && state === NovaState.CHAT_OPEN) {
-        stopVoice()
-        setState(NovaState.IDLE)
+        closeChat()
       }
     }
     window.addEventListener('keydown', h)
     return () => window.removeEventListener('keydown', h)
-  }, [state, stopVoice])
+  }, [state, closeChat])
 
-  // ─── Window resize: keep orb in bounds ────────────────────────────────────
+  // ─── Window resize: keep Nova pinned to the outer bottom-right corner ─────
   useEffect(() => {
-    const onResize = () => {
-      setOrbPos(prev => ({
-        ...prev,
-        x: Math.min(prev.x, window.innerWidth - ORB),
-        y: Math.min(prev.y, window.innerHeight - ORB),
-      }))
-    }
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
+    const pin = () => setOrbPos({
+      x: window.innerWidth - ORB - SAFE,
+      y: window.innerHeight - ORB - SAFE,
+    })
+    pin()
+    window.addEventListener('resize', pin)
+    return () => window.removeEventListener('resize', pin)
   }, [])
 
-  // ─── Click vs drag (instant, no delay) ────────────────────────────────────
+  // ─── Click only: Nova is pinned, not draggable ─────────────────────────────
   const onPointerDown = useCallback((e) => {
-    if (e.button !== 0) return
-    dragStartX.current = e.clientX
-    dragStartY.current = e.clientY
-    dragOrbX.current = orbX
-    dragOrbY.current = orbY
-    dragging.current = false
-
-    const onMove = (me) => {
-      const dx = me.clientX - dragStartX.current
-      const dy = me.clientY - dragStartY.current
-      const dist = Math.sqrt(dx * dx + dy * dy)
-      if (!dragging.current && dist > DRAG_THRESH_PX) {
-        dragging.current = true
-        setIsDragging(true)
-        document.body.style.cursor = 'grabbing'
-        clickTimer.current && clearTimeout(clickTimer.current)
-      }
-      if (dragging.current) {
-        lastMoveX.current = me.clientX
-        lastMoveY.current = me.clientY
-        if (rafId.current) cancelAnimationFrame(rafId.current)
-        rafId.current = requestAnimationFrame(() => {
-          const nx = Math.max(0, Math.min(window.innerWidth - ORB, dragOrbX.current + me.clientX - dragStartX.current))
-          const ny = Math.max(0, Math.min(window.innerHeight - ORB, dragOrbY.current + me.clientY - dragStartY.current))
-          setOrbPos({ x: nx, y: ny })
-        })
-      }
+    if (e.button != null && e.button !== 0) return
+    e.preventDefault()
+    if (state === NovaState.IDLE) {
+      setMsgs([])
+      setState(NovaState.CHAT_OPEN)
+    } else if (state === NovaState.CHAT_OPEN) {
+      closeChat()
     }
-
-    const onUp = () => {
-      document.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseup', onUp)
-      if (rafId.current) cancelAnimationFrame(rafId.current)
-      document.body.style.cursor = ''
-
-      if (dragging.current) {
-        dragging.current = false
-        setIsDragging(false)
-        // Capture final position at drag end (not stale closure)
-        const finalX = dragOrbX.current + (lastMoveX.current - dragStartX.current)
-        const finalY = dragOrbY.current + (lastMoveY.current - dragStartY.current)
-        const finalPos = {
-          x: Math.max(0, Math.min(window.innerWidth - ORB, finalX)),
-          y: Math.max(0, Math.min(window.innerHeight - ORB, finalY)),
-        }
-        setOrbPos(finalPos)
-        keepPos(finalPos)
-        return
-      }
-
-      // Not a drag — it's a click
-      dragging.current = false
-      setIsDragging(false)
-
-      if (state === NovaState.IDLE) {
-        setState(NovaState.CHAT_OPEN)
-        setTimeout(() => startVoice(), 100)
-      } else if (state === NovaState.CHAT_OPEN) {
-        stopVoice()
-        setState(NovaState.IDLE)
-      }
-    }
-
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup', onUp)
-  }, [orbX, orbY, state, startVoice, stopVoice])
+  }, [state, closeChat])
 
   const onMouseEnter = useCallback(() => {
-    document.body.style.cursor = isDragging ? 'grabbing' : 'pointer'
-  }, [isDragging])
+    document.body.style.cursor = 'pointer'
+  }, [])
 
   const onMouseLeave = () => {
     document.body.style.cursor = ''
@@ -878,28 +1177,10 @@ export default function NovaAssistant() {
         @keyframes spinB { from{transform:rotateY(72deg) rotateZ(18deg)} to{transform:rotateY(72deg) rotateZ(378deg)} }
         @keyframes spinC { from{transform:rotateX(72deg) rotateY(72deg) rotateZ(-22deg) scale(0.92)} to{transform:rotateX(72deg) rotateY(72deg) rotateZ(338deg) scale(0.92)} }
 
-        /* ── Orbit A: Rx=6, Ry=4 horizontal ellipse, 1.8s clockwise ──
-           Parametric: x(t)=6*cos(t), y(t)=4*sin(t)
-           Phase 0° → starts at right-most point. zIndex=10 above sphere. */
-        @keyframes orbitA {
-          0%   { transform: translate( 6px,  0px); }
-          25%  { transform: translate( 0px,  4px); }
-          50%  { transform: translate(-6px,  0px); }
-          75%  { transform: translate( 0px, -4px); }
-          100% { transform: translate( 6px,  0px); }
-        }
-
-        /* ── Orbit B: Rx=4, Ry=6 vertical ellipse, 1.4s counter-clockwise ──
-           Parametric: x(t)=4*cos(t+90°), y(t)=6*sin(t+90°)
-           Phase 90° → starts at bottom (0,6). NEVER meets orbitA — orthogonal axes.
-           Speed: 1.4s = 1.29× faster than orbitA. zIndex=10 above sphere. */
-        @keyframes orbitB {
-          0%   { transform: translate( 0px,  6px); }
-          25%  { transform: translate(-4px,  0px); }
-          50%  { transform: translate( 0px, -6px); }
-          75%  { transform: translate( 4px,  0px); }
-          100% { transform: translate( 0px,  6px); }
-        }
+        @keyframes siriFloat { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-2px) scale(1.035)} }
+        @keyframes siriSpin { from{transform:rotate(0deg) scale(1)} to{transform:rotate(360deg) scale(1)} }
+        @keyframes siriPulse { 0%,100%{opacity:0.58; transform:scale(0.95)} 50%{opacity:0.95; transform:scale(1.12)} }
+        @keyframes siriRing { from{transform:rotateX(68deg) rotateZ(18deg)} to{transform:rotateX(68deg) rotateZ(378deg)} }
 
         @keyframes dotBlink  { 0%,100%{transform:scale(1); opacity:1} 50%{transform:scale(1.5); opacity:0.6} }
         @keyframes wBar      { from{transform:scaleY(0.15)} to{transform:scaleY(1)} }
@@ -913,15 +1194,20 @@ export default function NovaAssistant() {
 
       {/* Chatbox panel */}
       {state === NovaState.CHAT_OPEN && (
-        <Chatbox
+      <Chatbox
           messages={msgs}
           onSend={chatSend}
-          onClose={() => { stopVoice(); setState(NovaState.IDLE) }}
+          onClose={closeChat}
+          onRestoreChat={restoreChat}
+          recentChats={recentChats}
           orbX={orbX}
           orbY={orbY}
           sending={sending}
           voiceTranscript={voiceTranscript}
           voiceListening={voiceListening}
+          onStartVoice={startVoice}
+          onStopVoice={stopVoice}
+          onRunAction={runNovaAction}
         />
       )}
 
@@ -932,13 +1218,13 @@ export default function NovaAssistant() {
         onTouchStart={onPointerDown}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
-        title={state === NovaState.CHAT_OPEN ? 'Click để đóng chat · Kéo để di chuyển' : 'Click để mở chat · Kéo để di chuyển'}
+        title={state === NovaState.CHAT_OPEN ? 'Click để đóng chat' : 'Click để mở chat'}
         style={{
           position: 'fixed',
           left: orbX,
           top: orbY,
           zIndex: state === NovaState.CHAT_OPEN ? 9999 : 9998,
-          cursor: isDragging ? 'grabbing' : 'pointer',
+          cursor: 'pointer',
           userSelect: 'none',
           WebkitUserSelect: 'none',
           display: 'flex',
@@ -946,15 +1232,6 @@ export default function NovaAssistant() {
         }}
       >
         {/* Drag ring indicator */}
-        {isDragging && (
-          <div style={{
-            position: 'absolute', inset: '-8px', borderRadius: '50%',
-            border: '2px solid rgba(125,211,252,0.55)',
-            animation: 'dragRing 0.6s ease-out infinite',
-            pointerEvents: 'none',
-          }} />
-        )}
-
         <NovaOrb
           state={state}
           hovered={false}

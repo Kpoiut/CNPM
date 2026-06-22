@@ -1,0 +1,45 @@
+HUONG DAN CHAY NHANH DU AN REAL ESTATE AVM
+
+1. Cai thu vien neu may chua co
+   - Chay INSTALL_DEPENDENCIES.bat
+   - Hoac cai rieng:
+       py -m pip install -r requirements.txt
+       cd frontend
+       npm install
+
+2. Backend
+   - Chay RUN_BACKEND.bat
+   - Backend: http://127.0.0.1:8000
+   - RUN_BACKEND.bat se tao .env tu .env.example neu thieu.
+   - JWT_SECRET_KEY la bat buoc; neu con placeholder, script tao secret tam cho phien chay.
+
+3. Frontend
+   - Chay RUN_FRONTEND.bat
+   - Frontend: http://127.0.0.1:5173
+   - frontend/.env can co:
+       VITE_API_PROXY_TARGET=http://127.0.0.1:8000
+
+4. Nova chatbox
+   - Luu toi da 3 cuoc tro chuyen gan nhat trong localStorage khi dong chat.
+   - Mo chat moi se bat dau phien moi; bam nut lich su trong header de xem lai 3 phien gan nhat.
+   - Ho tro gui anh va gui thu muc. Thu muc duoc gui dang manifest ten file/duong dan/dung luong/text preview ngan.
+   - Anh hop le duoc gui cho provider vision neu backend co key/token.
+
+5. Cau hinh key an toan
+   - Khong dat key that trong file zip nop.
+   - Co the dat ANTHROPIC_API_KEY hoac OPENAI_API_KEY trong .env local.
+   - Neu may co %USERPROFILE%\.claude\settings.json, RUN_BACKEND.ps1 se doc
+     ANTHROPIC_AUTH_TOKEN va ANTHROPIC_BASE_URL vao process luc chay.
+   - Key/token khong duoc in ra terminal, khong hard-code trong source, khong dong goi vao zip.
+
+6. Kiem tra nhanh
+   - Backend Nova health:
+       http://127.0.0.1:8000/api/nova/health
+   - Proxy qua frontend:
+       http://localhost:5173/api/provinces
+
+7. Dataset / model / database
+   - PostgreSQL 18 database: real_estate_avm.
+   - DATABASE_URL bat buoc dung dang postgresql+psycopg://...
+   - Chay migration bang: python -m alembic upgrade head.
+   - Model active hien tai duoc pin trong models/ACTIVE_MODEL.json va bang model_versions.

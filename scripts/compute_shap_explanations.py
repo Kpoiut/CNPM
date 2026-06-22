@@ -7,9 +7,21 @@ Run once after each model retrain.
 Usage: python scripts/compute_shap_explanations.py
 """
 import sys
+import os
 from pathlib import Path
+from dotenv import load_dotenv
+
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
+
+for env_name in (".env", ".env.postgres.local"):
+    env_path = PROJECT_ROOT / env_name
+    if env_path.exists():
+        load_dotenv(env_path)
+        break
+
+if not os.environ.get("DATABASE_URL", "").startswith("postgresql"):
+    raise SystemExit("Refusing SHAP computation: DATABASE_URL is not PostgreSQL")
 
 from datetime import datetime
 import json

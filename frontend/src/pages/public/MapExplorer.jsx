@@ -21,12 +21,15 @@ import {
 } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
+import markerIcon2xUrl from 'leaflet/dist/images/marker-icon-2x.png'
+import markerIconUrl from 'leaflet/dist/images/marker-icon.png'
+import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png'
 
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+  iconRetinaUrl: markerIcon2xUrl,
+  iconUrl: markerIconUrl,
+  shadowUrl: markerShadowUrl,
 })
 
 const HANOI_CENTER = [21.0285, 105.8542]
@@ -204,8 +207,10 @@ export default function MapExplorer() {
   const [activeLayer, setActiveLayer] = useState('street')
   const [activeView, setActiveView] = useState('price_tier') // 'price_tier' | 'confidence' | 'comparable'
   const [selectedDistrict, setSelectedDistrict] = useState(null)
+  const [districtPage, setDistrictPage] = useState(1)
   const [clickedCoords, setClickedCoords] = useState(null)
   const [hoveredMarker, setHoveredMarker] = useState(null)
+  const DISTRICT_PAGE_SIZE = 5
 
   // Fetch all properties with coordinates
   const { data: properties, isLoading } = useQuery({
@@ -264,6 +269,16 @@ export default function MapExplorer() {
       }
     }).sort((a, b) => b.avg_price_per_m2 - a.avg_price_per_m2)
   }, [geoProps])
+
+  const totalDistrictPages = Math.max(1, Math.ceil(districtPriceStats.length / DISTRICT_PAGE_SIZE))
+  const paginatedDistrictStats = useMemo(() => {
+    const start = (districtPage - 1) * DISTRICT_PAGE_SIZE
+    return districtPriceStats.slice(start, start + DISTRICT_PAGE_SIZE)
+  }, [districtPriceStats, districtPage])
+
+  useEffect(() => {
+    if (districtPage > totalDistrictPages) setDistrictPage(1)
+  }, [districtPage, totalDistrictPages])
 
   // Count by district
   const countByDistrict = useMemo(() => {
@@ -597,7 +612,7 @@ export default function MapExplorer() {
             <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: 8, fontWeight: 700, textTransform: 'uppercase' }}>
               Giá TB theo quận ({formatVnd(marketStats.avgPricePerM2)}/m²)
             </div>
-            {districtPriceStats.slice(0, 12).map(stat => (
+            {paginatedDistrictStats.map(stat => (
               <div
                 key={stat.district}
                 onClick={() => {
@@ -641,6 +656,36 @@ export default function MapExplorer() {
             {districtPriceStats.length === 0 && (
               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' }}>
                 Chưa có đủ dữ liệu giá theo quận
+              </div>
+            )}
+            {districtPriceStats.length > DISTRICT_PAGE_SIZE && (
+              <div className="app-pagination" style={{ marginTop: 12 }}>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  Trang {districtPage} / {totalDistrictPages} · {districtPriceStats.length.toLocaleString('vi-VN')} quận
+                </span>
+                <div className="app-pagination-pages">
+                  {Array.from({ length: totalDistrictPages }, (_, index) => {
+                    const page = index + 1
+                    return (
+                      <button
+                        key={page}
+                        type="button"
+                        className={`app-pagination-page ${districtPage === page ? 'active' : ''}`}
+                        onClick={() => setDistrictPage(page)}
+                      >
+                        {page}
+                      </button>
+                    )
+                  })}
+                </div>
+                <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
+                  <button className="btn btn-ghost btn-sm" disabled={districtPage <= 1} onClick={() => setDistrictPage(p => Math.max(1, p - 1))}>
+                    ← Trước
+                  </button>
+                  <button className="btn btn-ghost btn-sm" disabled={districtPage >= totalDistrictPages} onClick={() => setDistrictPage(p => Math.min(totalDistrictPages, p + 1))}>
+                    Sau →
+                  </button>
+                </div>
               </div>
             )}
           </div>

@@ -31,6 +31,8 @@ from src.config.province_config import (
     SCOPE_DISTRICTS,
     normalize_province,
 )
+from src.domain.evidence_tier import anchor_share as compute_anchor_share
+from src.domain.evidence_tier import evidence_weight
 
 
 # =============================================================================
@@ -422,9 +424,8 @@ class ValuationEngine:
         if not target_comps:
             target_comps = comparables
 
-        # Weighted median theo evidence tier
-        tier_weights = {"E1": 1.0, "E2": 0.85, "E3": 0.65, "E4": 0.35, "E5": 0.15}
-        weights = [tier_weights.get(c.evidence_tier, 0.3) for c in target_comps]
+        # Weighted median theo evidence tier (E5 mạnh nhất)
+        weights = [evidence_weight(c.evidence_tier) for c in target_comps]
         total_weight = sum(weights) or 1.0
 
         # Weighted mean price_per_m2
@@ -447,12 +448,12 @@ class ValuationEngine:
         tier_breakdown: Dict[str, int] = {}
         for c in target_comps:
             tier_breakdown[c.evidence_tier] = tier_breakdown.get(c.evidence_tier, 0) + 1
-        anchor_share = (tier_breakdown.get("E1", 0) + tier_breakdown.get("E2", 0)) / max(len(target_comps), 1)
+        strong_anchor_share = compute_anchor_share(tier_breakdown, len(target_comps))
 
         return base_price, {
             "avg_price_per_m2": avg_price_per_m2,
             "tier_breakdown": tier_breakdown,
-            "anchor_share": anchor_share,
+            "anchor_share": strong_anchor_share,
             "effective_sample_size": total_weight,
             "independent_source_count": len({c.evidence_tier for c in target_comps}),
         }
@@ -783,18 +784,17 @@ class ValuationEngine:
                 "tier_breakdown": {},
             }
 
-        tier_weights = {"E1": 1.0, "E2": 0.85, "E3": 0.65, "E4": 0.35, "E5": 0.15}
         tier_breakdown: Dict[str, int] = {}
         weighted_sum = 0.0
         total_weight = 0.0
 
         for c in comparables:
-            w = tier_weights.get(c.evidence_tier, 0.3)
+            w = evidence_weight(c.evidence_tier)
             weighted_sum += w * w  # square for emphasis on high-quality
             total_weight += w
             tier_breakdown[c.evidence_tier] = tier_breakdown.get(c.evidence_tier, 0) + 1
 
-        anchor_share = (tier_breakdown.get("E1", 0) + tier_breakdown.get("E2", 0)) / max(len(comparables), 1)
+        anchor_share = compute_anchor_share(tier_breakdown, len(comparables))
         avg_evidence_weight = total_weight / max(len(comparables), 1)
         similarity_values = [
             c.similarity_score for c in comparables
@@ -804,7 +804,7 @@ class ValuationEngine:
 
         # Effective sample size (Neff approximation)
         neff = sum(
-            tier_weights.get(c.evidence_tier, 0.3) * 0.5
+            evidence_weight(c.evidence_tier) * 0.5
             for c in comparables
         )
 
@@ -834,6 +834,20 @@ class ValuationEngine:
                 + geo_component,
             ),
         )
+
+        # A compact but very strong comparable pack should clear the "usable"
+        # threshold even when it is far below the 800-sample production-grade A
+        # target. This keeps small expert/demo cases from being marked as low
+        # confidence when all evidence is E4/E5, same market, and geocoded.
+        if (
+            sample_count >= 10
+            and anchor_share >= 0.80
+            and avg_evidence_weight >= 0.85
+            and avg_similarity >= 0.50
+            and asset_input.latitude
+            and asset_input.longitude
+        ):
+            confidence = max(confidence, 0.55)
 
         # Grade
         if sample_count >= 800 and confidence >= 0.85:
@@ -971,7 +985,7 @@ class ValuationEngine:
 
         anchor_share = stats.get("anchor_share", 0.0)
         if anchor_share == 0:
-            warnings.append("Không có comparable E1/E2 trong dataset — confidence bị cap.")
+            warnings.append("Không có comparable E4/E5 trong dataset — confidence bị cap.")
 
         if stats.get("effective_sample_size", 0) < 10:
             warnings.append("Effective sample size thấp — kết quả chỉ mang tính tham khảo.")

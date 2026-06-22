@@ -50,6 +50,8 @@ class PredictionResponse(BaseModel):
     model_used: str
     confidence: Optional[float] = None
     input_features: Dict[str, Any]
+    prediction_id: Optional[int] = None
+    request_id: Optional[str] = None
 
     # Training provenance
     model_version: Optional[str] = None

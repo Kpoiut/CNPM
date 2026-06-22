@@ -1,130 +1,248 @@
-name: CI
+name: Production CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, master, develop]
   pull_request:
-    branches: [main]
+    branches: [main, master, develop]
+  workflow_dispatch: {}
+
+concurrency:
+  group: production-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  # ---------------------------------------------------------------------------
-  # Lint — Python + JavaScript
-  # ---------------------------------------------------------------------------
-  lint:
-    name: Lint
+  backend-tests:
+    name: Backend + PostgreSQL production tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgis/postgis:18-3.6
+        env:
+          POSTGRES_DB: real_estate_avm_ci
+          POSTGRES_USER: avm_ci
+          POSTGRES_PASSWORD: avm-ci-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U avm_ci -d real_estate_avm_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://avm_ci:avm-ci-password@localhost:5432/real_estate_avm_ci
+      JWT_SECRET_KEY: test-jwt-secret-key-for-ci-only
+      RESEARCH_LAB_ACCESS_CODE: avm-research-ci-only
+      PYTHONUTF8: "1"
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
 
-      - name: Python lint
+      - name: Install test dependencies
         run: |
-          pip install flake8
-          flake8 src/ tests/ --max-line-length=120 --extend-ignore=E203,W503 || true
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
 
-      - name: Set up Node.js
+      - name: Migrate fresh PostgreSQL database
+        run: python -m alembic upgrade head
+
+      - name: Verify Alembic head
+        run: python -m alembic current
+
+      - name: Run pytest with JUnit and coverage evidence
+        run: |
+          mkdir -p reports/ci
+          python -m pytest tests -q --maxfail=5 \
+            --junitxml=reports/ci/pytest-junit.xml \
+            --cov=src --cov-report=term-missing \
+            --cov-report=xml:reports/ci/coverage.xml
+
+      - name: Audit PostgreSQL catalogue
+        run: python scripts/audit_postgres_catalog.py --exact-counts > reports/ci/postgresql-catalog.json
+
+      - name: Upload backend evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-evidence-${{ github.sha }}
+          path: |
+            reports/ci/pytest-junit.xml
+            reports/ci/coverage.xml
+            reports/ci/postgresql-catalog.json
+          if-no-files-found: warn
+          retention-days: 30
+
+  frontend-tests:
+    name: Frontend unit tests + production build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 20
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "npm"
+          cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: JS lint
-        run: |
-          cd frontend && npm ci
-          npx eslint src/ --max-warnings=50 || true
+      - name: Install locked dependencies
+        run: npm ci
 
-  # ---------------------------------------------------------------------------
-  # Backend Tests — pytest
-  # ---------------------------------------------------------------------------
-  backend-test:
-    name: Backend Tests
+      - name: Audit frontend dependencies
+        run: |
+          mkdir -p ../reports/ci
+          npm audit --audit-level=high --json > ../reports/ci/npm-audit.json
+
+      - name: Run frontend unit tests with JUnit evidence
+        run: npm run test:ci
+
+      - name: Build production frontend and enforce bundle budgets
+        run: |
+          npm run build
+          node scripts/check-bundle-budget.mjs --report=../reports/ci/frontend-bundle-budget.json
+
+      - name: Record bundle sizes
+        run: |
+          find dist/assets -type f -printf '%s %p\n' | sort -nr > ../reports/ci/frontend-bundle-sizes.txt
+
+      - name: Upload frontend evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-evidence-${{ github.sha }}
+          path: |
+            reports/ci/frontend-junit.xml
+            reports/ci/npm-audit.json
+            reports/ci/frontend-bundle-budget.json
+            reports/ci/frontend-bundle-sizes.txt
+          if-no-files-found: warn
+          retention-days: 30
+
+  test-catalogue:
+    name: Production test catalogue contract
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
-          cache-dependency-path: requirements.txt
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - name: Install workbook validator dependency
+        run: python -m pip install openpyxl==3.1.5
 
-      - name: Create .env for tests
+      - name: Validate scenarios, IDs, RTM and evidence mapping
         run: |
-          echo "RESEARCH_LAB_ACCESS_CODE=avm-research-2026" >> .env
-          echo "JWT_SECRET_KEY=test-jwt-secret-key-for-ci-only" >> .env
+          mkdir -p reports/ci
+          python scripts/quality/validate_test_catalog.py \
+            --report reports/ci/test-catalogue-validation.json
 
-      - name: Run pytest
-        run: python -m pytest tests/ -q --tb=short
+      - name: Upload catalogue evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-catalogue-evidence-${{ github.sha }}
+          path: |
+            docs/testing/AVM_Production_Test_Cases.xlsx
+            reports/ci/test-catalogue-validation.json
+          if-no-files-found: error
+          retention-days: 30
 
-  # ---------------------------------------------------------------------------
-  # Frontend Tests — Vitest
-  # ---------------------------------------------------------------------------
-  frontend-test:
-    name: Frontend Tests
+  security-audit:
+    name: Python dependency security gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-python@v5
         with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
+          python-version: "3.12"
 
-      - name: Install dependencies
-        run: cd frontend && npm ci
+      - name: Run blocking pip-audit
+        run: |
+          mkdir -p reports/ci
+          python -m pip install --upgrade pip pip-audit
+          pip-audit -r requirements.txt --format=json --output=reports/ci/pip-audit.json
 
-      - name: Run Vitest
-        run: cd frontend && npm run test -- --run || true
+      - name: Upload security evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-security-evidence-${{ github.sha }}
+          path: reports/ci/pip-audit.json
+          if-no-files-found: warn
+          retention-days: 30
 
-  # ---------------------------------------------------------------------------
-  # Build — Docker images
-  # ---------------------------------------------------------------------------
-  build:
-    name: Build Docker
+  docker-smoke:
+    name: Docker build + migration + health smoke
     runs-on: ubuntu-latest
-    needs: [lint, backend-test, frontend-test]
-    if: github.event_name == 'push'
+    needs: [backend-tests, frontend-tests, test-catalogue, security-audit]
+    env:
+      POSTGRES_DB: real_estate_avm
+      POSTGRES_USER: avm_app
+      POSTGRES_PASSWORD: ci-compose-validation-password
+      JWT_SECRET_KEY: ci-compose-validation-jwt-secret
+      RESEARCH_LAB_ACCESS_CODE: ci-compose-validation-code
+      CORS_ORIGINS: http://localhost
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Validate Compose contract
+        run: docker compose config --quiet
 
-      - name: Build backend image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: false
-          tags: real-estate-avm/backend:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Build immutable application images
+        run: docker compose build backend frontend migrate
 
-      - name: Build frontend image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./frontend/Dockerfile
-          push: false
-          tags: real-estate-avm/frontend:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Start production-like stack
+        run: docker compose up -d postgres backend frontend
 
-      - name: Docker Compose smoke test
+      - name: Wait for backend and frontend health
+        shell: bash
         run: |
-          docker compose -f docker-compose.yml build
-          docker compose -f docker-compose.yml up -d
-          sleep 10
-          docker compose -f docker-compose.yml ps
-          docker compose -f docker-compose.yml down
+          mkdir -p reports/ci
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1/api/health > reports/ci/docker-health.json; then
+              exit 0
+            fi
+            sleep 5
+          done
+          docker compose ps
+          docker compose logs --no-color
+          exit 1
+
+      - name: Record container state and logs
+        if: always()
+        shell: bash
+        run: |
+          docker compose ps --format json > reports/ci/docker-compose-ps.json || true
+          docker compose logs --no-color > reports/ci/docker-compose.log || true
+
+      - name: Upload Docker smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-smoke-evidence-${{ github.sha }}
+          path: |
+            reports/ci/docker-health.json
+            reports/ci/docker-compose-ps.json
+            reports/ci/docker-compose.log
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Stop stack
+        if: always()
+        run: docker compose down --volumes --remove-orphans

@@ -11,22 +11,19 @@ Usage:
     python scripts/retrain_v2.py --list            # List versions
 """
 import argparse
+import os
 import sys
 from pathlib import Path
+from dotenv import load_dotenv
+
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from datetime import datetime, timezone
-import scripts.model_registry as registry
-
-
-def _normalize_dt(value):
-    if not value:
-        return None
-    if value.tzinfo is not None:
-        return value.astimezone(timezone.utc).replace(tzinfo=None)
-    return value
-
+for env_name in (".env", ".env.postgres.local"):
+    env_path = PROJECT_ROOT / env_name
+    if env_path.exists():
+        load_dotenv(env_path)
+        break
 
 def main():
     parser = argparse.ArgumentParser(description="ML Retraining Orchestrator v2")
@@ -37,9 +34,12 @@ def main():
     parser.add_argument("--min-clean", type=int, default=500)
     args = parser.parse_args()
 
+    if not os.environ.get("DATABASE_URL", "").startswith("postgresql"):
+        raise SystemExit("Refusing retrain: DATABASE_URL is not PostgreSQL")
+
     if args.list:
-        for v in registry.list_versions():
-            print(f"  {v['version']} | {v['name']} | MAE={v.get('mae','?')} | R2={v.get('r2','?')}")
+        from scripts.mlops import cmd_experiments
+        cmd_experiments(args)
         return
 
     if args.rollback:
@@ -54,6 +54,11 @@ def main():
         print(f"[FAIL] Data validation failed. Fix issues before retraining.")
         print(f"  Clean records: {validation['clean_count']}/{validation['total']}")
         sys.exit(1)
+    if validation["clean_count"] < args.min_clean:
+        raise SystemExit(
+            f"Refusing retrain: only {validation['clean_count']} clean records; "
+            f"minimum is {args.min_clean}"
+        )
     print(f"[OK] Data validation passed — {validation['clean_count']} clean records")
 
     if args.dry_run:
@@ -72,10 +77,6 @@ def main():
         Property.area_m2 > 0,
         Property.price_per_m2 > 0,
     ).all()
-    verified_count = sum(1 for prop in props if prop.verification_status == "verified")
-    self_collected_count = sum(1 for prop in props if prop.data_origin_type == "self_collected")
-    train_start_date = min((_normalize_dt(prop.created_at) for prop in props if prop.created_at), default=None)
-    train_end_date = max((_normalize_dt(prop.updated_at or prop.created_at) for prop in props if prop.updated_at or prop.created_at), default=None)
     db.close()
     print(f"[OK] Loaded {len(props)} properties")
 
@@ -127,27 +128,17 @@ def main():
     except Exception as e:
         print(f"[WARN] SHAP computation skipped: {e}")
 
-    # Step 6: Register version
-    print("\n[Step 6/6] Registering model version...")
-    version_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-    metadata = {
-        "trained_at": version_str,
-        "best_model": best_name,
-        "n_train": len(props),
-        "fit_train_size": train_result.get("train_size"),
-        "validation_size": train_result.get("validation_size"),
-        "test_size": train_result.get("test_size"),
-        "verified_count": verified_count,
-        "test_mae": best_result.get("test_mae"),
-        "test_rmse": best_result.get("test_rmse"),
-        "test_r2": best_result.get("test_r2"),
-        "test_mape": best_result.get("test_mape"),
-        "self_collected_ratio": round(self_collected_count / len(props), 4) if props else 0.0,
-        "train_start_date": train_start_date,
-        "train_end_date": train_end_date,
-    }
-    vid = registry.register_version(metadata, model_path, "post-cleanup-full-retrain")
-    print(f"[OK] Registered as version {version_str} (id={vid})")
+    # Step 6: Synchronize the exact artifact stamp into canonical lineage.
+    # Never create a second timestamp a few seconds later: that was the source
+    # of duplicate model rows in the old registry.
+    print("\n[Step 6/6] Synchronizing PostgreSQL ML lineage...")
+    version_str = Path(model_path).stem.removeprefix("model_")
+    from scripts.sync_ml_registry import sync_registry
+    sync_result = sync_registry(PROJECT_ROOT / "models")
+    print(
+        f"[OK] Registered exact artifact version {version_str}; "
+        f"metadata files={sync_result['metadata_files']}"
+    )
 
     # Clear model cache
     try:

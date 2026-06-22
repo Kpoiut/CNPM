@@ -9,6 +9,7 @@
 const BASE = '/api'
 const V2_BASE = '/api/v2'
 const TOKEN_KEY = 'avm-token'
+const REFRESH_KEY = 'avm-refresh'
 
 const DEFAULT_TIMEOUT = 30_000 // 30s max per request
 const MAX_RETRIES = 3
@@ -18,6 +19,34 @@ const MAX_RETRIES = 3
  */
 function getAuthToken() {
   try { return localStorage.getItem(TOKEN_KEY) } catch { return null }
+}
+
+function getRefreshToken() {
+  try { return localStorage.getItem(REFRESH_KEY) } catch { return null }
+}
+
+// Đổi refresh token lấy access mới + xoay vòng. Gộp các lời gọi đồng thời.
+let _refreshing = null
+function tryRefresh() {
+  const rt = getRefreshToken()
+  if (!rt) return Promise.resolve(false)
+  if (_refreshing) return _refreshing
+  _refreshing = (async () => {
+    try {
+      const res = await fetch(`${BASE}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: rt }),
+      })
+      if (!res.ok) return false
+      const data = await res.json()
+      if (data.access_token) localStorage.setItem(TOKEN_KEY, data.access_token)
+      if (data.refresh_token) localStorage.setItem(REFRESH_KEY, data.refresh_token)
+      if (data.user) localStorage.setItem('avm-user', JSON.stringify(data.user))
+      return true
+    } catch { return false } finally { _refreshing = null }
+  })()
+  return _refreshing
 }
 
 function hasLocalAdminSession() {
@@ -53,6 +82,7 @@ function handle401() {
   }
   try {
     localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(REFRESH_KEY)
     localStorage.removeItem('avm-user')
   } catch { /* ignore */ }
   if (window.location.pathname !== '/login') {
@@ -73,8 +103,11 @@ async function fetchWithRetry(url, options = {}, { retries = MAX_RETRIES, timeou
 
     if (res.ok) return res
 
-    // 401 → unauthorized → redirect to login
+    // 401 → thử refresh access token 1 lần rồi gọi lại; thất bại mới về login
     if (res.status === 401) {
+      if (!options._retried && await tryRefresh()) {
+        return fetchWithRetry(url, { ...options, _retried: true }, { retries, timeout, redirectOn401 })
+      }
       const err = new Error('Phiên đăng nhập đã hết hạn')
       err.status = 401
       if (redirectOn401) handle401()

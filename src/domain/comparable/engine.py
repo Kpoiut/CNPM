@@ -16,6 +16,8 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Callable
 from datetime import datetime
 
+from src.domain.evidence_tier import anchor_share, evidence_score, evidence_sort_key
+
 
 # =============================================================================
 # DATA CLASSES
@@ -266,15 +268,8 @@ class ComparableEngine:
         return legal_map.get(comp.legal_status, 0.40)
 
     def _evidence_score(self, tier: str) -> float:
-        """Map E1-E5 tier sang score (0-1)."""
-        tier_map = {
-            "E1": 1.0,
-            "E2": 0.85,
-            "E3": 0.65,
-            "E4": 0.35,
-            "E5": 0.15,
-        }
-        return tier_map.get(tier, 0.30)
+        """Map E1-E5 tier sang score (0-1), E5 mạnh nhất."""
+        return evidence_score(tier)
 
     def _recency_score(self, listing_date_str: Optional[str]) -> float:
         """Tính recency score (0-1) dựa trên ngày listing."""
@@ -359,12 +354,10 @@ class ComparableEngine:
         Candidates được re-rank theo evidence tier,
         nhưng similarity vẫn được giữ nguyên.
         """
-        tier_order = {"E1": 0, "E2": 1, "E3": 2, "E4": 3, "E5": 4}
-
         return sorted(
             candidates,
             key=lambda c: (
-                tier_order.get(c.evidence_tier, 4),  # E1 first
+                evidence_sort_key(c.evidence_tier),
                 -c.overall_similarity,             # Then by similarity
             )
         )
@@ -378,10 +371,7 @@ class ComparableEngine:
         # Filter by minimum similarity
         filtered = [c for c in candidates if c.overall_similarity >= query.min_similarity]
 
-        # Sort by overall similarity (descending)
-        filtered.sort(key=lambda c: -c.overall_similarity)
-
-        # Limit count
+        # Preserve Layer 4 ordering: evidence tier first, similarity second.
         return filtered[:query.max_count]
 
     def generate_explanation(
@@ -403,9 +393,10 @@ class ComparableEngine:
 
         avg_similarity = sum(c.overall_similarity for c in comps) / len(comps)
 
-        if tier_counts["E1"] + tier_counts["E2"] >= len(comps) * 0.4:
+        strong_anchor_share = anchor_share(tier_counts, len(comps))
+        if strong_anchor_share >= 0.4:
             quality = "high"
-        elif tier_counts["E1"] + tier_counts["E2"] + tier_counts["E3"] >= len(comps) * 0.5:
+        elif strong_anchor_share + (tier_counts["E3"] / len(comps)) >= 0.5:
             quality = "medium"
         else:
             quality = "low"

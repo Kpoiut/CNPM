@@ -44,6 +44,35 @@ const FACTOR_GROUP_LABELS = {
 
 const CONFIDENCE_BAR_COLORS = { A: '#06d6a0', B: '#0099ff', C: '#f59e0b', D: '#ef233c' };
 
+// Tên hiển thị thân thiện cho factor_code (tránh hiện mã thô như GEOM_NÖHẬU)
+const FACTOR_LABELS = {
+  GEOM_NÖHẬU: 'Đất nở hậu (vuông vắn)',
+  GEOM_THOP_HAU: 'Đất thóp hậu',
+  GEOM_THOP_HAU_SEVERE: 'Thóp hậu nặng',
+  GEOM_CORNER_PLOT: 'Đất góc nhiều mặt tiền',
+  GEOM_IRREGULAR: 'Đất hình dạng méo',
+  GEOM_TAPER_MINOR: 'Đất hơi côn',
+  GEOM_TAPER_SEVERE: 'Đất côn nặng',
+  LEGAL_FULL: 'Sổ đỏ/hồng đầy đủ',
+  LEGAL_OWNERSHIP: 'Pháp lý sở hữu rõ ràng',
+  LEGAL_DISPUTE: 'Đang tranh chấp',
+  LEGAL_PENDING: 'Pháp lý đang chờ',
+  ACCESS_MAIN_STREET: 'Mặt đường chính',
+  ACCESS_SECONDARY: 'Đường thứ cấp',
+  ACCESS_ALLEY_3M: 'Hẻm 3-5m',
+  ACCESS_ALLEY_2M: 'Hẻm 2-3m',
+  ACCESS_ALLEY_1M: 'Hẻm nhỏ <2m',
+  ACCESS_DEAD_END: 'Hẻm cụt',
+  ENV_FLOOD_SEVERE: 'Nguy cơ ngập nặng',
+  ENV_FLOOD_MINOR: 'Ngập nhẹ theo mùa',
+  ENV_CEMETERY_200M: 'Gần nghĩa trang',
+  APT_VIEW_RIVER: 'View sông',
+  APT_VIEW_PARK: 'View công viên',
+  APT_NO_VIEW: 'Không có view',
+};
+const prettyFactor = (code = '') =>
+  FACTOR_LABELS[code] || code.replace('NÖHẬU', 'NỞ HẬU').replace(/_/g, ' ');
+
 function FactorGroupBadge({ group }) {
   const colorMap = {
     L1_LEGAL: '#f59e0b',
@@ -224,12 +253,12 @@ export default function ValuationResultCard({ result, compact = false }) {
                 <tr key={i}>
                   <td>
                     <span style={{
-                      fontFamily: 'monospace', fontWeight: 700, fontSize: '0.78rem',
-                      color: adj.direction === 'POSITIVE' ? '#06d6a0' : adj.direction === 'NEGATIVE' ? '#ef233c' : 'var(--text-muted)',
+                      fontWeight: 700, fontSize: '0.82rem',
+                      color: adj.direction === 'POSITIVE' ? '#06d6a0' : adj.direction === 'NEGATIVE' ? '#ef233c' : 'var(--text-primary)',
                     }}>
-                      {adj.factor_code}
+                      {prettyFactor(adj.factor_code)}
                     </span>
-                    <div className="text-xs text-muted" style={{ marginTop: '0.1rem', maxWidth: 200 }}>
+                    <div className="text-xs text-muted" style={{ marginTop: '0.1rem', maxWidth: 240 }}>
                       {adj.rationale}
                     </div>
                   </td>

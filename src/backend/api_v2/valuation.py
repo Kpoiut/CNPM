@@ -9,13 +9,15 @@ POST /api/v2/factors/evaluate — Đánh giá một property với danh sách fa
 
 from __future__ import annotations
 
+import hashlib
+import json
 from dataclasses import dataclass
-from typing import Optional
+from typing import Literal, Optional
 from uuid import uuid4
 import os
 import time
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, Depends, Request, Body
+from fastapi import APIRouter, HTTPException, Depends, Request, Body, Query
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
@@ -32,7 +34,10 @@ from src.domain.valuation.pipeline_orchestrator import PipelineOrchestrator
 from src.domain.comparable.engine import ComparableCandidate, ComparableEngine, ComparableQuery
 from src.config.province_config import SCOPE_DISTRICTS, normalize_province
 from src.backend.models import ModelVersion, ValuationRun
+from src.backend.auth.dependencies import get_current_user, get_optional_user, require_admin
+from src.backend.auth.models import User
 from src.backend.config import limiter as _val_limiter
+from src.backend.model_metrics import build_metric_provenance
 
 
 # =============================================================================
@@ -242,6 +247,25 @@ class ValuationResponse(BaseModel):
     sub_engines: Optional[SubEngineOutput] = None
 
 
+class ValuationFeedbackRequest(BaseModel):
+    """Giá thực tế do account cung cấp, chờ kiểm duyệt trước khi training."""
+
+    actual_price_vnd: float = Field(..., ge=100_000_000)
+    actual_price_source: Literal[
+        "notarized_contract",
+        "sale_contract",
+        "bank_appraisal",
+        "expert_verified",
+        "owner_report",
+    ]
+    evidence_ref: str = Field(..., min_length=3, max_length=500)
+
+
+class FeedbackVerificationRequest(BaseModel):
+    approved: bool
+    reason: Optional[str] = Field(None, max_length=255)
+
+
 # =============================================================================
 # HELPERS
 # =============================================================================
@@ -409,6 +433,69 @@ def _display_engine_version(raw: str | None) -> str:
     return value.split("_", 1)[0]
 
 
+def _persist_valuation_run(
+    *,
+    db: Session,
+    req: ValuationRequest,
+    source_endpoint: str,
+    request_id: str,
+    current_user: User | None,
+    valuation: ValuationResult | None,
+    result_payload: dict,
+    request_status: str,
+    request_latency_ms: float,
+    engine_version: str,
+    comparable_records: list[dict] | None = None,
+) -> ValuationRun:
+    """Persist one canonical prediction event; caller transaction must succeed."""
+    input_payload = req.model_dump(mode="json")
+    canonical_input = json.dumps(
+        input_payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    account_id = current_user.id if current_user and current_user.id > 0 else None
+    record = ValuationRun(
+        request_id=request_id,
+        source_endpoint=source_endpoint,
+        account_id=account_id,
+        model_version_snapshot=engine_version,
+        model_name="ValuationEngine",
+        engine_version=engine_version,
+        request_status=request_status,
+        request_latency_ms=round(request_latency_ms, 2),
+        base_price_vnd=valuation.base_price_vnd if valuation else None,
+        base_price_source=valuation.base_price_source if valuation else None,
+        fair_market_value_vnd=valuation.fair_market_value_vnd if valuation else None,
+        quick_sale_value_vnd=valuation.quick_sale_value_vnd if valuation else None,
+        recommended_listing_vnd=valuation.recommended_listing_vnd if valuation else None,
+        optimistic_ask_vnd=valuation.optimistic_ask_vnd if valuation else None,
+        expected_range_low_vnd=valuation.expected_range_low_vnd if valuation else None,
+        expected_range_high_vnd=valuation.expected_range_high_vnd if valuation else None,
+        liquidity_score=valuation.liquidity_score if valuation else None,
+        liquidity_band=valuation.liquidity_band if valuation else None,
+        overall_confidence=valuation.overall_confidence if valuation else None,
+        confidence_grade=valuation.confidence_grade if valuation else None,
+        evidence_tier=valuation.evidence_tier if valuation else None,
+        comparable_count=valuation.comparable_count if valuation else 0,
+        effective_sample_size=valuation.effective_sample_size if valuation else 0,
+        anchor_share=valuation.anchor_share if valuation else None,
+        independent_source_count=valuation.independent_source_count if valuation else None,
+        input_hash=hashlib.sha256(canonical_input.encode("utf-8")).hexdigest(),
+        input_features_json=input_payload,
+        result_json=result_payload,
+        comparable_records_json=comparable_records or [],
+        feedback_verification_status="not_submitted",
+        training_eligible=False,
+        training_exclusion_reason="actual_price_feedback_missing",
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return record
+
+
 def _comparable_finder(asset_input: AssetInput, db: Session) -> list[ComparableRecord]:
     """
     Real comparable finder: query DB then score by Comparable Engine.
@@ -516,7 +603,7 @@ def _comparable_finder(asset_input: AssetInput, db: Session) -> list[ComparableR
                 reasons.append("Diện tích lệch dưới 10%")
             elif gap <= 0.25:
                 reasons.append("Diện tích cùng biên độ")
-        if c.evidence_tier in ("E1", "E2"):
+        if c.evidence_tier in ("E4", "E5"):
             reasons.append(f"Nguồn mạnh {c.evidence_tier}")
 
         records.append(
@@ -553,6 +640,7 @@ async def run_valuation(
     request: Request,
     req: ValuationRequest,
     db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
 ):
     """
     Chạy valuation engine với đầy đủ 3 lớp output.
@@ -562,6 +650,8 @@ async def run_valuation(
         - fit_suitability: persona fit scores
         - confidence_evidence: confidence grade, evidence tier, warnings
     """
+    started_at = time.perf_counter()
+
     # Build AssetInput
     input_data = AssetInput(
         asset_type=req.asset_type,
@@ -654,37 +744,8 @@ async def run_valuation(
     # Run engine
     result = engine.run(input_data)
 
-    # Persist to valuation_runs
-    import hashlib
-    input_hash = hashlib.sha224(
-        f"{req.asset_type}:{req.province_city}:{req.district}:{req.area_m2}".encode()
-    ).hexdigest()
-    run_record = ValuationRun(
-        engine_version=ENGINE_VERSION,
-        base_price_vnd=result.base_price_vnd,
-        base_price_source=result.base_price_source if hasattr(result, 'base_price_source') else None,
-        fair_market_value_vnd=result.fair_market_value_vnd,
-        quick_sale_value_vnd=result.quick_sale_value_vnd,
-        recommended_listing_vnd=result.recommended_listing_vnd,
-        optimistic_ask_vnd=result.optimistic_ask_vnd,
-        expected_range_low_vnd=result.expected_range_low_vnd,
-        expected_range_high_vnd=result.expected_range_high_vnd,
-        liquidity_score=result.liquidity_score,
-        liquidity_band=result.liquidity_band,
-        overall_confidence=result.overall_confidence,
-        confidence_grade=result.confidence_grade,
-        evidence_tier=result.evidence_tier,
-        comparable_count=result.comparable_count,
-        effective_sample_size=result.effective_sample_size,
-        anchor_share=result.anchor_share if hasattr(result, 'anchor_share') else None,
-        independent_source_count=result.independent_source_count if hasattr(result, 'independent_source_count') else None,
-        input_hash=input_hash,
-    )
-    db.add(run_record)
-    db.commit()
-
     # Build response
-    return ValuationResponse(
+    response = ValuationResponse(
         run_id=result.run_id,
         engine_version=ENGINE_VERSION,
         market_valuation=MarketValuationOutput(
@@ -729,12 +790,27 @@ async def run_valuation(
             environment_assessment=result.environment_assessment,
         ),
     )
+    _persist_valuation_run(
+        db=db,
+        req=req,
+        source_endpoint="api_v2_valuation",
+        request_id=result.run_id,
+        current_user=current_user,
+        valuation=result,
+        result_payload=result.to_dict(),
+        request_status="completed",
+        request_latency_ms=(time.perf_counter() - started_at) * 1000,
+        engine_version=ENGINE_VERSION,
+        comparable_records=[item.model_dump(mode="json") for item in (req.comparables or [])],
+    )
+    return response
 
 
 @api_router.post("/pipeline")
 def run_pipeline(
     req: ValuationRequest,
     db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
 ):
     """
     Production pipeline — 9-gate locked chain.
@@ -749,6 +825,7 @@ def run_pipeline(
         - valuation: kết quả định giá (nếu không bị block)
         - completeness: báo cáo mức độ đầy đủ dữ liệu
     """
+    started_at = time.perf_counter()
     input_data = AssetInput(
         asset_type=req.asset_type,
         province_city=req.province_city,
@@ -826,7 +903,21 @@ def run_pipeline(
 
     pipeline.valuation_engine.comparable_finder = finder
     result = pipeline.run(input_data)
-    return result.to_dict()
+    payload = result.to_dict()
+    _persist_valuation_run(
+        db=db,
+        req=req,
+        source_endpoint="api_v2_pipeline",
+        request_id=result.pipeline_id,
+        current_user=current_user,
+        valuation=result.valuation,
+        result_payload=payload,
+        request_status=result.final_status.lower(),
+        request_latency_ms=(time.perf_counter() - started_at) * 1000,
+        engine_version=result.pipeline_version,
+        comparable_records=result.comparable_records,
+    )
+    return payload
 
 
 @api_router.get("/engine/version")
@@ -837,7 +928,37 @@ def engine_version(db: Session = Depends(get_db)):
     Admin UI should keep the technical engine label and follow future ML/pipeline
     upgrades without hardcoding a button caption in the frontend.
     """
-    latest_model = db.query(ModelVersion).order_by(ModelVersion.trained_at.desc()).first()
+    metric_provenance = build_metric_provenance()
+    serving_metric = metric_provenance.get("serving") or {}
+    serving_model = None
+    serving_stamp = serving_metric.get("stamp")
+    if serving_stamp:
+        serving_model = db.query(ModelVersion).filter(
+            ModelVersion.model_version == serving_stamp
+        ).first()
+        if serving_model is None:
+            serving_model = db.query(ModelVersion).filter(
+                ModelVersion.model_path.like(f"%{serving_stamp}%")
+            ).first()
+    if serving_model is None and not serving_stamp:
+        serving_model = db.query(ModelVersion).filter(ModelVersion.is_active == True).first()
+
+    serving_payload = None
+    if serving_model or serving_metric:
+        serving_payload = {
+            "role": "serving",
+            "version": serving_metric.get("stamp") or (serving_model.model_version if serving_model else None),
+            "model_name": serving_metric.get("model_name") or (serving_model.model_name if serving_model else None),
+            "trained_at": (
+                serving_metric.get("trained_at")
+                or (serving_model.trained_at.isoformat() if serving_model and serving_model.trained_at else None)
+            ),
+            "official_test_mape_pct": serving_metric.get("test_mape"),
+            "official_test_mae_vnd": serving_metric.get("test_mae"),
+            "official_test_r2": serving_metric.get("test_r2"),
+            "serving_source": metric_provenance.get("serving_source"),
+        }
+
     pipeline_version = getattr(pipeline, "pipeline_version", None)
     display_version = _display_engine_version(pipeline_version or ENGINE_VERSION)
     return {
@@ -845,51 +966,157 @@ def engine_version(db: Session = Depends(get_db)):
         "pipeline_version": pipeline_version or ENGINE_VERSION,
         "core_engine_version": ENGINE_VERSION,
         "button_label": f"Chạy Valuation Engine {display_version}",
-        "latest_model": {
-            "version": latest_model.model_version if latest_model else None,
-            "model_name": latest_model.model_name if latest_model else None,
-            "trained_at": latest_model.trained_at.isoformat() if latest_model and latest_model.trained_at else None,
-        } if latest_model else None,
+        "serving_model": serving_payload,
+        "latest_model": serving_payload,
+        "model_metric_provenance": {
+            "serving_version": serving_metric.get("stamp"),
+            "latest_candidate_version": (metric_provenance.get("latest") or {}).get("stamp"),
+            "best_verified_version": (metric_provenance.get("best_verified") or {}).get("stamp"),
+            "warning": metric_provenance.get("warning"),
+            "serving_warning": metric_provenance.get("serving_warning"),
+        },
+    }
+
+
+def _valuation_query_for_user(db: Session, current_user: User):
+    query = db.query(ValuationRun)
+    if current_user.role != "admin":
+        query = query.filter(ValuationRun.account_id == current_user.id)
+    return query
+
+
+@api_router.post("/valuation/{request_id}/feedback")
+def submit_valuation_feedback(
+    request_id: str,
+    payload: ValuationFeedbackRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Gắn giá thực tế vào lần định giá; user thường phải chờ admin xác minh."""
+    run = db.query(ValuationRun).filter(ValuationRun.request_id == request_id).first()
+    if not run:
+        raise HTTPException(status_code=404, detail="Không tìm thấy lần định giá.")
+    if current_user.role != "admin" and run.account_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Bạn không có quyền cập nhật lần định giá này.")
+
+    is_admin = current_user.role == "admin"
+    run.actual_price_vnd = payload.actual_price_vnd
+    run.actual_price_recorded_at = datetime.utcnow()
+    run.actual_price_source = payload.actual_price_source
+    run.actual_price_evidence_ref = payload.evidence_ref
+    run.feedback_by_account_id = current_user.id
+    run.feedback_verification_status = "verified" if is_admin else "pending_review"
+    run.feedback_verified_at = datetime.utcnow() if is_admin else None
+    run.feedback_verified_by_account_id = current_user.id if is_admin else None
+    run.training_eligible = bool(is_admin and run.input_features_json)
+    run.training_exclusion_reason = (
+        None if run.training_eligible else "feedback_pending_admin_verification"
+    )
+    db.commit()
+    db.refresh(run)
+    return {
+        "request_id": run.request_id,
+        "feedback_verification_status": run.feedback_verification_status,
+        "training_eligible": run.training_eligible,
+    }
+
+
+@api_router.post("/valuation/{request_id}/feedback/verify")
+def verify_valuation_feedback(
+    request_id: str,
+    payload: FeedbackVerificationRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Admin duyệt feedback trước khi bản ghi được phép đi vào training queue."""
+    run = db.query(ValuationRun).filter(ValuationRun.request_id == request_id).first()
+    if not run:
+        raise HTTPException(status_code=404, detail="Không tìm thấy lần định giá.")
+    if run.actual_price_vnd is None:
+        raise HTTPException(status_code=409, detail="Lần định giá chưa có giá thực tế để xác minh.")
+
+    has_training_input = bool(run.input_features_json)
+    run.feedback_verification_status = "verified" if payload.approved else "rejected"
+    run.feedback_verified_at = datetime.utcnow()
+    run.feedback_verified_by_account_id = admin.id if admin.id > 0 else None
+    run.training_eligible = bool(payload.approved and has_training_input and run.actual_price_vnd >= 500_000_000)
+    if run.training_eligible:
+        run.training_exclusion_reason = None
+    elif payload.reason:
+        run.training_exclusion_reason = payload.reason
+    elif not payload.approved:
+        run.training_exclusion_reason = "feedback_rejected"
+    elif not has_training_input:
+        run.training_exclusion_reason = "input_features_missing"
+    else:
+        run.training_exclusion_reason = "actual_price_below_training_threshold"
+    db.commit()
+    return {
+        "request_id": run.request_id,
+        "feedback_verification_status": run.feedback_verification_status,
+        "training_eligible": run.training_eligible,
+        "training_exclusion_reason": run.training_exclusion_reason,
     }
 
 
 @api_router.get("/valuation/runs")
-def list_valuation_runs(limit: int = 20, db: Session = Depends(get_db)):
-    """
-    List recent valuation runs persisted to DB.
-    """
-    runs = db.query(ValuationRun).order_by(ValuationRun.created_at.desc()).limit(limit).all()
+def list_valuation_runs(
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """List recent valuation runs, isolated by account unless caller is admin."""
+    query = _valuation_query_for_user(db, current_user)
+    total = query.count()
+    runs = (
+        query.order_by(ValuationRun.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
     return {
         "runs": [
             {
                 "id": r.id,
+                "request_id": r.request_id,
+                "source_endpoint": r.source_endpoint,
                 "engine_version": r.engine_version,
+                "model_version": r.model_version_snapshot,
                 "fair_market_value_vnd": r.fair_market_value_vnd,
                 "confidence_grade": r.confidence_grade,
                 "evidence_tier": r.evidence_tier,
                 "overall_confidence": r.overall_confidence,
                 "comparable_count": r.comparable_count,
+                "feedback_verification_status": r.feedback_verification_status,
+                "training_eligible": r.training_eligible,
                 "created_at": r.created_at.isoformat() if r.created_at else None,
             }
             for r in runs
         ],
-        "total": db.query(ValuationRun).count(),
+        "total": total,
+        "limit": limit,
+        "offset": offset,
     }
 
 
 @api_router.get("/valuation/stats")
-def valuation_stats(db: Session = Depends(get_db)):
+def valuation_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
     Aggregate statistics from valuation runs.
     """
-    total = db.query(ValuationRun).count()
+    query = _valuation_query_for_user(db, current_user)
+    total = query.count()
     if total == 0:
         return {"total_runs": 0}
 
     from sqlalchemy import func
-    avg_confidence = db.query(func.avg(ValuationRun.overall_confidence)).scalar() or 0
-    avg_fmv = db.query(func.avg(ValuationRun.fair_market_value_vnd)).scalar() or 0
-    grade_counts = db.query(
+    avg_confidence = query.with_entities(func.avg(ValuationRun.overall_confidence)).scalar() or 0
+    avg_fmv = query.with_entities(func.avg(ValuationRun.fair_market_value_vnd)).scalar() or 0
+    grade_counts = query.with_entities(
         ValuationRun.confidence_grade,
         func.count(ValuationRun.id)
     ).group_by(ValuationRun.confidence_grade).all()

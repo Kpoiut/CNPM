@@ -5,27 +5,54 @@ REST API for property valuation with IoT/smartphone features.
 """
 
 import json
+import hashlib
 import os
 import pickle
 import secrets
 import subprocess
 import sys
 import threading
+import time
 import uuid
 from typing import Dict, List, Optional
 from datetime import datetime, date, timedelta
 from pathlib import Path
 
+def _load_project_env() -> None:
+    """Load simple KEY=VALUE pairs from project .env before importing auth modules."""
+    env_path = Path(__file__).resolve().parents[2] / ".env"
+    if not env_path.exists():
+        return
+
+    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
+
+
+_load_project_env()
+
 from fastapi import FastAPI, Depends, HTTPException, status, Query, UploadFile, File, Form, Request
 from fastapi.staticfiles import StaticFiles
 import aiofiles
+
+
+HEALTH_DB_CACHE_TTL_SECONDS = int(os.getenv("HEALTH_DB_CACHE_TTL_SECONDS", "10"))
+_HEALTH_DB_CACHE = {"expires_at": 0.0, "database": None}
+PREDICTION_POOL_CACHE_TTL_SECONDS = int(os.getenv("PREDICTION_POOL_CACHE_TTL_SECONDS", "30"))
+_PREDICTION_POOL_CACHE = {"expires_at": 0.0, "value": None}
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 from src.backend.database import init_db
-from src.backend.models import Property, Prediction, BaselineModel, DataSource, ModelVersion, AuditLog, PredictionHistory, ProvenanceChain, CollectionSource, BuyerRequirement, ExpertRating, ExpertProperty, ValuationRun
+from src.backend.models import Property, ModelVersion, AuditLog, ProvenanceChain, CollectionSource, BuyerRequirement, ExpertRating, ExpertProperty, ValuationRun
 from src.backend.deps import get_db, get_cached_model
 from src.backend.quality_assessment import (
     build_adaptive_interval,
@@ -128,6 +155,35 @@ async def add_timing_header(request, call_next):
     response = await call_next(request)
     duration_ms = (time.perf_counter() - start) * 1000
     response.headers["X-Response-Time-Ms"] = f"{duration_ms:.1f}"
+    # Security headers (defense-in-depth; không dùng CSP chặt để tránh vỡ tile/iframe bản đồ)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "geolocation=(self), microphone=(self), camera=()")
+    response.headers.setdefault("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+    # CSP Report-Only: giám sát vi phạm mà KHÔNG chặn (an toàn cho tile/iframe bản đồ bên thứ ba).
+    # Cho phép các nguồn tài nguyên app đang dùng: Esri/CartoDB/OSM tiles, Google Maps iframe,
+    # ảnh từ Cho Tot CDN, leaflet CDN. Khi đã ổn định có thể đổi sang Content-Security-Policy (enforce).
+    response.headers.setdefault(
+        "Content-Security-Policy-Report-Only",
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+        "style-src 'self' 'unsafe-inline' https://unpkg.com https://cdnjs.cloudflare.com; "
+        "img-src 'self' data: blob: "
+        "https://server.arcgisonline.com https://*.arcgisonline.com "
+        "https://*.basemaps.cartocdn.com https://*.tile.openstreetmap.org "
+        "https://unpkg.com https://cdnjs.cloudflare.com "
+        "https://cdn.chotot.com https://*.chotot.com "
+        "https://*.google.com https://maps.gstatic.com https://*.gstatic.com; "
+        "font-src 'self' data: https://cdnjs.cloudflare.com; "
+        "connect-src 'self' "
+        "https://server.arcgisonline.com https://*.basemaps.cartocdn.com "
+        "https://*.tile.openstreetmap.org https://overpass-api.de https://nominatim.openstreetmap.org "
+        "https://gateway.chotot.com https://*.chotot.com; "
+        "frame-src 'self' https://*.google.com https://maps.google.com; "
+        "worker-src 'self' blob:; "
+        "object-src 'none'; base-uri 'self'; form-action 'self'"
+    )
     return response
 
 # API v2: Asset-Specific Decision Intelligence Platform
@@ -175,8 +231,18 @@ except ImportError as e:
     import sys
     print(f"[WARN] nova not available: {e}", file=sys.stderr)
 
+# Map Intelligence: location picker (Nominatim proxy + nearby + IoT auto-profile)
+try:
+    from src.backend.api_v2.map_intel import router as map_intel_router, iot_router as iot_signal_router
+    app.include_router(map_intel_router, prefix="", tags=["Map Intelligence"])
+    app.include_router(iot_signal_router, prefix="", tags=["IoT Sensor Network"])
+    print("[OK] map-intelligence + iot routes registered")
+except ImportError as e:
+    import sys
+    print(f"[WARN] map-intelligence not available: {e}", file=sys.stderr)
+
 # Auth: JWT + RBAC
-from src.backend.auth import router as auth_router
+from src.backend.auth.router import router as auth_router
 from src.backend.auth.models import User, UserSession  # noqa: F401
 from src.backend.auth.dependencies import get_current_user, require_admin, get_optional_user
 app.include_router(auth_router)
@@ -292,6 +358,70 @@ def _default_research_lab_tree() -> dict:
             },
         ],
     }
+
+
+def _date_label(value) -> str | None:
+    if not value:
+        return None
+    if isinstance(value, str):
+        return value[:10]
+    if hasattr(value, "strftime"):
+        return value.strftime("%Y-%m-%d")
+    return str(value)[:10]
+
+
+def _find_model_version_by_stamp(db: Session, stamp: str | None) -> ModelVersion | None:
+    if not stamp:
+        return None
+    model_version_info = db.query(ModelVersion).filter(
+        ModelVersion.model_version == stamp
+    ).first()
+    if model_version_info is not None:
+        return model_version_info
+    return db.query(ModelVersion).filter(
+        ModelVersion.model_path.like(f"%{stamp}%")
+    ).first()
+
+
+def _resolve_serving_model_version_info(db: Session, model_data: dict) -> tuple[ModelVersion | None, dict, dict]:
+    """Resolve the DB row and official metrics for the model artifact actually serving predictions."""
+    from src.backend.model_metrics import build_metric_provenance
+
+    metric_provenance = build_metric_provenance()
+    serving_metric = metric_provenance.get("serving") or {}
+    serving_stamp = model_data.get("model_version") or serving_metric.get("stamp")
+
+    model_version_info = _find_model_version_by_stamp(db, serving_stamp)
+    if model_version_info is None and not serving_stamp:
+        model_version_info = db.query(ModelVersion).filter(ModelVersion.is_active == True).first()
+
+    return model_version_info, serving_metric, metric_provenance
+
+
+def _metric_or_db_version(model_version_info: ModelVersion | None, serving_metric: dict, model_data: dict) -> str | None:
+    return (
+        serving_metric.get("stamp")
+        or model_data.get("model_version")
+        or (model_version_info.model_version if model_version_info else None)
+    )
+
+
+def _get_prediction_pool_stats(db: Session) -> dict:
+    now = time.time()
+    cached = _PREDICTION_POOL_CACHE.get("value")
+    if cached and now < float(_PREDICTION_POOL_CACHE.get("expires_at", 0)):
+        return {**cached, "cache": "hit"}
+
+    stats = {
+        "verified_pool": db.query(Property).filter(Property.verification_status == "verified").count(),
+        "self_collected_pool": db.query(Property).filter(
+            Property.data_origin_type == "self_collected",
+            Property.verification_status == "verified",
+        ).count(),
+    }
+    _PREDICTION_POOL_CACHE["value"] = stats
+    _PREDICTION_POOL_CACHE["expires_at"] = now + PREDICTION_POOL_CACHE_TTL_SECONDS
+    return {**stats, "cache": "miss"}
 
 
 def _confidence_band_from_score(score: float) -> str:
@@ -699,14 +829,47 @@ def root():
 
 @app.get("/api/health")
 def health_check():
-    """Health check endpoint."""
-    from src.backend.database import SessionLocal
+    """Readiness health check: process + database connectivity."""
+    from src.backend.database import SessionLocal, engine
     from src.backend.models import Property
+    from sqlalchemy import inspect
+    now = time.time()
+    cached_database = _HEALTH_DB_CACHE.get("database")
+    if cached_database and now < float(_HEALTH_DB_CACHE.get("expires_at", 0)):
+        return {
+            "status": "ok",
+            "iot_enabled": True,
+            "database": {
+                **cached_database,
+                "cache": "hit",
+                "expires_in_seconds": round(float(_HEALTH_DB_CACHE["expires_at"]) - now, 2),
+            },
+        }
+
     db = SessionLocal()
-    total = db.query(Property).count()
-    sc = db.query(Property).filter(Property.data_origin_type == "self_collected").count()
-    db.close()
-    return {"status": "healthy", "iot_enabled": True, "db_total": total, "db_self_collected": sc}
+    try:
+        schema_ready = inspect(engine).has_table(Property.__tablename__)
+        total = 0
+        sc = 0
+        if schema_ready:
+            total = db.query(Property).count()
+            sc = db.query(Property).filter(Property.data_origin_type == "self_collected").count()
+        database = {
+            "ok": True,
+            "dialect": engine.dialect.name,
+            "schema_ready": schema_ready,
+            "total_properties": total,
+            "self_collected_properties": sc,
+        }
+        _HEALTH_DB_CACHE["database"] = database
+        _HEALTH_DB_CACHE["expires_at"] = now + HEALTH_DB_CACHE_TTL_SECONDS
+        return {
+            "status": "ok",
+            "iot_enabled": True,
+            "database": {**database, "cache": "miss", "expires_in_seconds": HEALTH_DB_CACHE_TTL_SECONDS},
+        }
+    finally:
+        db.close()
 
 
 # --- Location Endpoints (Round 22: Canonical Province Config) ---
@@ -1029,7 +1192,7 @@ def _research_lab_capabilities() -> dict:
             {
                 "operation": "frontend_build",
                 "label": "Frontend production build",
-                "description": "npm run build de bat loi UI/bundle.",
+                "description": "npm run build:check de bat loi UI va bundle budget.",
                 "timeout_seconds": 360,
             },
             {
@@ -1040,8 +1203,8 @@ def _research_lab_capabilities() -> dict:
             },
             {
                 "operation": "data_audit",
-                "label": "Data/provenance audit",
-                "description": "scripts/honest_audit.py cho audit du lieu that.",
+                "label": "PostgreSQL catalog audit",
+                "description": "scripts/audit_postgres_catalog.py cho dataset, prediction va ML lineage.",
                 "timeout_seconds": 420,
             },
             {
@@ -1092,6 +1255,44 @@ def _research_lab_capabilities() -> dict:
                 "timeout_seconds": 30,
             },
         ],
+        "mlops": [
+            {
+                "operation": "mlops_experiments",
+                "label": "Experiment leaderboard",
+                "description": "Bang so sanh moi lan train (R2/MAE/features) tu metadata that.",
+                "timeout_seconds": 60,
+            },
+            {
+                "operation": "mlops_registry",
+                "label": "Model registry + active",
+                "description": "Liet ke model version va version dang duoc pin active.",
+                "timeout_seconds": 60,
+            },
+            {
+                "operation": "mlops_monitor",
+                "label": "Model health check",
+                "description": "Load model active + smoke predict de xac nhan con phuc vu duoc.",
+                "timeout_seconds": 120,
+            },
+            {
+                "operation": "mlops_drift",
+                "label": "Data drift (PSI)",
+                "description": "Population Stability Index giua du lieu cu va moi -> co nen retrain.",
+                "timeout_seconds": 180,
+            },
+            {
+                "operation": "mlops_activate",
+                "label": "Activate / rollback version",
+                "description": "Pin backend dung 1 model version cu the (nhap version stamp).",
+                "timeout_seconds": 60,
+            },
+            {
+                "operation": "mlops_deactivate",
+                "label": "Bo pin (auto latest)",
+                "description": "Go pin de backend tu chon model moi nhat.",
+                "timeout_seconds": 60,
+            },
+        ],
     }
 
 
@@ -1125,11 +1326,11 @@ def _build_research_lab_command(operation: str, params: dict) -> tuple[list[str]
     if operation == "api_contract_tests":
         return [python, "-m", "pytest", "tests/integration/test_api_v2.py", "-q"], root, timeout
     if operation == "frontend_build":
-        return ["npm", "run", "build"], root / "frontend", timeout
+        return ["npm", "run", "build:check"], root / "frontend", timeout
     if operation == "data_validation":
         return [python, "scripts/validate_clean_data.py"], root, timeout
     if operation == "data_audit":
-        return [python, "scripts/honest_audit.py"], root, timeout
+        return [python, "scripts/audit_postgres_catalog.py"], root, timeout
     if operation == "model_evaluation":
         return [python, "scripts/evaluate_model.py"], root, timeout
     if operation == "train_dry_run":
@@ -1142,6 +1343,19 @@ def _build_research_lab_command(operation: str, params: dict) -> tuple[list[str]
         return [python, "scripts/compute_shap_explanations.py"], root, timeout
     if operation == "list_models":
         return [python, "scripts/retrain_v2.py", "--list"], root, timeout
+    if operation == "mlops_experiments":
+        return [python, "scripts/mlops.py", "experiments"], root, timeout
+    if operation == "mlops_registry":
+        return [python, "scripts/mlops.py", "registry"], root, timeout
+    if operation == "mlops_monitor":
+        return [python, "scripts/mlops.py", "monitor"], root, timeout
+    if operation == "mlops_drift":
+        return [python, "scripts/mlops.py", "drift"], root, timeout
+    if operation == "mlops_activate":
+        version = str(params.get("version", "")).strip()
+        return [python, "scripts/mlops.py", "activate", "--version", version], root, timeout
+    if operation == "mlops_deactivate":
+        return [python, "scripts/mlops.py", "deactivate"], root, timeout
     return None, root, timeout
 
 
@@ -1194,7 +1408,7 @@ def _finish_internal_research_job(job_id: str) -> None:
             from src.backend.deps import clear_model_cache
 
             clear_model_cache()
-            output = "Model cache cleared. The next prediction request will load the latest model bundle."
+            output = "Model cache cleared. The next prediction request will load the ACTIVE_MODEL.json artifact only."
             return_code = 0
         elif job["operation"] == "db_status":
             from src.backend.database import SessionLocal
@@ -1381,10 +1595,15 @@ def research_lab_admin_job_detail(
 
 
 @app.post("/api/predict", response_model=PredictionResponse, deprecated=True)
-def predict_price(request: PredictionRequest, db: Session = Depends(get_db)):
+def predict_price(
+    request: PredictionRequest,
+    db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_user),
+):
     """Predict property price with full explainability."""
     from sqlalchemy import func
 
+    started_at = time.perf_counter()
     model_data = get_cached_model()
     if not model_data:
         raise HTTPException(
@@ -1414,11 +1633,9 @@ def predict_price(request: PredictionRequest, db: Session = Depends(get_db)):
     comparable = support_bundle["comparables"]
     comparable_records = serialize_comparable_records(comparable, area)
 
-    total_verified = db.query(Property).filter(Property.verification_status == "verified").count()
-    self_collected_count = db.query(Property).filter(
-        Property.data_origin_type == "self_collected",
-        Property.verification_status == "verified",
-    ).count()
+    pool_stats = _get_prediction_pool_stats(db)
+    total_verified = pool_stats["verified_pool"]
+    self_collected_count = pool_stats["self_collected_pool"]
 
     data_quality_assessment = build_data_quality_assessment(
         request_data=input_dict,
@@ -1535,16 +1752,29 @@ def predict_price(request: PredictionRequest, db: Session = Depends(get_db)):
     confidence_high = interval_analysis["confidence_high"]
     confidence_ratio = round(data_quality_assessment["overall_score"] / 10, 4)
 
-    model_version_info = db.query(ModelVersion).order_by(ModelVersion.trained_at.desc()).first()
-
-    prediction = Prediction(
-        input_features=str(input_dict),
-        predicted_price=predicted_price,
-        model_used=model_name,
-        confidence=confidence_ratio,
+    model_version_info, serving_metric, metric_provenance = _resolve_serving_model_version_info(db, model_data)
+    serving_version = _metric_or_db_version(model_version_info, serving_metric, model_data) or "unknown"
+    serving_trained_at = (
+        _date_label(model_version_info.trained_at if model_version_info else None)
+        or _date_label(serving_metric.get("trained_at"))
     )
-    db.add(prediction)
-    db.commit()
+    train_start_date = _date_label(model_version_info.train_start_date if model_version_info else None)
+    train_end_date = _date_label(model_version_info.train_end_date if model_version_info else None)
+    train_record_count = (
+        model_version_info.train_record_count
+        if model_version_info and model_version_info.train_record_count is not None
+        else serving_metric.get("train_size")
+    )
+    verified_record_count = (
+        model_version_info.verified_record_count
+        if model_version_info and model_version_info.verified_record_count is not None
+        else None
+    )
+    self_collected_ratio = (
+        model_version_info.self_collected_ratio
+        if model_version_info and model_version_info.self_collected_ratio is not None
+        else None
+    )
 
     feature_importance = {}
     try:
@@ -1566,6 +1796,48 @@ def predict_price(request: PredictionRequest, db: Session = Depends(get_db)):
             "noise_level": 0.04,
         }
 
+    request_id = str(uuid.uuid4())
+    canonical_input = json.dumps(
+        input_dict,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
+    history = ValuationRun(
+        request_id=request_id,
+        source_endpoint="api_predict",
+        account_id=(current_user.id if current_user and current_user.id > 0 else None),
+        model_version_id=model_version_info.id if model_version_info else None,
+        model_version_snapshot=serving_version,
+        model_name=model_name,
+        engine_version="legacy-ml",
+        request_status="completed",
+        request_latency_ms=round((time.perf_counter() - started_at) * 1000, 2),
+        fair_market_value_vnd=predicted_price,
+        expected_range_low_vnd=confidence_low,
+        expected_range_high_vnd=confidence_high,
+        overall_confidence=confidence_ratio,
+        confidence_grade=calibration_band,
+        comparable_count=len(comparable_records),
+        input_hash=hashlib.sha256(canonical_input.encode("utf-8")).hexdigest(),
+        input_features_json=input_dict,
+        result_json={
+            "predicted_price": predicted_price,
+            "price_per_m2": price_per_m2,
+            "confidence_low": confidence_low,
+            "confidence_high": confidence_high,
+        },
+        feature_importance_json=feature_importance,
+        comparable_records_json=comparable_records,
+        feedback_verification_status="not_submitted",
+        training_eligible=False,
+        training_exclusion_reason="actual_price_feedback_missing",
+    )
+    db.add(history)
+    db.commit()
+    db.refresh(history)
+
     return PredictionResponse(
         predicted_price=round(predicted_price, 0),
         price_per_m2=round(price_per_m2, 0),
@@ -1574,13 +1846,15 @@ def predict_price(request: PredictionRequest, db: Session = Depends(get_db)):
         model_used=model_name,
         confidence=confidence_ratio,
         input_features=input_dict,
-        model_version=model_version_info.model_version if model_version_info else "v1.0",
-        trained_at=model_version_info.trained_at.strftime("%Y-%m-%d") if model_version_info and model_version_info.trained_at else "2026-03-13",
-        train_start_date=model_version_info.train_start_date.strftime("%Y-%m-%d") if model_version_info and model_version_info.train_start_date else "2024-01-01",
-        train_end_date=model_version_info.train_end_date.strftime("%Y-%m-%d") if model_version_info and model_version_info.train_end_date else "2026-03-13",
-        total_train_records=model_version_info.train_record_count if model_version_info else 2100,
-        verified_train_records=model_version_info.verified_record_count if model_version_info else 2100,
-        self_collected_ratio=model_version_info.self_collected_ratio if model_version_info else 0.086,
+        prediction_id=history.id,
+        request_id=request_id,
+        model_version=serving_version,
+        trained_at=serving_trained_at,
+        train_start_date=train_start_date,
+        train_end_date=train_end_date,
+        total_train_records=train_record_count,
+        verified_train_records=verified_record_count,
+        self_collected_ratio=self_collected_ratio,
         same_property_type_count=same_type_count,
         same_province_count=same_province_count,
         same_district_count=same_district_count,
@@ -1600,18 +1874,28 @@ def predict_price(request: PredictionRequest, db: Session = Depends(get_db)):
         ][:6],
         source_attribution=(
             f"Analysis based on {len(comparable_records)} comparable properties. "
-            f"Model: {model_name}. Data reliability grade: {data_quality_assessment['confidence_grade']} "
+            f"Model: {model_name} version {serving_version}. "
+            f"Data reliability grade: {data_quality_assessment['confidence_grade']} "
             f"({data_quality_assessment['overall_score']}/10). "
             f"Standard: {data_quality_assessment.get('standard_name', 'CVX-BDS/IoT')}"
         ),
         data_provenance={
-            "model_version": model_version_info.model_version if model_version_info else "v1.0",
+            "model_version": serving_version,
             "model_algorithm": model_name,
             "confidence_stage_model": model_data.get("confidence_best_model_name"),
-            "training_date": model_version_info.trained_at.strftime("%Y-%m-%d") if model_version_info and model_version_info.trained_at else "2026-03-13",
-            "training_records": model_version_info.train_record_count if model_version_info else 2100,
-            "verified_records": model_version_info.verified_record_count if model_version_info else 2100,
-            "self_collected_ratio": model_version_info.self_collected_ratio if model_version_info else 0.086,
+            "training_date": serving_trained_at,
+            "training_records": train_record_count,
+            "verified_records": verified_record_count,
+            "self_collected_ratio": self_collected_ratio,
+            "official_test_mape_pct": serving_metric.get("test_mape"),
+            "official_test_mae_vnd": serving_metric.get("test_mae"),
+            "official_test_r2": serving_metric.get("test_r2"),
+            "official_test_n": serving_metric.get("n_test"),
+            "metric_source": "metadata.all_results[best_model].test_*",
+            "serving_source": metric_provenance.get("serving_source"),
+            "latest_model_version": (metric_provenance.get("latest") or {}).get("stamp"),
+            "best_verified_model_version": (metric_provenance.get("best_verified") or {}).get("stamp"),
+            "metric_warning": metric_provenance.get("warning"),
             "data_sources": list(set([c.get("source_name", "Unknown") for c in comparable_records]))[:5],
             "methodology": (
                 "Two-stage research AVM with confidence classification, "
@@ -1620,10 +1904,11 @@ def predict_price(request: PredictionRequest, db: Session = Depends(get_db)):
             ),
             "verified_pool": total_verified,
             "self_collected_pool": self_collected_count,
+            "pool_stats_cache": pool_stats.get("cache"),
         },
         citation={
-            "apa": f"Real Estate AVM System. ({datetime.now().year}). {model_name} (Version {model_version_info.model_version if model_version_info else '1.0'}). Retrieved from automated valuation model.",
-            "bibtex": f"@misc{{avm_{datetime.now().strftime('%Y%m%d')},\n  title={{Real Estate Price Prediction}},\n  author={{AVM System}},\n  year={{{datetime.now().year}}},\n  note={{Model: {model_name}, Version: {model_version_info.model_version if model_version_info else '1.0'}}}\n}}",
+            "apa": f"Real Estate AVM System. ({datetime.now().year}). {model_name} (Version {serving_version}). Retrieved from automated valuation model.",
+            "bibtex": f"@misc{{avm_{datetime.now().strftime('%Y%m%d')},\n  title={{Real Estate Price Prediction}},\n  author={{AVM System}},\n  year={{{datetime.now().year}}},\n  note={{Model: {model_name}, Version: {serving_version}}}\n}}",
         },
         algorithm=(
             f"Two-stage pipeline: {model_data.get('confidence_best_model_name') or 'ConfidenceClassifier'} -> "
@@ -1866,12 +2151,25 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         Property.price_per_m2 > 0,
     )
     trainable_count = trainable_query.count()
-    # Latest model version
-    latest_model = db.query(ModelVersion).order_by(ModelVersion.trained_at.desc()).first()
+
+    from src.backend.model_metrics import build_metric_provenance
+
+    metric_provenance = build_metric_provenance()
+    serving_metric = metric_provenance.get("serving") or {}
+    serving_model = _find_model_version_by_stamp(db, serving_metric.get("stamp"))
+    if serving_model is None and not serving_metric.get("stamp"):
+        serving_model = db.query(ModelVersion).filter(ModelVersion.is_active == True).first()
+
     model_metadata = {}
-    if latest_model and latest_model.model_path:
+    serving_metadata_path = serving_metric.get("source_path")
+    if serving_model and serving_model.metadata_path:
+        serving_metadata_path = serving_model.metadata_path
+    elif serving_model and serving_model.model_path:
+        serving_metadata_path = str(serving_model.model_path).replace("model_", "metadata_")
+
+    if serving_metadata_path:
         try:
-            metadata_path = Path(str(latest_model.model_path).replace("model_", "metadata_")).with_suffix(".json")
+            metadata_path = Path(str(serving_metadata_path)).with_suffix(".json")
             if metadata_path.exists():
                 model_metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
         except Exception:
@@ -1921,9 +2219,54 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
             except Exception:
                 confidence_source = "unavailable"
 
+    serving_train_count = None
+    if serving_model and serving_model.train_record_count is not None:
+        serving_train_count = serving_model.train_record_count
+    elif serving_metric.get("train_size") is not None:
+        serving_train_count = serving_metric.get("train_size")
+
     model_needs_retrain = True
-    if latest_model:
-        model_needs_retrain = (latest_model.train_record_count or 0) < trainable_count
+    if serving_train_count is not None:
+        model_needs_retrain = int(serving_train_count or 0) < trainable_count
+
+    serving_model_payload = None
+    if serving_model or serving_metric:
+        serving_model_payload = {
+            "role": "serving",
+            "version": (
+                serving_metric.get("stamp")
+                or (serving_model.model_version if serving_model else None)
+            ),
+            "model_name": (
+                serving_metric.get("model_name")
+                or (serving_model.model_name if serving_model else None)
+            ),
+            "trained_at": (
+                serving_metric.get("trained_at")
+                or (serving_model.trained_at.isoformat() if serving_model and serving_model.trained_at else None)
+            ),
+            "train_record_count": serving_train_count,
+            "verified_record_count": serving_model.verified_record_count if serving_model else None,
+            "self_collected_ratio": serving_model.self_collected_ratio if serving_model else None,
+            "dataset_record_count": trainable_count,
+            "mae": (
+                serving_model.mae
+                if serving_model and serving_model.mae is not None
+                else serving_metric.get("test_mae")
+            ),
+            "mape": (
+                serving_model.mape
+                if serving_model and serving_model.mape is not None
+                else serving_metric.get("test_mape")
+            ),
+            "rmse": serving_model.rmse if serving_model else None,
+            "r2": (
+                serving_model.r2
+                if serving_model and serving_model.r2 is not None
+                else serving_metric.get("test_r2")
+            ),
+            "metric_source": "ACTIVE_MODEL/metadata",
+        }
 
     return {
         "total_records": total,
@@ -1954,18 +2297,16 @@ def get_dashboard_stats(db: Session = Depends(get_db)):
         "confidence_source": confidence_source,
         "trainable_record_count": trainable_count,
         "model_needs_retrain": model_needs_retrain,
-        "latest_model": {
-            "version": latest_model.model_version if latest_model else None,
-            "model_name": latest_model.model_name if latest_model else None,
-            "trained_at": latest_model.trained_at.isoformat() if latest_model else None,
-            "train_record_count": latest_model.train_record_count if latest_model else None,
-            "verified_record_count": latest_model.verified_record_count if latest_model else None,
-            "self_collected_ratio": latest_model.self_collected_ratio if latest_model else None,
-            "dataset_record_count": trainable_count,
-            "mae": latest_model.mae if latest_model else None,
-            "rmse": latest_model.rmse if latest_model else None,
-            "r2": latest_model.r2 if latest_model else None
-        } if latest_model else None
+        "serving_model": serving_model_payload,
+        "latest_model": serving_model_payload,
+        "model_metric_provenance": {
+            "serving_version": serving_metric.get("stamp"),
+            "latest_candidate_version": (metric_provenance.get("latest") or {}).get("stamp"),
+            "best_verified_version": (metric_provenance.get("best_verified") or {}).get("stamp"),
+            "serving_source": metric_provenance.get("serving_source"),
+            "warning": metric_provenance.get("warning"),
+            "serving_warning": metric_provenance.get("serving_warning"),
+        },
     }
 
 
@@ -2019,7 +2360,7 @@ def get_dataset_overview(db: Session = Depends(get_db)):
 @app.get("/api/data-sources")
 def list_data_sources(db: Session = Depends(get_db), _admin: User | None = Depends(get_optional_user)):
     """List all data sources with statistics (Quy tắc 6)"""
-    sources = db.query(DataSource).all()
+    sources = db.query(CollectionSource).all()
     source_map = {source.source_name: source for source in sources if source.source_name}
     property_source_names = [
         row[0] for row in db.query(Property.source_name)
@@ -2054,7 +2395,7 @@ def list_data_sources(db: Session = Depends(get_db), _admin: User | None = Depen
         result.append({
             "id": source.id if source else f"property-source-{abs(hash(source_name)) % 100000}",
             "source_name": source_name,
-            "source_url": source.source_url if source else (first_with_url.source_url if first_with_url else None),
+            "source_url": source.base_url if source else (first_with_url.source_url if first_with_url else None),
             "source_type": source_type,
             "total_records": total,
             "verified_records": verified,
@@ -2065,7 +2406,7 @@ def list_data_sources(db: Session = Depends(get_db), _admin: User | None = Depen
             "iot_records": iot_records,
             "image_records": image_records,
             "source_link_ready": total > 0 and trace_ready == total,
-            "last_collected_at": source.last_collected_at.isoformat() if source and source.last_collected_at else None,
+            "last_collected_at": source.last_run_at.isoformat() if source and source.last_run_at else None,
             "is_active": source.is_active if source else total > 0,
             "notes": source.notes if source else "Nguồn được tổng hợp trực tiếp từ bảng properties.",
         })
@@ -2485,16 +2826,32 @@ async def get_collection_status_admin(
 # --- Baseline Endpoints ---
 
 def _build_baseline_metrics(db: Session):
-    """Build baseline metrics from actual trained model in DB, not hardcoded."""
-    best_model = db.query(ModelVersion).filter(
-        ModelVersion.mae.isnot(None)
-    ).order_by(ModelVersion.trained_at.desc()).first()
+    """Build baseline metrics from the serving model, not the newest candidate."""
+    from src.backend.model_metrics import build_metric_provenance
 
-    if best_model:
+    metric_provenance = build_metric_provenance()
+    serving_metric = metric_provenance.get("serving") or {}
+    serving_model = _find_model_version_by_stamp(db, serving_metric.get("stamp"))
+    if serving_model is None and not serving_metric.get("stamp"):
+        serving_model = db.query(ModelVersion).filter(ModelVersion.is_active == True).first()
+
+    if serving_model:
         return {
-            "mae": round(best_model.mae),
-            "rmse": round(best_model.rmse),
-            "r2": round(best_model.r2, 3),
+            "mae": round(serving_model.mae) if serving_model.mae is not None else None,
+            "rmse": round(serving_model.rmse) if serving_model.rmse is not None else None,
+            "r2": round(serving_model.r2, 3) if serving_model.r2 is not None else None,
+            "mape": round(serving_model.mape, 3) if serving_model.mape is not None else None,
+            "model_version": serving_model.model_version,
+            "metric_source": "serving_model_db",
+        }
+    if serving_metric:
+        return {
+            "mae": round(serving_metric["test_mae"]) if serving_metric.get("test_mae") is not None else None,
+            "rmse": None,
+            "r2": round(serving_metric["test_r2"], 3) if serving_metric.get("test_r2") is not None else None,
+            "mape": round(serving_metric["test_mape"], 3) if serving_metric.get("test_mape") is not None else None,
+            "model_version": serving_metric.get("stamp"),
+            "metric_source": "ACTIVE_MODEL/metadata",
         }
     return None
 
@@ -2551,7 +2908,7 @@ def list_baselines(db: Session = Depends(get_db)):
 @app.get("/api/baselines/compare")
 def compare_baselines(db: Session = Depends(get_db)):
     """Compare baseline vs improved model."""
-    baseline_metrics = _build_baseline_metrics()
+    baseline_metrics = _build_baseline_metrics(db)
     return {
         "comparison": {
             "baseline": {
@@ -2917,8 +3274,8 @@ def db_status(db: Session = Depends(get_db), _admin: User = Depends(require_admi
             if prov in {"Hà Nội", "TP. Hồ Chí Minh"}
         ],
         "next_actions": {
-            "if_empty": "python scripts/seed_data.py --seed-demo 30",
-            "if_has_data": "python scripts/train_ml.py",
+            "if_empty": "python scripts/import_real_data.py --template",
+            "if_has_data": "python scripts/retrain_v2.py --dry-run",
             "if_has_ml": "Truy cập http://localhost:5173 để sử dụng app",
         }
     }
@@ -3309,24 +3666,21 @@ def evaluation_summary(db: Session = Depends(get_db)):
     mape_data_points = mape_result[0] if mape_result else 0
     expert_mape = round(mape_result[1], 1) if mape_result and mape_result[1] else None
 
-    # Model MAPE: tính từ MAE / avg_price_per_m2
-    best_model = db.query(ModelVersion).filter(
-        ModelVersion.mae.isnot(None)
-    ).order_by(ModelVersion.trained_at.desc()).first()
+    # Model MAPE: official metadata test_mape. Do not estimate total-price MAE
+    # against price_per_m2; that mixes units and caused 16.09% vs 42-45% drift
+    # to be displayed without provenance.
+    from src.backend.model_metrics import build_metric_provenance
 
-    model_mape = None
-    if best_model and mape_data_points > 0:
-        # Ước lượng model MAPE = MAE / avg_actual_price_per_m2 * 100
-        avg_actual_ppm = db.execute(
-            text("""
-                SELECT AVG(p.price_per_m2)
-                FROM expert_properties ep
-                JOIN properties p ON p.id = ep.property_id
-                WHERE ep.status = 'completed' AND p.price_per_m2 > 0
-            """)
-        ).scalar() or 0
-        if avg_actual_ppm > 0:
-            model_mape = round(best_model.mae / avg_actual_ppm * 100, 1)
+    metric_provenance = build_metric_provenance()
+    best_metric = metric_provenance.get("best_verified") or {}
+    serving_metric = metric_provenance.get("serving") or best_metric
+    latest_metric = metric_provenance.get("latest") or {}
+
+    best_db_model = None
+    if serving_metric.get("stamp"):
+        best_db_model = db.query(ModelVersion).filter(
+            ModelVersion.model_path.like(f"%{serving_metric['stamp']}%")
+        ).first()
 
     return {
         "expert_evaluation": {
@@ -3345,14 +3699,20 @@ def evaluation_summary(db: Session = Depends(get_db)):
         "model_comparison": {
             "expert_estimate_MAPE": f"{expert_mape}%" if expert_mape else None,
             "expert_estimate_MAPE_data_points": mape_data_points,
-            "model_MAPE_estimate": f"{model_mape}%" if model_mape else None,
-            "model_mae_vnd": round(best_model.mae) if best_model else None,
-            "model_r2": round(best_model.r2, 3) if best_model else None,
-            "model_rmse_vnd": round(best_model.rmse) if best_model else None,
-            "model_trained_records": best_model.train_record_count if best_model else None,
-            "note": "MAPE = mean absolute percentage error trên price/m². "
+            "model_MAPE_estimate": f"{round(serving_metric['test_mape'], 1)}%" if serving_metric.get("test_mape") is not None else None,
+            "model_MAPE_latest": f"{round(latest_metric['test_mape'], 1)}%" if latest_metric.get("test_mape") is not None else None,
+            "model_MAPE_best_verified": f"{round(best_metric['test_mape'], 1)}%" if best_metric.get("test_mape") is not None else None,
+            "model_version": serving_metric.get("stamp"),
+            "latest_model_version": latest_metric.get("stamp"),
+            "best_verified_model_version": best_metric.get("stamp"),
+            "model_mae_vnd": round(serving_metric["test_mae"]) if serving_metric.get("test_mae") is not None else None,
+            "model_r2": round(serving_metric["test_r2"], 3) if serving_metric.get("test_r2") is not None else None,
+            "model_rmse_vnd": round(best_db_model.rmse) if best_db_model and best_db_model.rmse else None,
+            "model_trained_records": serving_metric.get("train_size") or (best_db_model.train_record_count if best_db_model else None),
+            "metric_provenance": metric_provenance,
+            "note": "MAPE = mean absolute percentage error. "
                     "Expert MAPE: so sánh expert mid estimate vs actual price/m². "
-                    "Model MAPE ước lượng từ MAE / avg_price_per_m2.",
+                    "Model MAPE lấy từ official test_mape trong metadata theo từng model version.",
         },
     }
 

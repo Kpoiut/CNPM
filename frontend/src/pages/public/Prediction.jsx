@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { Suspense, lazy, useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { icon } from '../../components/ui/icons'
 import { PROPERTY_TYPES } from '../../constants/vnStrings'
@@ -11,10 +11,25 @@ import ValuationResultCard from '../../components/valuation/ValuationResultCard'
 import SDEVResultCard from '../../components/valuation/SDEVResultCard'
 import PipelineGateTrail from '../../components/valuation/PipelineGateTrail'
 import SubEnginePanel from '../../components/valuation/SubEnginePanel'
-import { ImpactAnalysisPanel } from '../../components/valuation/ImpactAnalysisPanel'
 import { useAuth } from '../../components/auth'
-import { predictPipeline, predictSDEV } from '../../api'
+import { predictPipeline, predictSDEV, iotAreaSignal } from '../../api'
 import { PredictionHeroBand } from '../../components/prediction/PredictionHeroBand'
+import { setNovaContext, clearNovaContext } from '../../components/nova/novaBus'
+import './prediction-pro.css'
+
+const MapLocationPicker = lazy(() => import('../../components/valuation/MapLocationPicker'))
+const PropertyVisualizer = lazy(() => import('../../components/valuation/PropertyVisualizer'))
+const ImpactAnalysisPanel = lazy(() =>
+  import('../../components/valuation/ImpactAnalysisPanel').then(module => ({ default: module.ImpactAnalysisPanel }))
+)
+
+function LazyPanelFallback({ label = 'Đang tải mô-đun...' }) {
+  return (
+    <div className="prediction-inline-note" style={{ minHeight: 120, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {label}
+    </div>
+  )
+}
 
 // Map frontend property_type → v2 canonical asset_type
 const PROPERTY_TO_ASSET = {
@@ -34,11 +49,19 @@ const completenessPct = (value) => {
   return 0
 }
 
-const BASE_TABS = [
-  { key: 'form',        label: 'Biểu mẫu + Kết quả', abbr: 'BM', iconKey: 'house' },
-  { key: 'comparables', label: 'So sánh',            abbr: 'SS', iconKey: 'table' },
-  { key: 'pipeline',    label: 'Pipeline',           abbr: 'PL', iconKey: 'flask' },
+// Hai cách bắt đầu (chọn 1 trong 2) — đứng trên nhóm kết quả
+const ENTRY_TABS = [
+  { key: 'form', label: 'Biểu mẫu', iconKey: 'house' },
+  { key: 'map',  label: 'Định vị thông minh', iconKey: 'map' },
 ]
+
+// Nhóm kết quả — bị KHÓA cho tới khi có kết quả dự đoán
+const RESULT_TABS = [
+  { key: 'result',      label: 'Kết quả',  iconKey: 'chart' },
+  { key: 'comparables', label: 'So sánh',  iconKey: 'table' },
+  { key: 'pipeline',    label: 'Pipeline', iconKey: 'flask' },
+]
+const RESULT_TAB_KEYS = ['result', 'comparables', 'pipeline', 'impact']
 
 const fmtVnd = (value) => value
   ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', maximumFractionDigits: 0 }).format(value)
@@ -363,6 +386,128 @@ function MarketStatsBar({ comparables }) {
   )
 }
 
+function PredictionCommandRail({
+  isAdmin,
+  activeTab,
+  propertyType,
+  pipelineResult,
+  v2Result,
+  comparables,
+  loading,
+  staleLocation,
+  repredicting,
+  scopeText,
+  engineLabel,
+  modelProvenance,
+}) {
+  const hasResult = Boolean(pipelineResult)
+  const value = v2Result?.market_valuation?.fair_market_value
+  const grade = v2Result?.confidence_evidence?.confidence_grade || pipelineResult?.valuation?.confidence_evidence?.confidence_grade
+  const confidence = v2Result?.confidence_evidence?.overall_confidence
+  const servingModel = modelProvenance?.serving
+  const latestModel = modelProvenance?.latest
+  const modelMetricText = model => model?.test_mape != null
+    ? `${model.stamp} · MAPE ${Number(model.test_mape).toLocaleString('vi-VN', { maximumFractionDigits: 2 })}%`
+    : 'Đang tải metric có version'
+  const nextAction = loading
+    ? 'Đợi pipeline hoàn tất'
+    : !hasResult
+      ? 'Nhập hồ sơ rồi bấm Dự đoán'
+      : staleLocation
+        ? 'Vị trí đã đổi — chạy lại dự đoán'
+        : activeTab === 'form'
+          ? 'Kiểm tra Kết quả hoặc So sánh'
+          : activeTab === 'result'
+            ? 'Đối chiếu comparable/pipeline'
+            : 'Có thể quay lại form để tinh chỉnh'
+
+  return (
+    <aside className="pp-command-rail" aria-label="Prediction workspace status">
+      <div className="pp-rail-card pp-rail-card--role">
+        <div className="pp-rail-kicker">{isAdmin ? 'Vận hành quản trị' : 'Định giá cá nhân'}</div>
+        <div className="pp-rail-title">
+          {icon(isAdmin ? 'shieldCheck' : 'user', 18)}
+          {isAdmin ? 'Chế độ kiểm soát đầy đủ' : 'Chế độ định giá người dùng'}
+        </div>
+        <p>
+          {isAdmin
+            ? 'Có thêm tab Tác động, audit pipeline và thông tin vận hành để kiểm tra mô hình.'
+            : 'Tập trung vào nhập hồ sơ, nhận khoảng giá, xem bằng chứng và mức tin cậy.'}
+        </p>
+      </div>
+
+      <div className="pp-rail-card">
+        <div className="pp-rail-kicker">Hành động tiếp theo</div>
+        <strong className="pp-rail-action">{nextAction}</strong>
+        <div className="pp-step-stack">
+          {[
+            ['form', '01', 'Hồ sơ'],
+            ['result', '02', 'Kết quả'],
+            ['comparables', '03', 'So sánh'],
+            ['pipeline', '04', 'Audit'],
+          ].map(([key, number, label]) => (
+            <span
+              key={key}
+              className={`pp-step-pill ${activeTab === key ? 'is-active' : ''} ${hasResult || key === 'form' ? '' : 'is-locked'}`}
+            >
+              <b>{number}</b>{label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="pp-rail-card">
+        <div className="pp-rail-kicker">Tóm tắt trực tiếp</div>
+        <dl className="pp-rail-metrics">
+          <div>
+            <dt>Loại tài sản</dt>
+            <dd>{PROPERTY_TYPES?.[propertyType] || propertyType}</dd>
+          </div>
+          <div>
+            <dt>Giá ước tính</dt>
+            <dd>{value ? fmtVnd(value) : 'Chưa chạy'}</dd>
+          </div>
+          <div>
+            <dt>Comparable</dt>
+            <dd>{comparables?.length || 0} mẫu</dd>
+          </div>
+          <div>
+            <dt>Confidence</dt>
+            <dd>{grade ? `Grade ${grade}${confidence != null ? ` · ${(confidence * 100).toFixed(0)}%` : ''}` : '—'}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div className="pp-rail-card pp-rail-card--system">
+        <div className="pp-rail-kicker">Thông tin hệ thống</div>
+        <div className="pp-system-line">
+          <span>{icon('flask', 16)}</span>
+          <span>{engineLabel || 'Valuation Engine v2'}</span>
+        </div>
+        <div className="pp-system-line">
+          <span>{icon('database', 16)}</span>
+          <span>PostgreSQL/PostGIS source</span>
+        </div>
+        <div className="pp-system-line">
+          <span>{icon('shieldCheck', 16)}</span>
+          <span>Model đang phục vụ: {modelMetricText(servingModel)}</span>
+        </div>
+        <div className="pp-system-line">
+          <span>{icon('activity', 16)}</span>
+          <span>Chu kỳ train mới nhất: {modelMetricText(latestModel)}</span>
+        </div>
+        {servingModel?.stamp && latestModel?.stamp && servingModel.stamp !== latestModel.stamp && (
+          <small>
+            Candidate mới chưa được activate vì metric test chưa tốt hơn model đang phục vụ.
+          </small>
+        )}
+        <small>{scopeText}</small>
+        {repredicting && <span className="pp-rail-sync">{icon('loader', 14)} Đang cập nhật live estimate</span>}
+      </div>
+    </aside>
+  )
+}
+
 // ─── Main Prediction component ────────────────────────────────────────────────
 function Prediction() {
   const [activeTab, setActiveTab] = useState('form')
@@ -373,6 +518,8 @@ function Prediction() {
   const [loading, setLoading] = useState(false)
   const [sdevLoading, setSdevLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [prefill, setPrefill] = useState(null)
+  const [iotSignal, setIotSignal] = useState(null)
   const { isAdmin } = useAuth()
 
   const { data: engineInfo } = useQuery({
@@ -383,6 +530,16 @@ function Prediction() {
       return res.json()
     },
     staleTime: 10 * 60 * 1000,
+  })
+
+  const { data: modelComparison } = useQuery({
+    queryKey: ['model-metric-provenance'],
+    queryFn: async () => {
+      const res = await fetch('/api/v2/explain/model-compare')
+      if (!res.ok) throw new Error('Không lấy được metric theo model version')
+      return res.json()
+    },
+    staleTime: 5 * 60 * 1000,
   })
 
   // Dynamic scope from API
@@ -429,34 +586,129 @@ function Prediction() {
     setError(null)
   }
 
-  const handleV2Submit = async (payload) => {
-    setLoading(true)
-    setError(null)
+  // Map picker → set loại hình + prefill rồi chuyển sang biểu mẫu để người dùng hoàn tất
+  const handleMapConfirm = ({ propertyType: nextType, prefill: nextPrefill }) => {
+    if (nextType && nextType !== propertyType) {
+      setPropertyType(nextType)
+      setPipelineResult(null)
+      setSdevResult(null)
+      setLastPayload(null)
+      setError(null)
+    }
+    setPrefill(nextPrefill)
+    setActiveTab('form')
+  }
+
+  // Map picker → DỰ ĐOÁN LUÔN: giữ data ở form + chạy pipeline + sang kết quả
+  const handleMapPredict = ({ propertyType: nextType, prefill: nextPrefill }) => {
+    if (nextType && nextType !== propertyType) setPropertyType(nextType)
+    setPrefill(nextPrefill)
+    const assetType = PROPERTY_TO_ASSET[nextType] || nextType.toUpperCase()
+    const clean = Object.fromEntries(
+      Object.entries(nextPrefill || {}).filter(([k, v]) => !k.startsWith('_') && v !== '' && v != null)
+    )
+    runPrediction({ asset_type: assetType, ...clean })
+  }
+
+  // Xóa hết: reset form + kết quả (remount form qua resetKey)
+  const [resetKey, setResetKey] = useState(0)
+  const [formPhotos, setFormPhotos] = useState([])
+  const clearAll = () => {
+    setPrefill(null)
     setPipelineResult(null)
     setSdevResult(null)
-    setLastPayload(payload)
+    setLastPayload(null)
+    setError(null)
+    setFormPhotos([])
+    setResetKey(k => k + 1)
+  }
+  const onFormUpload = (e) => {
+    const files = Array.from(e.target.files || []).slice(0, 6)
+    setFormPhotos(prev => [...prev, ...files.map(f => ({ name: f.name, url: URL.createObjectURL(f) }))].slice(0, 6))
+  }
+
+  // Khóa nhóm kết quả: nếu chưa có dự đoán mà đang ở tab kết quả → quay về biểu mẫu
+  useEffect(() => {
+    if (RESULT_TAB_KEYS.includes(activeTab) && !pipelineResult && !loading) {
+      setActiveTab('form')
+    }
+  }, [activeTab, pipelineResult, loading])
+
+  // Kích thước nút nhóm kết quả: admin +50%, user +100% (thiếu nút Tác động)
+  const resultScale = isAdmin ? 1.5 : 2.0
+  const resultTabs = isAdmin
+    ? [...RESULT_TABS, { key: 'impact', label: 'Tác động', iconKey: 'chart' }]
+    : RESULT_TABS
+
+  const liveTimerRef = useRef(null)
+  const lastLocSigRef = useRef(null)
+  const [repredicting, setRepredicting] = useState(false)
+  const [staleLocation, setStaleLocation] = useState(false)
+
+  const locSig = (p) => [p?.province_city, p?.district, p?.ward, p?.latitude, p?.longitude, p?.street_or_project].join('|')
+
+  const runPrediction = async (payload, { silent = false } = {}) => {
+    if (silent) { setRepredicting(true) }
+    else { setLoading(true); setError(null); setPipelineResult(null); setSdevResult(null) }
+
+    let enriched = payload
+    if (!silent) {
+      const lat = parseFloat(payload.latitude)
+      const lng = parseFloat(payload.longitude)
+      const hasIot = payload.noise_level != null && payload.noise_level !== ''
+      if (!hasIot && Number.isFinite(lat) && Number.isFinite(lng)) {
+        try {
+          const signal = await iotAreaSignal({ lat, lng })
+          const r = signal?.readings || {}
+          enriched = {
+            ...payload,
+            ...(r.noise_level != null ? { noise_level: r.noise_level } : {}),
+            ...(r.temperature != null ? { temperature: r.temperature } : {}),
+            ...(r.humidity != null ? { humidity: r.humidity } : {}),
+            iot_signal_source: signal?.sensor_source,
+            iot_node_count: signal?.node_count,
+          }
+          setIotSignal(signal)
+        } catch (_) { /* không chặn dự đoán nếu tín hiệu lỗi */ }
+      }
+    }
+    setLastPayload(enriched)
+
     try {
-      const data = await predictPipeline(payload)
+      const data = await predictPipeline(enriched)
       setPipelineResult(data)
-      if (payload.district && payload.area_m2) {
+      lastLocSigRef.current = locSig(enriched)
+      setStaleLocation(false)
+      if (!silent) setActiveTab('result')
+      if (!silent && enriched.district && enriched.area_m2) {
         setSdevLoading(true)
         try {
           const sdevData = await predictSDEV({
             asset_type: PROPERTY_TO_ASSET[propertyType] || propertyType.toUpperCase(),
-            province_city: payload.province_city || payload.province,
-            district: payload.district,
-            area_m2: parseFloat(payload.area_m2) || 0,
-            bedrooms: parseInt(payload.bedrooms) || 2,
+            province_city: enriched.province_city || enriched.province,
+            district: enriched.district,
+            area_m2: parseFloat(enriched.area_m2) || 0,
+            bedrooms: parseInt(enriched.bedrooms) || 2,
           })
           setSdevResult(sdevData)
         } catch (_) { setSdevResult(null) }
         finally { setSdevLoading(false) }
       }
     } catch (err) {
-      setError(err.message)
+      if (!silent) setError(err.message)
     } finally {
-      setLoading(false)
+      if (silent) setRepredicting(false); else setLoading(false)
     }
+  }
+
+  const handleV2Submit = (payload) => runPrediction(payload, { silent: false })
+
+  // Tự cập nhật giá khi đổi field SỐ; ĐÓNG BĂNG khi đổi VỊ TRÍ (quận/phường/tọa độ) → cần bấm dự đoán lại
+  const handleLiveChange = (payload) => {
+    if (!pipelineResult) return
+    if (locSig(payload) !== lastLocSigRef.current) { setStaleLocation(true); return }
+    clearTimeout(liveTimerRef.current)
+    liveTimerRef.current = setTimeout(() => runPrediction(payload, { silent: true }), 650)
   }
 
   // v2 valuation data for ValuationResultCard
@@ -472,8 +724,39 @@ function Prediction() {
   // v2 comparables — from PipelineResult.top-level comparable_records field
   const comparables = pipelineResult?.comparable_records || []
 
+  // Grade hiển thị ở thanh kết quả
+  const resultGrade = v2Result?.confidence_evidence?.confidence_grade
+  const resultConf = v2Result?.confidence_evidence?.overall_confidence ?? 0
+  const GRADE_COLORS = { A: '#06d6a0', B: '#0099ff', C: '#f59e0b', D: '#ef233c' }
+  const resultGradeColor = GRADE_COLORS[resultGrade] || '#888'
+
+  // Publish kết quả định giá hiện tại cho trợ lý Nova (tương tác sâu: "giải thích kết quả này")
+  useEffect(() => {
+    const mv = v2Result?.market_valuation
+    if (!mv) { clearNovaContext(['current_valuation']); return }
+    const topFactors = (mv.adjustments || mv.top_factors || [])
+      .slice?.(0, 5)
+      .map(a => a?.label || a?.name || a?.factor_code || a)
+      .filter(Boolean)
+    setNovaContext({
+      current_valuation: {
+        fair_value: mv.fair_market_value,
+        fair_value_text: fmtVnd(mv.fair_market_value),
+        range_low: mv.expected_range_low,
+        range_high: mv.expected_range_high,
+        property_type: PROPERTY_TYPES?.[propertyType] || propertyType,
+        district: lastPayload?.district,
+        area: lastPayload?.area_m2,
+        confidence_grade: resultGrade,
+        confidence: resultConf ? `${(resultConf * 100).toFixed(0)}%` : undefined,
+        top_factors: topFactors,
+      },
+    })
+    return () => clearNovaContext(['current_valuation'])
+  }, [v2Result, propertyType, lastPayload, resultGrade, resultConf])
+
   return (
-    <div>
+    <div className="pred-pro">
       {/* Page Header */}
       <div className="page-header">
         <div>
@@ -488,73 +771,130 @@ function Prediction() {
         isAdmin={isAdmin}
       />
 
-      {/* ── Tabs ── */}
-      <div className="flex gap-2 mb-6">
-        {BASE_TABS.map(t => (
+      {/* Hero giá trị — cập nhật trực tiếp khi đổi thông số (ẩn ở tab Kết quả) */}
+      {v2Result?.market_valuation && activeTab !== 'result' && (
+        <div className="pp-hero" style={{ margin: '1rem 0 1.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <div className="pp-hero-label">Giá trị thị trường ước tính</div>
+              <div className="pp-hero-price">{fmtVnd(v2Result.market_valuation.fair_market_value)}</div>
+              <div className="pp-hero-sub">
+                {PROPERTY_TYPES?.[propertyType] || propertyType}
+                {lastPayload?.district ? ` · ${lastPayload.district}` : ''}
+                {lastPayload?.area_m2 ? ` · ${lastPayload.area_m2} m²` : ''}
+                {(v2Result.market_valuation.expected_range_low && v2Result.market_valuation.expected_range_high)
+                  ? ` · khoảng ${fmtVnd(v2Result.market_valuation.expected_range_low)} – ${fmtVnd(v2Result.market_valuation.expected_range_high)}` : ''}
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
+              <span className="pp-hero-chip">
+                <span className="pp-live-dot" />
+                {repredicting ? 'Đang cập nhật giá...' : staleLocation ? 'Cần dự đoán lại' : 'Cập nhật trực tiếp'}
+              </span>
+              {iotSignal?.node_count > 0 && (
+                <span className="pp-hero-chip" style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>{icon('radio', 13)} {iotSignal.node_count} cảm biến IoT</span>
+              )}
+              {pipelineResult?.valuation?.confidence_evidence?.confidence_grade && (
+                <span className="pp-hero-chip">Độ tin cậy {pipelineResult.valuation.confidence_evidence.confidence_grade}</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* ── Tabs: cách nhập (trái) · kết quả khóa tới khi dự đoán (phải) ── */}
+      <div className="pp-tabs" style={{ display: 'flex', alignItems: 'stretch', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
+        {ENTRY_TABS.map(t => (
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
-            className={`btn btn-sm ${activeTab === t.key ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+            className={`btn ${activeTab === t.key ? 'btn-primary' : 'btn-ghost'}`}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', padding: '0.65rem 1.2rem', fontSize: '0.92rem', fontWeight: 700 }}
           >
-            {icon(t.iconKey, 16)}
+            {icon(t.iconKey, 18)}
             {t.label}
           </button>
         ))}
-        {isAdmin && (
-          <button
-            key="impact"
-            onClick={() => setActiveTab('impact')}
-            className={`btn btn-sm ${activeTab === 'impact' ? 'btn-primary' : 'btn-ghost'}`}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
-          >
-            {icon('chart', 16)}
-            Tác động
-            <span style={{
-              padding: '1px 6px',
-              background: '#06d6a020',
-              color: '#06d6a0',
-              borderRadius: '10px',
-              fontSize: '0.65rem',
-              fontWeight: 700,
-            }}>
-              Admin
-            </span>
-          </button>
-        )}
+
+        <div style={{ width: 1, background: 'var(--border)', margin: '0 0.2rem' }} />
+
+        {resultTabs.map(t => {
+          const locked = !pipelineResult
+          const active = activeTab === t.key
+          return (
+            <button
+              key={t.key}
+              onClick={() => { if (!locked) setActiveTab(t.key) }}
+              disabled={locked}
+              title={locked ? 'Cần dự đoán xong mới mở khóa' : ''}
+              className={`btn ${active ? 'btn-primary' : 'btn-ghost'}`}
+              style={{
+                flex: '1 1 0', minWidth: 130, justifyContent: 'center',
+                display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                padding: `${(0.5 * resultScale).toFixed(2)}rem ${(0.9 * resultScale).toFixed(2)}rem`,
+                fontSize: `${Math.min(0.82 + (resultScale - 1) * 0.4, 1.1).toFixed(2)}rem`,
+                fontWeight: 700,
+                opacity: locked ? 0.45 : 1,
+                cursor: locked ? 'not-allowed' : 'pointer',
+              }}
+            >
+              {icon(t.iconKey, Math.round(16 * resultScale / 1.5))}
+              {t.label}
+              {t.key === 'impact' && (
+                <span style={{ padding: '1px 6px', background: '#06d6a020', color: '#06d6a0', borderRadius: '10px', fontSize: '0.62rem', fontWeight: 700 }}>
+                  Admin
+                </span>
+              )}
+              {locked && <span style={{ fontSize: '0.8em' }}>🔒</span>}
+            </button>
+          )
+        })}
       </div>
+
+      <div className="pp-workspace">
+        <PredictionCommandRail
+          isAdmin={isAdmin}
+          activeTab={activeTab}
+          propertyType={propertyType}
+          pipelineResult={pipelineResult}
+          v2Result={v2Result}
+          comparables={comparables}
+          loading={loading}
+          staleLocation={staleLocation}
+          repredicting={repredicting}
+          scopeText={scopeText}
+          engineLabel={engineInfo?.button_label}
+          modelProvenance={modelComparison?.metric_provenance}
+        />
+
+        <main className="pp-workspace-main">
+
+      {/* ════════════════════════════════════════════════════════════
+          TAB: MAP — Định vị thông minh (chọn vị trí → tự điền form)
+      ════════════════════════════════════════════════════════════ */}
+      {activeTab === 'map' && (
+        <Suspense fallback={<LazyPanelFallback label="Đang tải bản đồ định vị..." />}>
+          <MapLocationPicker
+            propertyType={propertyType}
+            onPropertyTypeChange={handlePropertyTypeChange}
+            onConfirm={handleMapConfirm}
+            onPredict={handleMapPredict}
+          />
+        </Suspense>
+      )}
 
       {/* ════════════════════════════════════════════════════════════
           TAB: FORM + RESULTS
           Left: intake form | Right: v2 results (no decorative map)
       ════════════════════════════════════════════════════════════ */}
       {activeTab === 'form' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1.15fr 0.85fr', gap: '1.5rem' }}>
-          {/* LEFT — Form */}
+        <div>
+          {/* Form (full width) */}
           <div className="card animate-fadeIn">
             <div className="card-header">
               <span className="stat-icon primary">{icon('house', 20)}</span>
               <span className="card-title">Thông tin bất động sản</span>
-            </div>
-
-            <div className="prediction-note-band" style={{ marginBottom: '1rem' }}>
-              <div className="prediction-note-head">
-                <span className="stat-icon info">{icon('activity', 18)}</span>
-                <strong>Luồng làm việc</strong>
-              </div>
-              <div className="prediction-note-grid prediction-workflow-grid">
-                {[
-                  ['01', 'Nhập hồ sơ', 'Form thật để kích hoạt pipeline.'],
-                  ['02', 'So sánh mẫu', 'Comparable và evidence đi cùng.'],
-                  ['03', 'Xem audit', 'Pipeline, sub-engine và tác động.'],
-                ].map(([step, title, desc]) => (
-                  <div key={title} className="prediction-note-stat">
-                    <div className="prediction-note-stat-label">{step}</div>
-                    <div className="prediction-note-stat-value" style={{ fontSize: '0.95rem' }}>{title}</div>
-                    <div className="prediction-metric-note">{desc}</div>
-                  </div>
-                ))}
-              </div>
             </div>
 
             {/* Property type selector */}
@@ -580,6 +920,20 @@ function Prediction() {
                     {label}
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={clearAll}
+                  title="Xóa toàn bộ thông tin đã nhập"
+                  style={{
+                    marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.4rem',
+                    padding: '0.5rem 0.875rem', borderRadius: 'var(--radius)',
+                    fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer',
+                    border: '1px solid var(--danger, #ef233c)', background: 'transparent',
+                    color: 'var(--danger, #ef233c)',
+                  }}
+                >
+                  Xóa hết
+                </button>
               </div>
               {V2_SUPPORTED.has(propertyType) && (
                 <div style={{ marginTop: '0.5rem' }}>
@@ -592,23 +946,51 @@ function Prediction() {
 
             {/* v2 asset-specific forms */}
             {V2_SUPPORTED.has(propertyType) && propertyType === 'land' && (
-              <LandIntakeForm onSubmit={handleV2Submit} loading={loading} isAdmin={isAdmin} engineLabel={engineInfo?.button_label} />
+              <LandIntakeForm key={`land-${resetKey}`} onSubmit={handleV2Submit} loading={loading} isAdmin={isAdmin} engineLabel={engineInfo?.button_label} prefill={prefill} onLiveChange={handleLiveChange} />
             )}
             {V2_SUPPORTED.has(propertyType) && propertyType === 'apartment' && (
-              <ApartmentIntakeForm onSubmit={handleV2Submit} loading={loading} isAdmin={isAdmin} engineLabel={engineInfo?.button_label} />
+              <ApartmentIntakeForm key={`apartment-${resetKey}`} onSubmit={handleV2Submit} loading={loading} isAdmin={isAdmin} engineLabel={engineInfo?.button_label} prefill={prefill} onLiveChange={handleLiveChange} />
             )}
             {V2_SUPPORTED.has(propertyType) && propertyType === 'townhouse' && (
-              <TownhouseIntakeForm onSubmit={handleV2Submit} loading={loading} isAdmin={isAdmin} engineLabel={engineInfo?.button_label} />
+              <TownhouseIntakeForm key={`townhouse-${resetKey}`} onSubmit={handleV2Submit} loading={loading} isAdmin={isAdmin} engineLabel={engineInfo?.button_label} prefill={prefill} onLiveChange={handleLiveChange} />
             )}
             {V2_SUPPORTED.has(propertyType) && propertyType === 'villa' && (
-              <VillaIntakeForm onSubmit={handleV2Submit} loading={loading} isAdmin={isAdmin} engineLabel={engineInfo?.button_label} />
+              <VillaIntakeForm key={`villa-${resetKey}`} onSubmit={handleV2Submit} loading={loading} isAdmin={isAdmin} engineLabel={engineInfo?.button_label} prefill={prefill} onLiveChange={handleLiveChange} />
             )}
             {V2_SUPPORTED.has(propertyType) && propertyType === 'house' && (
-              <HouseIntakeForm onSubmit={handleV2Submit} loading={loading} isAdmin={isAdmin} engineLabel={engineInfo?.button_label} />
+              <HouseIntakeForm key={`house-${resetKey}`} onSubmit={handleV2Submit} loading={loading} isAdmin={isAdmin} engineLabel={engineInfo?.button_label} prefill={prefill} onLiveChange={handleLiveChange} />
             )}
-          </div>
 
-          {/* RIGHT — Results panel */}
+            {/* Ảnh BĐS (tùy chọn) — tham chiếu trực quan, không bắt buộc */}
+            <div style={{ marginTop: '1rem', padding: '0.75rem 0.9rem', border: '1px dashed var(--border)', borderRadius: 'var(--radius)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 700, color: 'var(--primary)', cursor: 'pointer' }}>
+                  {icon('plus', 14)} Tải ảnh bất động sản (tùy chọn)
+                  <input type="file" accept="image/*" multiple onChange={onFormUpload} style={{ display: 'none' }} />
+                </label>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Ảnh dùng để tham chiếu trực quan, không bắt buộc và không thay đổi giá dự đoán.</span>
+              </div>
+              {formPhotos.length > 0 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                  {formPhotos.map((p, i) => (
+                    <div key={i} style={{ position: 'relative' }}>
+                      <img src={p.url} alt={p.name} style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover', border: '1px solid var(--border)' }} />
+                      <button type="button" onClick={() => setFormPhotos(ph => ph.filter((_, j) => j !== i))}
+                        style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: '50%', border: 'none', background: 'var(--danger, #ef233c)', color: '#fff', cursor: 'pointer', fontSize: 11, lineHeight: '18px', padding: 0 }}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════════
+          TAB: RESULT — trang kết quả riêng (full-width)
+      ════════════════════════════════════════════════════════════ */}
+      {activeTab === 'result' && (
+        <div className="animate-fadeIn">
           <div>
             {error && (
               <div className="alert alert-danger mb-4">
@@ -618,7 +1000,61 @@ function Prediction() {
             )}
 
             {pipelineResult && (
-              <div className="animate-scaleIn" style={{ position: 'sticky', top: '80px', display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+              <div className="animate-scaleIn" style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+
+                {/* Thanh tóm tắt + hành động */}
+                <div className="pp-result-bar">
+                  <div style={{ minWidth: 0 }}>
+                    <div className="pp-result-title">Kết quả định giá</div>
+                    <div className="pp-result-chips">
+                      <span className="pp-result-chip">{PROPERTY_TYPES?.[propertyType] || propertyType}</span>
+                      {lastPayload?.district && <span className="pp-result-chip">{lastPayload.district}</span>}
+                      {lastPayload?.ward && <span className="pp-result-chip">{lastPayload.ward}</span>}
+                      {(lastPayload?.area_m2 || lastPayload?.land_area_m2) && (
+                        <span className="pp-result-chip">{lastPayload.area_m2 || lastPayload.land_area_m2} m²</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="pp-result-actions">
+                    {resultGrade && (
+                      <span className="pp-grade-pill" style={{ background: `${resultGradeColor}18`, color: resultGradeColor, border: `1px solid ${resultGradeColor}40` }}>
+                        {icon('shieldCheck', 14)} Độ tin cậy {resultGrade} · {(resultConf * 100).toFixed(0)}%
+                      </span>
+                    )}
+                    <button className="btn btn-ghost btn-sm" onClick={() => setActiveTab('form')}>← Sửa biểu mẫu</button>
+                    <button className="btn btn-primary btn-sm" disabled={repredicting || loading} onClick={() => lastPayload && runPrediction(lastPayload)}>
+                      {repredicting ? 'Đang tính...' : 'Định giá lại'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Trạng thái cập nhật giá trực tiếp */}
+                {repredicting && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem 0.75rem', borderRadius: 8, background: 'var(--primary-50)', border: '1px solid var(--primary-200)', fontSize: '0.78rem', color: 'var(--primary)' }}>
+                    <span className="spinner" style={{ width: 14, height: 14 }} />
+                    Đang cập nhật giá theo thay đổi...
+                  </div>
+                )}
+                {staleLocation && !repredicting && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem 0.75rem', borderRadius: 8, background: '#f59e0b15', border: '1px solid #f59e0b50', fontSize: '0.78rem' }}>
+                    <span>{icon('pin', 14)}</span>
+                    <span>Bạn đã đổi <strong>vị trí/khu vực</strong> — giá hiện tại không còn đúng. Bấm <strong>Dự đoán</strong> để cập nhật.</span>
+                  </div>
+                )}
+
+                {/* Tín hiệu IoT khu vực đã phát khi dự đoán */}
+                {iotSignal && (
+                  <div style={{
+                    padding: '0.6rem 0.8rem', borderRadius: 10, fontSize: '0.76rem',
+                    background: iotSignal.node_count > 0 ? '#06d6a012' : '#f59e0b12',
+                    border: `1px solid ${iotSignal.node_count > 0 ? '#06d6a040' : '#f59e0b40'}`,
+                  }}>
+                    <strong style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>{icon('radio', 14)} Tín hiệu IoT khu vực</strong>{' '}
+                    {iotSignal.node_count > 0
+                      ? `— thu từ ${iotSignal.node_count} node cảm biến (gần nhất ${iotSignal.nearest_node_m}m). Ồn ${iotSignal.readings?.noise_level ?? '—'}dB · ${iotSignal.readings?.temperature ?? '—'}°C · ${iotSignal.readings?.humidity ?? '—'}%`
+                      : '— không có node trong vùng, dùng ước lượng theo quận.'}
+                  </div>
+                )}
 
                 {/* Blocked banner */}
                 {pipelineResult.final_status === 'BLOCK' && (
@@ -637,19 +1073,32 @@ function Prediction() {
                   </div>
                 )}
 
-                {/* Valuation Result Card — 3-layer output */}
-                {v2Result && (
-                  <>
-                    <ValuationResultCard result={v2Result} compact />
-                    <ResultEvidenceSummary comparables={comparables} input={lastPayload} />
-                  </>
-                )}
+                {/* Valuation Result Card — 3-layer output (đầy đủ) */}
+                {v2Result && <ValuationResultCard result={v2Result} />}
 
-                {/* SDEV */}
+                {/* SDEV — đẩy lên trên để trực quan hóa cung-cầu */}
                 {(sdevResult || sdevLoading) && (
                   <SDEVResultCard sdev={sdevResult} loading={sdevLoading} />
                 )}
 
+                {v2Result && (
+                  <ResultEvidenceSummary comparables={comparables} input={lastPayload} />
+                )}
+
+                {/* Trực quan hóa (full-width) */}
+                {v2Result && lastPayload && (
+                  <Suspense fallback={<LazyPanelFallback label="Đang tải trực quan hóa tài sản..." />}>
+                    <PropertyVisualizer payload={lastPayload} propertyType={propertyType} userPhotos={formPhotos} />
+                  </Suspense>
+                )}
+
+              </div>
+            )}
+
+            {loading && !pipelineResult && (
+              <div className="card" style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
+                <span className="spinner" style={{ width: 26, height: 26, display: 'inline-block' }} />
+                <p style={{ marginTop: '0.75rem', fontSize: '0.9rem' }}>Đang chạy Valuation Engine v2...</p>
               </div>
             )}
 
@@ -809,13 +1258,15 @@ function Prediction() {
         <div className="animate-fadeIn">
           {isAdmin ? (
             pipelineResult ? (
-              <ImpactAnalysisPanel
-                formData={{
-                  ...lastPayload,
-                  asset_type: PROPERTY_TO_ASSET[propertyType] || propertyType.toUpperCase(),
-                }}
-                runId={pipelineResult.pipeline_id}
-              />
+              <Suspense fallback={<LazyPanelFallback label="Đang tải phân tích tác động..." />}>
+                <ImpactAnalysisPanel
+                  formData={{
+                    ...lastPayload,
+                    asset_type: PROPERTY_TO_ASSET[propertyType] || propertyType.toUpperCase(),
+                  }}
+                  runId={pipelineResult.pipeline_id}
+                />
+              </Suspense>
             ) : (
               <div className="card">
                 <div className="empty-state">
@@ -840,6 +1291,8 @@ function Prediction() {
           )}
         </div>
       )}
+        </main>
+      </div>
     </div>
   )
 }

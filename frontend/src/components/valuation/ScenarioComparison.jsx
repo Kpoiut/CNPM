@@ -39,8 +39,8 @@ export function ScenarioComparison({ current, fullInfo, maxCred }) {
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
-      {scenarios.map(s => (
-        <ScenarioCard key={s.key} {...s} />
+      {scenarios.map(({ key, ...scenarioProps }) => (
+        <ScenarioCard key={key} {...scenarioProps} />
       ))}
     </div>
   );

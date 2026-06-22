@@ -197,7 +197,7 @@ function About() {
             { name: 'Backend', tech: 'FastAPI', color: 'var(--success)', bg: 'rgba(16,185,129,0.08)', border: 'rgba(16,185,129,0.2)' },
             { name: 'ML', tech: 'scikit-learn', color: 'var(--info)', bg: 'rgba(14,165,233,0.08)', border: 'rgba(14,165,233,0.2)' },
             { name: 'Frontend', tech: 'React', color: 'var(--primary)', bg: 'rgba(79,70,229,0.08)', border: 'rgba(79,70,229,0.2)' },
-            { name: 'Database', tech: 'SQLite', color: 'var(--warning)', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.2)' },
+            { name: 'Database', tech: 'PostgreSQL/PostGIS', color: 'var(--warning)', bg: 'rgba(245,158,11,0.08)', border: 'rgba(245,158,11,0.2)' },
             { name: 'IoT', tech: 'Smartphone', color: 'var(--accent)', bg: 'rgba(16,185,129,0.06)', border: 'rgba(16,185,129,0.15)' },
           ].map((t, i) => (
             <div key={i} style={{

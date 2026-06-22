@@ -5,24 +5,6 @@ Chạy: python -m pytest tests/integration/test_api_v2.py -v
 Dùng FastAPI TestClient.
 """
 
-import pytest
-from fastapi.testclient import TestClient
-
-
-# =============================================================================
-# FIXTURES
-# =============================================================================
-
-@pytest.fixture
-def client():
-    """FastAPI TestClient."""
-    # Import app AFTER sys.path is set
-    import sys, os
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
-    from src.backend.main import app
-    return TestClient(app)
-
-
 # =============================================================================
 # ADJUSTMENT FACTORS (sample from registry — used in assertions)
 # =============================================================================

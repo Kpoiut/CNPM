@@ -7,6 +7,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import './CommunityAdmin.css';
 import { useAuth } from '../../components/auth';
 import { icon } from '../../components/ui/icons';
+import { authFetch } from '../../api/client';
 
 const API = '/api/community';
 const tk = () => localStorage.getItem('avm-token');
@@ -59,7 +60,7 @@ export default function CommunityAdmin() {
   const loadPosts = useCallback(async (t, p) => {
     setLoading(true);
     try {
-      const r = await fetch(`${API}/admin/feed?tab=${t}&page=${p}&limit=20`, { headers: hdr() });
+      const r = await authFetch(`${API}/admin/feed?tab=${t}&page=${p}&limit=20`, { headers: hdr() });
       if (r.ok) {
         const d = await r.json();
         setPosts(d.claims);
@@ -87,25 +88,25 @@ export default function CommunityAdmin() {
 
   const loadDetail = async (id) => {
     try {
-      const r = await fetch(`${API}/claims/${id}`, { headers: hdr() });
+      const r = await authFetch(`${API}/claims/${id}`, { headers: hdr() });
       if (r.ok) setDetail(await r.json());
     } catch {}
   };
 
   // Admin actions
   const runCoalitionScan = async () => {
-    await fetch(`${API}/admin/run-coalition-scan`, { method: 'POST', headers: hdr() });
+    await authFetch(`${API}/admin/run-coalition-scan`, { method: 'POST', headers: hdr() });
     alert('Coalition scan started');
   };
 
   const processVerdicts = async () => {
-    await fetch(`${API}/court/process-verdicts`, { method: 'POST', headers: hdr() });
+    await authFetch(`${API}/court/process-verdicts`, { method: 'POST', headers: hdr() });
     alert('Verdicts processed');
     loadPosts(tab, page);
   };
 
   const openCourt = async (claimId) => {
-    await fetch(`${API}/claims/${claimId}/court`, { method: 'POST', headers: hdr() });
+    await authFetch(`${API}/claims/${claimId}/court`, { method: 'POST', headers: hdr() });
     setCourtTarget(null);
     loadPosts(tab, page);
   };

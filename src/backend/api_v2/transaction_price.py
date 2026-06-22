@@ -7,19 +7,17 @@ GET /api/v2/transaction-price/{property_id}
 """
 from __future__ import annotations
 
-import json
-from pathlib import Path
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
-
-PROJECT_ROOT = Path(__file__).parent.parent.parent.parent
-import sys
-sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.backend.database import get_db
 from src.backend.api_v2 import router as api_router
-from src.backend.models import Property, MatchedPair, BuyerRequirement
+from src.backend.model_metrics import serving_calibration_metric
+from src.backend.models import MatchedPair, Property
 from src.domain.valuation.sdev_engine import SDEVEngine
+
+
+router = api_router
 
 
 def _vnd(v: float) -> str:
@@ -27,11 +25,16 @@ def _vnd(v: float) -> str:
 
 
 def _area_band(area_m2: float) -> str:
-    if area_m2 < 50: return "30-50"
-    if area_m2 < 70: return "50-70"
-    if area_m2 < 90: return "70-90"
-    if area_m2 < 120: return "90-120"
-    if area_m2 < 200: return "120-200"
+    if area_m2 < 50:
+        return "30-50"
+    if area_m2 < 70:
+        return "50-70"
+    if area_m2 < 90:
+        return "70-90"
+    if area_m2 < 120:
+        return "90-120"
+    if area_m2 < 200:
+        return "120-200"
     return "200+"
 
 
@@ -44,7 +47,7 @@ def get_transaction_price(property_id: int, db: Session = Depends(get_db)):
     - ask_bid_overlap_score from matched_pairs table
     - SDEV midpoint from ask/bid distributions
     - overasking_pct = (listing_price - sdev_mid) / listing_price
-    - calibration_mape from cross-validation error proxy
+    - calibration_mape from the pinned serving model's official test metric
     """
     prop = db.query(Property).filter(Property.id == property_id).first()
     if not prop:
@@ -106,21 +109,7 @@ def get_transaction_price(property_id: int, db: Session = Depends(get_db)):
         low_price = int(mid_price * 0.92)
         high_price = int(mid_price * 1.08)
 
-    # Load model metadata for calibration MAPE
-    all_metadata = sorted(
-        list((PROJECT_ROOT / "models").glob("metadata_*.json")) +
-        list((PROJECT_ROOT / "src" / "models_archive").glob("metadata_*.json")),
-        reverse=True
-    )
-    calib_mape = 18.5  # default
-    if all_metadata:
-        with open(all_metadata[0], encoding="utf-8") as f:
-            m = json.load(f)
-        best_result = m.get("all_results", {}).get(m.get("best_model", ""), {})
-        test_mae = best_result.get("test_mae", 0)
-        median_price = 3_500_000_000
-        if test_mae > 0:
-            calib_mape = round(min((test_mae / median_price) * 100, 50), 1)
+    calibration = serving_calibration_metric()
 
     return {
         "status": "success",
@@ -141,7 +130,10 @@ def get_transaction_price(property_id: int, db: Session = Depends(get_db)):
         "ask_bid_overlap_score": float(sdev.ask_bid_overlap_score) if sdev.status == "ESTIMATED" else 0.5,
         "buyer_matches": buyer_matches,
         "similar_listings": similar_count,
-        "calibration_mape_pct": calib_mape,
+        "calibration_mape_pct": calibration["mape_pct"],
+        "calibration_model_version": calibration["model_version"],
+        "calibration_metric_name": calibration["metric_name"],
+        "calibration_metric_source": calibration["source"],
         "sdev_status": sdev.status,
         "sdev_reason": sdev.reason,
         "cluster": {
@@ -155,5 +147,3 @@ def get_transaction_price(property_id: int, db: Session = Depends(get_db)):
             "Use for market analysis only."
         ),
     }
-
-from src.backend.api_v2 import router

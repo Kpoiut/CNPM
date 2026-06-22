@@ -558,9 +558,9 @@ class PipelineOrchestrator:
         for c in comps:
             tiers[c.evidence_tier] = tiers.get(c.evidence_tier, 0) + 1
 
-        anchor_count = tiers.get("E1", 0) + tiers.get("E2", 0)
+        anchor_count = tiers.get("E4", 0) + tiers.get("E5", 0)
         if count > 0 and anchor_count == 0:
-            warnings.append("Khong co comparable E1/E2 — can bo sung du lieu chat luong cao.")
+            warnings.append("Khong co comparable E4/E5 — can bo sung du lieu chat luong cao.")
 
         return GateResult(7, "COMPARABLE",
                           GateStatus.WARN if warnings else GateStatus.PASS,

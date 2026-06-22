@@ -1,4 +1,4 @@
-﻿"""
+"""
 Research-grade data-quality assessment for the AVM project.
 
 This module implements a project-specific standard inspired by the user's
@@ -17,6 +17,13 @@ from datetime import datetime
 from statistics import mean, median, pstdev
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 from urllib.parse import urlparse
+
+from src.domain.evidence_tier import (
+    VALID_EVIDENCE_TIERS,
+    confidence_cap,
+    evidence_anchor_strength,
+    evidence_weight,
+)
 
 
 def clamp(value: float, lower: float, upper: float) -> float:
@@ -200,29 +207,22 @@ def classify_evidence_tier(record: Any) -> Dict[str, Any]:
     """
     stored = _get(record, "evidence_tier", "")
     collection_method = (_get(record, "collection_method", "") or "").lower()
-    if stored in ("E1", "E2", "E3", "E4", "E5"):
-        # Config inverted: E5=highest (1.0), E1=lowest (0.15)
-        cfg = {
-            "E5": (1.0, 1.0, 10.0),
-            "E4": (0.85, 0.85, 9.0),
-            "E3": (0.65, 0.65, 8.0),
-            "E2": (0.35, 0.45, 6.5),
-            "E1": (0.15, 0.2, 4.0),
-        }
+    if stored in VALID_EVIDENCE_TIERS:
         # Special case: public auction = E5 tier (high confidence, anchored asset)
         if stored == "E5" and collection_method == "public_auction_asset_evidence":
             return {
                 "tier": stored,
                 "note": "E5 public auction asset evidence; auction anchor, not private transaction.",
-                "anchor_strength": 1.0,
-                "evidence_weight": 1.0,
-                "cap": 10.0,
+                "anchor_strength": evidence_anchor_strength(stored),
+                "evidence_weight": evidence_weight(stored),
+                "cap": confidence_cap(stored),
             }
-        a, e, c = cfg[stored]
         return {
             "tier": stored,
             "note": f"Stored tier from DB import: {stored}",
-            "anchor_strength": a, "evidence_weight": e, "cap": c,
+            "anchor_strength": evidence_anchor_strength(stored),
+            "evidence_weight": evidence_weight(stored),
+            "cap": confidence_cap(stored),
         }
 
     verification_status = (_get(record, "verification_status", "unverified") or "unverified").lower()
@@ -304,17 +304,10 @@ def classify_evidence_tier(record: Any) -> Dict[str, Any]:
         else:
             tier, note = "E1", "E1: Minimal evidence."
 
-    # Config inverted: E5=highest
-    cfg = {
-        "E5": (1.0, 1.0, 10.0),
-        "E4": (0.85, 0.85, 9.0),
-        "E3": (0.65, 0.65, 8.0),
-        "E2": (0.35, 0.45, 6.5),
-        "E1": (0.15, 0.2, 4.0),
-    }
-    a, e, c = cfg[tier]
     return {"tier": tier, "note": note,
-            "anchor_strength": a, "evidence_weight": e, "cap": c}
+            "anchor_strength": evidence_anchor_strength(tier),
+            "evidence_weight": evidence_weight(tier),
+            "cap": confidence_cap(tier)}
 
 def _score_provenance(record: Any) -> Dict[str, Any]:
     fields = [
@@ -472,21 +465,8 @@ def score_property_quality(
     # Priority 1: stored evidence_tier from DB (set by verify_scraped_data.py)
     # This takes precedence over everything else — verify_scraped_data.py has already
     # determined the correct tier, so respect it.
-    if _get(record, "evidence_tier") in ("E1", "E2", "E3", "E4", "E5"):
+    if _get(record, "evidence_tier") in VALID_EVIDENCE_TIERS:
         stored_tier = _get(record, "evidence_tier")
-        # Config inverted: E5=highest, E1=lowest
-        tier_config = {
-            "E5": {"anchor_strength": 1.0, "evidence_weight": 1.0, "cap": 10.0},
-            "E4": {"anchor_strength": 0.85, "evidence_weight": 0.85, "cap": 9.0},
-            "E3": {"anchor_strength": 0.65, "evidence_weight": 0.65, "cap": 8.0},
-            "E2": {"anchor_strength": 0.35, "evidence_weight": 0.45, "cap": 6.5},
-            "E1": {"anchor_strength": 0.15, "evidence_weight": 0.2, "cap": 4.0},
-        }
-        if (
-            stored_tier == "E5"
-            and (_get(record, "collection_method", "") or "").lower() == "public_auction_asset_evidence"
-        ):
-            tier_config["E5"] = {"anchor_strength": 1.0, "evidence_weight": 1.0, "cap": 10.0}
         evidence_profile = {
             "tier": stored_tier,
             "note": (
@@ -495,7 +475,9 @@ def score_property_quality(
                 and (_get(record, "collection_method", "") or "").lower() == "public_auction_asset_evidence"
                 else f"Stored tier from DB: {stored_tier}"
             ),
-            **tier_config[stored_tier],
+            "anchor_strength": evidence_anchor_strength(stored_tier),
+            "evidence_weight": evidence_weight(stored_tier),
+            "cap": confidence_cap(stored_tier),
         }
     # Priority 2: batch_generator records without stored tier -> E1 (lowest, minimal evidence)
     elif _get(record, "source_access_method") == "batch_generator":
@@ -731,11 +713,11 @@ def build_data_quality_assessment(
 
     if anchor_count == 0:
         capped_score = min(capped_score, 7.0)
-        applied_rules.append("cap_no_anchor_E1_E2")
-        warnings.append("Khong co ho so E1/E2 trong tap doi chieu; he thong khong duoc xep muc tin cay qua cao.")
+        applied_rules.append("cap_no_anchor_E4_E5")
+        warnings.append("Khong co ho so E4/E5 trong tap doi chieu; he thong khong duoc xep muc tin cay qua cao.")
         next_actions.append("Bo sung ho so co bang chung field-survey, giao dich neo hoac xac minh doc lap manh hon.")
     else:
-        strengths.append("Tap doi chieu da co ho so E1/E2, giup tang kha nang neo vao thi truong thuc te hon.")
+        strengths.append("Tap doi chieu da co ho so E4/E5, giup tang kha nang neo vao thi truong thuc te hon.")
 
     if neff_value < 30:
         capped_score = min(capped_score, 5.5)

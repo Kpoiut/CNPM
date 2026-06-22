@@ -169,6 +169,8 @@ function Dashboard() {
     staleTime: 10 * 60 * 1000,
   })
 
+  const servingModel = stats?.serving_model || stats?.latest_model
+
   const {
     typeData, provinceData, priceData, evidenceData, dbEmpty,
     totalDistrictCount,
@@ -303,7 +305,7 @@ function Dashboard() {
             </div>
             <div className="dashboard-hero-meta-item">
               <strong>Model</strong>
-              <span>{stats.latest_model?.model_name || 'Chưa có model train'}</span>
+              <span>{servingModel?.model_name || 'Chưa có model train'}</span>
             </div>
           </div>
         </div>
@@ -746,22 +748,22 @@ function Dashboard() {
       </div>
 
       {/* Model Performance */}
-      {stats.latest_model && (
+      {servingModel && (
         <Card className="dashboard-panel" style={{ borderLeft: '4px solid var(--primary)', marginBottom: '1.5rem' }}>
           <CardHeader>
             <CardTitle style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-              {icon('bot', 14)} Hiệu suất mô hình hiện tại
+              {icon('bot', 14)} Hiệu suất model đang phục vụ
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr)', gap: '0.75rem', marginBottom: '1.25rem' }}>
               {[
-                { label: 'Mô hình', value: stats.latest_model.model_name, color: 'var(--primary)' },
-                { label: 'Phiên bản', value: stats.latest_model.version, color: 'var(--text-primary)' },
-                { label: 'Mẫu train', value: (stats.latest_model.dataset_record_count || stats.latest_model.train_record_count)?.toLocaleString(), color: 'var(--text-primary)' },
-                { label: 'MAE', value: fmtPrice(stats.latest_model.mae), color: 'var(--danger)' },
-                { label: 'RMSE', value: stats.latest_model.rmse != null ? fmtPrice(stats.latest_model.rmse) : '—', color: 'var(--warning)' },
-                { label: 'R² Score', value: (stats.latest_model.r2 || 0).toFixed(4), color: 'var(--success)' },
+                { label: 'Mô hình', value: servingModel.model_name, color: 'var(--primary)' },
+                { label: 'Phiên bản', value: servingModel.version, color: 'var(--text-primary)' },
+                { label: 'Mẫu train', value: (servingModel.dataset_record_count || servingModel.train_record_count)?.toLocaleString(), color: 'var(--text-primary)' },
+                { label: 'MAPE', value: servingModel.mape != null ? `${Number(servingModel.mape).toFixed(2)}%` : '—', color: 'var(--danger)' },
+                { label: 'MAE', value: fmtPrice(servingModel.mae), color: 'var(--danger)' },
+                { label: 'R² Score', value: (servingModel.r2 || 0).toFixed(4), color: 'var(--success)' },
               ].map((m, i) => (
                 <div key={i} style={{
                   padding: '0.875rem', textAlign: 'center',
@@ -784,20 +786,20 @@ function Dashboard() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
               {[
                 {
-                  label: 'MAE', value: stats.latest_model.mae,
+                  label: 'MAE', value: servingModel.mae,
                   max: 15e6,
                   color: 'var(--danger)',
                   fmt: fmtPrice,
                 },
                 {
-                  label: 'RMSE', value: stats.latest_model.rmse || 0,
+                  label: 'RMSE', value: servingModel.rmse || 0,
                   max: 25e6,
                   color: 'var(--warning)',
                   fmt: fmtPrice,
-                  skip: !stats.latest_model.rmse,
+                  skip: !servingModel.rmse,
                 },
                 {
-                  label: 'R² Score', value: stats.latest_model.r2 || 0,
+                  label: 'R² Score', value: servingModel.r2 || 0,
                   max: 1,
                   color: 'var(--success)',
                   fmt: (v) => (v * 100).toFixed(1) + '%',
@@ -822,7 +824,10 @@ function Dashboard() {
                 {stats.model_needs_retrain ? 'Cần retrain theo DB mới' : 'Model đã khớp tập train hiện tại'}
               </Badge>
               <Badge variant="primary" size="sm">
-                {icon('database', 10)} {stats.latest_model.dataset_record_count || stats.latest_model.train_record_count} samples
+                {icon('database', 10)} {servingModel.dataset_record_count || servingModel.train_record_count} samples
+              </Badge>
+              <Badge variant="info" size="sm">
+                Metric: {servingModel.metric_source || 'ACTIVE_MODEL/metadata'}
               </Badge>
               <Badge variant="info" size="sm">
                 P-CONF: {stats.confidence_source || '—'}
@@ -832,7 +837,7 @@ function Dashboard() {
         </Card>
       )}
 
-      {!stats.latest_model && (
+      {!servingModel && (
         <Card className="dashboard-panel" style={{ background: 'var(--warning-bg)', border: '1px solid var(--warning-border)' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
             {icon('flask', 18, '')}

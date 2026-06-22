@@ -1561,7 +1561,7 @@ class GenericScraperCollector(BaseCollector):
 class CrossSourceValidator:
     """
     Cross-validate properties across multiple sources.
-    Khi 1 BĐS xuất hiện ở 2+ nguồn → tăng tier lên E1/E2.
+    Khi 1 BĐS xuất hiện ở 2+ nguồn → tăng tier lên E4/E5.
     Khi giá conflict giữa sources → flag để review.
     """
 
@@ -1669,11 +1669,11 @@ class CrossSourceValidator:
 
             # Promote tier if cross-source confirmed
             new_tier = None
-            if len(sources) >= 2 and prop.evidence_tier not in ["E1", "E2"]:
+            if len(sources) >= 2 and prop.evidence_tier not in ["E4", "E5"]:
                 if has_conflict:
-                    new_tier = "E2"  # Multi-source but conflict → E2
+                    new_tier = "E4"  # Multi-source but conflict → E4
                 else:
-                    new_tier = "E1"  # Multi-source, price agree → E1
+                    new_tier = "E5"  # Multi-source, price agree → E5
 
             results[pid] = {
                 "sources": sources,

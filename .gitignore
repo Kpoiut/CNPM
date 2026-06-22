@@ -35,6 +35,10 @@ frontend/.vite/
 # Tool caches
 .pytest_cache/
 .omninexus/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
 
 # IDE
 .idea/
@@ -44,6 +48,9 @@ frontend/.vite/
 
 # Environment
 .env
+.env.*
+!.env.example
+!frontend/.env.example
 *.db
 *.db-wal
 *.db-shm
@@ -51,14 +58,32 @@ frontend/.vite/
 *.sqlite
 *.sqlite3
 
-# Models (keep baseline)
+# Models: chỉ version hóa artifact đã audit để CI/Docker có active model.
 models/*.pkl
+!models/model_20260504_144753.pkl
+!models/model_20260621_162930.pkl
 !models/.gitkeep
 
 # Logs
 *.log
 *.err
 logs/
+reports/
+!reports/.gitkeep
+
+# Runtime state
+uploads/**
+!uploads/.gitkeep
+backups/
+tmp/
+
+# Frontend build and test output
+frontend/dist/
+frontend/coverage/
+
+# Local worktrees and agent scratch data
+.worktrees/
+.codex_tmp/
 
 # OS
 .DS_Store
