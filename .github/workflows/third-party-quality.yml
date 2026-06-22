@@ -18,16 +18,35 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Require SonarCloud token
+      - name: Check SonarCloud token
+        id: sonar_token
         shell: bash
         run: |
+          mkdir -p reports/ci
           if [ -z "${SONAR_TOKEN}" ]; then
-            echo "SONAR_TOKEN is not configured."
-            echo "Add SONAR_TOKEN in GitHub repository secrets to enable third-party automated quality scanning."
-            exit 1
+            echo "configured=false" >> "${GITHUB_OUTPUT}"
+            echo "::warning::SONAR_TOKEN is not configured; skipping SonarCloud scan. Configure repository secret SONAR_TOKEN to enable third-party quality gate."
+            {
+              echo "status=skipped"
+              echo "reason=SONAR_TOKEN is not configured"
+              echo "required_secret=SONAR_TOKEN"
+            } > reports/ci/sonarcloud-status.txt
+          else
+            echo "configured=true" >> "${GITHUB_OUTPUT}"
+            echo "status=configured" > reports/ci/sonarcloud-status.txt
           fi
 
       - name: SonarCloud scan
+        if: steps.sonar_token.outputs.configured == 'true'
         uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Upload third-party quality evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: third-party-quality-evidence-${{ github.sha }}
+          path: reports/ci/sonarcloud-status.txt
+          if-no-files-found: warn
+          retention-days: 30

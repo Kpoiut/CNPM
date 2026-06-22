@@ -100,10 +100,24 @@ def _extend_valuation_runs() -> None:
     op.alter_column("valuation_runs", "request_status", nullable=False, schema="public")
     op.alter_column("valuation_runs", "fair_market_value_vnd", nullable=True, schema="public")
     op.create_unique_constraint("uq_valuation_runs_request_id", "valuation_runs", ["request_id"], schema="public")
-    op.create_index("ix_valuation_runs_account_created", "valuation_runs", ["account_id", "created_at"], schema="public")
-    op.create_index("ix_valuation_runs_source_endpoint", "valuation_runs", ["source_endpoint"], schema="public")
-    op.create_index("ix_valuation_runs_feedback_status", "valuation_runs", ["feedback_verification_status"], schema="public")
-    op.create_index("ix_valuation_runs_training_run_id", "valuation_runs", ["training_run_id"], schema="public")
+    # Migration 0001 creates current SQLAlchemy metadata on fresh databases, so
+    # index creation here must also be safe when the target index already exists.
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_valuation_runs_account_created "
+        "ON public.valuation_runs (account_id, created_at)"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_valuation_runs_source_endpoint "
+        "ON public.valuation_runs (source_endpoint)"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_valuation_runs_feedback_status "
+        "ON public.valuation_runs (feedback_verification_status)"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_valuation_runs_training_run_id "
+        "ON public.valuation_runs (training_run_id)"
+    )
 
 
 def _migrate_legacy_prediction_rows() -> None:

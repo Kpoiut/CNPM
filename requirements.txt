@@ -8,12 +8,12 @@ aiofiles==23.2.1
 sqlalchemy==2.0.51
 alembic==1.18.4
 psycopg[binary]==3.2.10
-python-dotenv==1.0.1
+python-dotenv==1.2.2
 
 # Machine Learning
 scikit-learn==1.6.1
 xgboost==2.0.3
-lightgbm==4.3.0
+lightgbm==4.6.0
 shap==0.52.0
 
 # Data processing
